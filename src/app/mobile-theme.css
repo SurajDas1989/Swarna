@@ -1,0 +1,33 @@
+/* Mobile-only color theme */
+:root.mobile-theme {
+  --mobile-bg: #F2EBC9;
+  --mobile-primary: #F29727;
+  --mobile-secondary: #D9933D;
+  --mobile-accent: #D9A76A;
+  --mobile-surface: #F2F2F2;
+}
+
+body.mobile-theme {
+  background: var(--mobile-bg);
+  color: var(--mobile-secondary);
+}
+
+.mobile-theme .primary {
+  background: var(--mobile-primary);
+  color: #fff;
+}
+
+.mobile-theme .secondary {
+  background: var(--mobile-secondary);
+  color: #fff;
+}
+
+.mobile-theme .accent {
+  background: var(--mobile-accent);
+  color: #fff;
+}
+
+.mobile-theme .surface {
+  background: var(--mobile-surface);
+  color: #333;
+}

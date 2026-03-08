@@ -12,18 +12,28 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-    const [theme, setTheme] = useState<Theme>("light");
+    // Detect mobile device
+    const isMobile = typeof window !== "undefined" && /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    const [theme, setTheme] = useState<Theme>(isMobile ? "light" : "light"); // Always light for mobile
 
     useEffect(() => {
         const root = document.documentElement;
-        if (theme === "dark") {
-            root.classList.add("dark");
-        } else {
+        // Always force light theme for mobile
+        if (isMobile) {
             root.classList.remove("dark");
+            if (theme !== "light") setTheme("light");
+        } else {
+            if (theme === "dark") {
+                root.classList.add("dark");
+            } else {
+                root.classList.remove("dark");
+            }
         }
     }, [theme]);
 
     const toggleTheme = () => {
+        // Prevent toggling theme on mobile
+        if (isMobile) return;
         setTheme((prev) => (prev === "dark" ? "light" : "dark"));
     };
 

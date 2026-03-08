@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import type { Product } from "@/context/AppContext";
@@ -26,9 +26,15 @@ function getInitialRecentlyViewed(): Product[] {
 }
 
 export function RecentlyViewed() {
-    const [items] = useState<Product[]>(getInitialRecentlyViewed);
+    const [mounted, setMounted] = useState(false);
+    const [items, setItems] = useState<Product[]>([]);
 
-    if (items.length === 0) {
+    useEffect(() => {
+        setMounted(true);
+        setItems(getInitialRecentlyViewed());
+    }, []);
+
+    if (!mounted || items.length === 0) {
         return null;
     }
 

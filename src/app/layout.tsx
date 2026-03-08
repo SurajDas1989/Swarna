@@ -4,6 +4,7 @@ import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { CartModal } from "@/components/layout/CartModal";
 import { BackToTop } from "@/components/BackToTop";
+import { MobileBottomNav } from "@/components/layout/MobileBottomNav";
 import { AppProvider } from "@/context/AppContext";
 import { AuthProvider } from "@/context/AuthContext";
 import { ThemeProvider } from "@/context/ThemeContext";
@@ -41,8 +42,9 @@ export default function RootLayout({
               <ToastProvider>
                 <Navbar />
                 <CartModal />
-                <main className="flex-grow">{children}</main>
+                <main className="flex-grow pb-24 md:pb-0">{children}</main>
                 <BackToTop />
+                <MobileBottomNav />
                 <Footer />
               </ToastProvider>
             </AppProvider>

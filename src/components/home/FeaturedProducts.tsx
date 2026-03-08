@@ -1,13 +1,13 @@
 ﻿"use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { useAppContext, Product } from "@/context/AppContext";
 import { useToast } from "@/components/ui/Toast";
-import { ArrowUpDown, Check, Plus, Search, SlidersHorizontal, X } from "lucide-react";
+import { ArrowUpDown, Check, ChevronDown, Plus, Search, SlidersHorizontal } from "lucide-react";
 import { getBlurDataUrl } from "@/lib/utils/imageBlur";
 import { ScrollReveal } from "@/components/ui/ScrollReveal";
 import { Skeleton } from "@/components/ui/Skeleton";
@@ -23,13 +23,6 @@ export const FILTERS = [
     { id: "sets", label: "Sets" },
 ];
 
-const PRICE_FILTERS = [
-    { id: "all", label: "All Prices" },
-    { id: "under500", label: "Under 500" },
-    { id: "500to1500", label: "500 - 1500" },
-    { id: "over1500", label: "Over 1500" },
-];
-
 export const SORT_OPTIONS = [
     { id: "default", label: "Default" },
     { id: "price-asc", label: "Price: Low to High" },
@@ -37,6 +30,8 @@ export const SORT_OPTIONS = [
     { id: "rating", label: "Highest Rated" },
     { id: "discount", label: "Biggest Discount" },
 ];
+
+const MOBILE_SEARCH_FOCUS_KEY = "mobile-search-focus";
 
 function ProductCardSkeleton() {
     return (
@@ -63,7 +58,6 @@ export function FeaturedProducts() {
         addToCart,
         activeCategory,
         setActiveCategory,
-        activePriceRange,
         setActivePriceRange,
         searchQuery,
         setSearchQuery,
@@ -71,40 +65,82 @@ export function FeaturedProducts() {
 
     const { showToast } = useToast();
     const router = useRouter();
+    const mobileSearchInputRef = useRef<HTMLInputElement>(null);
     const [sortBy, setSortBy] = useState("default");
     const [showAllProducts, setShowAllProducts] = useState(false);
     const [addedProductId, setAddedProductId] = useState<string | null>(null);
-    const [mobileSortOpen, setMobileSortOpen] = useState(false);
     const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
+    const [mobileSortOpen, setMobileSortOpen] = useState(false);
 
-    const filteredProducts =
-        activeCategory === "liked"
-            ? products.filter((p) => isInWishlist(p.id))
-            : products;
+    useEffect(() => {
+        const focusSearch = () => {
+            mobileSearchInputRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+            window.setTimeout(() => mobileSearchInputRef.current?.focus(), 220);
+        };
 
-    const sortedProducts = [...filteredProducts];
-    switch (sortBy) {
-        case "price-asc":
-            sortedProducts.sort((a, b) => a.price - b.price);
-            break;
-        case "price-desc":
-            sortedProducts.sort((a, b) => b.price - a.price);
-            break;
-        case "rating":
-            sortedProducts.sort((a, b) => b.rating - a.rating);
-            break;
-        case "discount":
-            sortedProducts.sort((a, b) => {
-                const discountA = (a.originalPrice - a.price) / a.originalPrice;
-                const discountB = (b.originalPrice - b.price) / b.originalPrice;
-                return discountB - discountA;
-            });
-            break;
-        default:
-            break;
-    }
+        const shouldFocusFromSession = sessionStorage.getItem(MOBILE_SEARCH_FOCUS_KEY) === "1";
+        if (shouldFocusFromSession) {
+            sessionStorage.removeItem(MOBILE_SEARCH_FOCUS_KEY);
+            focusSearch();
+        }
 
-    const displayedProducts = showAllProducts ? sortedProducts : sortedProducts.slice(0, 8);
+        window.addEventListener("focus-products-search", focusSearch);
+        return () => window.removeEventListener("focus-products-search", focusSearch);
+    }, []);
+
+    useEffect(() => {
+        const closeMenus = () => {
+            setMobileFilterOpen(false);
+            setMobileSortOpen(false);
+        };
+
+        window.addEventListener("scroll", closeMenus, { passive: true });
+        return () => window.removeEventListener("scroll", closeMenus);
+    }, []);
+
+
+    const filteredProducts = useMemo(() => {
+        if (activeCategory === "liked") {
+            return products.filter((p) => isInWishlist(p.id));
+        }
+
+        return products;
+    }, [activeCategory, isInWishlist, products]);
+
+    const sortedProducts = useMemo(() => {
+        // Create a shallow copy to avoid mutating the original array
+        const nextProducts = [...filteredProducts];
+
+        switch (sortBy) {
+            case "price-asc":
+                nextProducts.sort((a, b) => (a.price || 0) - (b.price || 0));
+                break;
+            case "price-desc":
+                nextProducts.sort((a, b) => (b.price || 0) - (a.price || 0));
+                break;
+            case "rating":
+                nextProducts.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+                break;
+            case "discount":
+                nextProducts.sort((a, b) => {
+                    const discountA = a.originalPrice > 0 ? (a.originalPrice - a.price) / a.originalPrice : 0;
+                    const discountB = b.originalPrice > 0 ? (b.originalPrice - b.price) / b.originalPrice : 0;
+                    return discountB - discountA;
+                });
+                break;
+            default:
+                // For 'default', we keep the order from the API which is typically 'createdAt' desc
+                break;
+        }
+
+        return nextProducts;
+    }, [filteredProducts, sortBy]);
+
+    const displayedProducts = useMemo(() => {
+        // If there are few products as in the filtered case, we show them all
+        if (sortedProducts.length <= 8) return sortedProducts;
+        return showAllProducts ? sortedProducts : sortedProducts.slice(0, 8);
+    }, [showAllProducts, sortedProducts]);
 
     const handleAddToCart = (product: Product) => {
         addToCart(product.id);
@@ -113,6 +149,16 @@ export function FeaturedProducts() {
             setAddedProductId((prev) => (prev === product.id ? null : prev));
         }, 850);
         showToast(`Added ${product.name} to cart`, "success");
+    };
+
+    const handleCategoryChange = (category: string) => {
+        setActiveCategory(category);
+        setShowAllProducts(false);
+    };
+
+    const handleSortChange = (nextSort: string) => {
+        setSortBy(nextSort);
+        // Don't reset showAllProducts here to avoid layout jump if user already expanded
     };
 
     return (
@@ -131,10 +177,13 @@ export function FeaturedProducts() {
                     <div className="relative">
                         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
                         <input
+                            id="mobile-products-search"
+                            ref={mobileSearchInputRef}
                             type="text"
                             value={searchQuery}
                             onChange={(e) => {
                                 setSearchQuery(e.target.value);
+                                setShowAllProducts(false);
                                 if (e.target.value.trim().length > 0) {
                                     router.push("/#products");
                                 }
@@ -142,6 +191,88 @@ export function FeaturedProducts() {
                             placeholder="Search jewellery..."
                             className="w-full rounded-full border border-gray-200 bg-white py-2.5 pl-10 pr-4 text-sm text-gray-900 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary dark:border-white/15 dark:bg-white/5 dark:text-foreground"
                         />
+                    </div>
+
+                    <div className="relative mt-3 border-b border-gray-200 px-1 pb-2 dark:border-white/10">
+                        <div className="flex items-center justify-between">
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setMobileFilterOpen((prev) => !prev);
+                                    setMobileSortOpen(false);
+                                }}
+                                className="inline-flex items-center gap-1.5 text-[13px] font-medium uppercase tracking-[0.08em] text-gray-800 dark:text-gray-100"
+                                aria-expanded={mobileFilterOpen}
+                                aria-controls="mobile-filter-menu"
+                            >
+                                <SlidersHorizontal className="h-3.5 w-3.5" />
+                                <span>Filter</span>
+                            </button>
+
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setMobileSortOpen((prev) => !prev);
+                                    setMobileFilterOpen(false);
+                                }}
+                                className="inline-flex items-center gap-1 text-[13px] font-medium text-gray-700 dark:text-gray-200"
+                                aria-expanded={mobileSortOpen}
+                                aria-controls="mobile-sort-menu"
+                            >
+                                <span>Sort</span>
+                                <ChevronDown className={`h-3.5 w-3.5 transition-transform ${mobileSortOpen ? "rotate-180" : ""}`} />
+                            </button>
+                        </div>
+
+                        {mobileFilterOpen && (
+                            <div
+                                id="mobile-filter-menu"
+                                className="mt-2 overflow-hidden rounded-md border border-gray-200 bg-white shadow-lg dark:border-white/10 dark:bg-card"
+                            >
+                                {FILTERS.map((filter) => (
+                                    <button
+                                        key={filter.id}
+                                        type="button"
+                                        onClick={() => {
+                                            handleCategoryChange(filter.id);
+                                            setMobileFilterOpen(false);
+                                        }}
+                                        className={`flex w-full items-center justify-between px-3 py-2.5 text-left text-[13px] ${activeCategory === filter.id
+                                            ? "bg-gray-100 font-medium text-gray-900 dark:bg-white/10 dark:text-white"
+                                            : "text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-white/5"
+                                            }`}
+                                    >
+                                        <span>{filter.label}</span>
+                                        {activeCategory === filter.id ? <Check className="h-3.5 w-3.5" /> : null}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+
+                        {mobileSortOpen && (
+                            <div
+                                id="mobile-sort-menu"
+                                className="mt-2 overflow-hidden rounded-md border border-gray-200 bg-white shadow-lg dark:border-white/10 dark:bg-card"
+                            >
+                                {SORT_OPTIONS.map((opt) => (
+                                    <button
+                                        key={opt.id}
+                                        type="button"
+                                        onClick={() => {
+                                            handleSortChange(opt.id);
+                                            setMobileSortOpen(false);
+                                        }}
+                                        className={`flex w-full items-center justify-between px-3 py-2.5 text-left text-[13px] ${sortBy === opt.id
+                                            ? "bg-gray-100 font-medium text-gray-900 dark:bg-white/10 dark:text-white"
+                                            : "text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-white/5"
+                                            }`}
+                                    >
+                                        <span>{opt.label}</span>
+                                        {sortBy === opt.id ? <Check className="h-3.5 w-3.5" /> : null}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
                     </div>
                 </div>
 
@@ -151,12 +282,11 @@ export function FeaturedProducts() {
                             {FILTERS.map((filter) => (
                                 <button
                                     key={filter.id}
-                                    onClick={() => setActiveCategory(filter.id)}
-                                    className={`whitespace-nowrap rounded-full px-6 py-2.5 text-sm font-medium transition-all duration-300 ${
-                                        activeCategory === filter.id
-                                            ? "bg-gray-900 text-white shadow-md dark:bg-primary"
-                                            : "bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-white/5 dark:text-gray-300 dark:hover:bg-white/10"
-                                    }`}
+                                    onClick={() => handleCategoryChange(filter.id)}
+                                    className={`whitespace-nowrap rounded-full px-6 py-2.5 text-sm font-medium transition-all duration-300 ${activeCategory === filter.id
+                                        ? "bg-gray-900 text-white shadow-md dark:bg-primary"
+                                        : "bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-white/5 dark:text-gray-300 dark:hover:bg-white/10"
+                                        }`}
                                 >
                                     {filter.label}
                                 </button>
@@ -178,12 +308,11 @@ export function FeaturedProducts() {
                             {SORT_OPTIONS.map((opt) => (
                                 <button
                                     key={opt.id}
-                                    onClick={() => setSortBy(opt.id)}
-                                    className={`w-full px-4 py-3 text-left text-sm transition-colors hover:bg-gray-50 dark:hover:bg-white/5 ${
-                                        sortBy === opt.id
-                                            ? "bg-primary/5 font-medium text-primary dark:bg-primary/10"
-                                            : "text-gray-700 dark:text-gray-300"
-                                    }`}
+                                    onClick={() => handleSortChange(opt.id)}
+                                    className={`w-full px-4 py-3 text-left text-sm transition-colors hover:bg-gray-50 dark:hover:bg-white/5 ${sortBy === opt.id
+                                        ? "bg-primary/5 font-medium text-primary dark:bg-primary/10"
+                                        : "text-gray-700 dark:text-gray-300"
+                                        }`}
                                 >
                                     {opt.label}
                                 </button>
@@ -198,13 +327,13 @@ export function FeaturedProducts() {
                             <ProductCardSkeleton key={n} />
                         ))}
                     </div>
-                ) : filteredProducts.length > 0 ? (
+                ) : sortedProducts.length > 0 ? (
                     <div className="grid grid-cols-2 gap-3 transition-all duration-500 lg:grid-cols-4 lg:gap-6 xl:gap-8">
                         {displayedProducts.map((product, idx) => {
                             const isAdded = addedProductId === product.id;
 
                             return (
-                                <ScrollReveal key={product.id} delay={0.05 * (idx % 4)} direction="up" className="h-full">
+                                <ScrollReveal key={`prod-${product.id}`} delay={0.05 * (idx % 4)} direction="up" className="h-full">
                                     <div className="group flex h-full flex-col overflow-hidden rounded-xl border border-gray-100 bg-white transition-all duration-500 hover:-translate-y-1 hover:border-primary/25 hover:shadow-xl dark:border-white/5 dark:bg-card dark:hover:border-primary/35 dark:hover:shadow-primary/10">
                                         <div className="relative aspect-[4/5] overflow-hidden bg-[#F8F8F8] p-3 dark:bg-black lg:p-6">
                                             {product.originalPrice > product.price && (
@@ -240,11 +369,10 @@ export function FeaturedProducts() {
                                             <div className="absolute inset-x-0 bottom-0 hidden translate-y-4 p-4 opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100 lg:block">
                                                 <Button
                                                     disabled={isAdded}
-                                                    className={`w-full shadow-lg transition-all duration-300 ${
-                                                        isAdded
-                                                            ? "bg-emerald-600 text-white hover:bg-emerald-600"
-                                                            : "bg-white text-gray-900 hover:bg-primary hover:text-white"
-                                                    }`}
+                                                    className={`w-full shadow-lg transition-all duration-300 ${isAdded
+                                                        ? "bg-emerald-600 text-white hover:bg-emerald-600"
+                                                        : "bg-white text-gray-900 hover:bg-primary hover:text-white"
+                                                        }`}
                                                     onClick={(e) => {
                                                         e.preventDefault();
                                                         handleAddToCart(product);
@@ -285,11 +413,10 @@ export function FeaturedProducts() {
                                                         e.preventDefault();
                                                         handleAddToCart(product);
                                                     }}
-                                                    className={`flex h-8 w-8 items-center justify-center rounded-full transition-all duration-300 lg:hidden ${
-                                                        isAdded
-                                                            ? "bg-emerald-600 text-white"
-                                                            : "bg-gray-100 text-gray-900 hover:bg-primary hover:text-white dark:bg-white/5 dark:text-foreground dark:hover:bg-primary"
-                                                    }`}
+                                                    className={`flex h-8 w-8 items-center justify-center rounded-full transition-all duration-300 lg:hidden ${isAdded
+                                                        ? "bg-emerald-600 text-white"
+                                                        : "bg-gray-100 text-gray-900 hover:bg-primary hover:text-white dark:bg-white/5 dark:text-foreground dark:hover:bg-primary"
+                                                        }`}
                                                     aria-label={isAdded ? "Added" : "Add to Cart"}
                                                 >
                                                     {isAdded ? <Check className="h-3.5 w-3.5" /> : <Plus className="h-4 w-4" />}
@@ -323,7 +450,7 @@ export function FeaturedProducts() {
                     </div>
                 )}
 
-                {filteredProducts.length > 8 && !showAllProducts && (
+                {sortedProducts.length > 8 && !showAllProducts && (
                     <div className="mt-12 text-center lg:mt-16">
                         <Button
                             variant="outline"
@@ -336,103 +463,15 @@ export function FeaturedProducts() {
                     </div>
                 )}
             </div>
-
-            <div className="fixed inset-x-0 bottom-0 z-40 border-t border-primary/15 bg-white/95 px-4 py-3 backdrop-blur dark:border-white/10 dark:bg-[#0f131a]/95 lg:hidden">
-                <div className="mx-auto flex max-w-md items-center divide-x divide-slate-300/70 overflow-hidden rounded-xl border border-slate-300/80 bg-slate-100/90 text-slate-800 shadow-xl dark:divide-white/15 dark:border-white/10 dark:bg-[#1b2435] dark:text-white">
-                    <button
-                        onClick={() => setMobileSortOpen(true)}
-                        className={`flex flex-1 items-center justify-center gap-2 py-3 text-sm font-semibold transition-colors ${mobileSortOpen ? "bg-primary/20 text-primary dark:bg-primary/25" : "hover:bg-slate-200/80 dark:hover:bg-white/10"}`}
-                    >
-                        <ArrowUpDown className="h-4 w-4" /> SORT
-                    </button>
-                    <button
-                        onClick={() => setMobileFilterOpen(true)}
-                        className={`flex flex-1 items-center justify-center gap-2 py-3 text-sm font-semibold transition-colors ${mobileFilterOpen ? "bg-primary/20 text-primary dark:bg-primary/25" : "hover:bg-slate-200/80 dark:hover:bg-white/10"}`}
-                    >
-                        <SlidersHorizontal className="h-4 w-4" /> FILTER
-                    </button>
-                </div>
-            </div>
-
-            {(mobileSortOpen || mobileFilterOpen) && (
-                <div className="fixed inset-0 z-50 bg-black/45 lg:hidden" onClick={() => { setMobileSortOpen(false); setMobileFilterOpen(false); }} />
-            )}
-
-            {mobileSortOpen && (
-                <div className="fixed inset-x-0 bottom-0 z-50 rounded-t-2xl border-t border-primary/15 bg-white p-4 text-slate-900 shadow-2xl dark:border-white/10 dark:bg-[#101827] dark:text-white lg:hidden">
-                    <div className="mb-3 flex items-center justify-between">
-                        <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-600 dark:text-white/85">Sort By</h3>
-                        <button onClick={() => setMobileSortOpen(false)}><X className="h-5 w-5" /></button>
-                    </div>
-                    <div className="space-y-2 pb-2">
-                        {SORT_OPTIONS.map((opt) => (
-                            <button
-                                key={opt.id}
-                                onClick={() => {
-                                    setSortBy(opt.id);
-                                    setMobileSortOpen(false);
-                                }}
-                                className={`w-full rounded-lg border px-4 py-3 text-left text-sm transition-colors ${
-                                    sortBy === opt.id
-                                        ? "border-primary bg-primary/20 text-primary"
-                                        : "border-slate-300 bg-slate-50 hover:bg-slate-100 dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/10"
-                                }`}
-                            >
-                                {opt.label}
-                            </button>
-                        ))}
-                    </div>
-                </div>
-            )}
-
-            {mobileFilterOpen && (
-                <div className="fixed inset-x-0 bottom-0 z-50 rounded-t-2xl border-t border-primary/15 bg-white p-4 text-slate-900 shadow-2xl dark:border-white/10 dark:bg-[#101827] dark:text-white lg:hidden">
-                    <div className="mb-3 flex items-center justify-between">
-                        <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-600 dark:text-white/85">Filter</h3>
-                        <button onClick={() => setMobileFilterOpen(false)}><X className="h-5 w-5" /></button>
-                    </div>
-
-                    <p className="mb-2 text-xs uppercase tracking-wider text-slate-500 dark:text-white/70">Category</p>
-                    <div className="mb-4 flex flex-wrap gap-2">
-                        {FILTERS.map((filter) => (
-                            <button
-                                key={filter.id}
-                                onClick={() => setActiveCategory(filter.id)}
-                                className={`rounded-full px-3 py-1.5 text-xs transition-colors ${
-                                    activeCategory === filter.id ? "bg-primary text-black" : "border border-slate-300 bg-slate-100 text-slate-700 dark:border-white/10 dark:bg-white/10 dark:text-white/85"
-                                }`}
-                            >
-                                {filter.label}
-                            </button>
-                        ))}
-                    </div>
-
-                    <p className="mb-2 text-xs uppercase tracking-wider text-slate-500 dark:text-white/70">Price</p>
-                    <div className="mb-5 flex flex-wrap gap-2">
-                        {PRICE_FILTERS.map((price) => (
-                            <button
-                                key={price.id}
-                                onClick={() => setActivePriceRange(price.id)}
-                                className={`rounded-full px-3 py-1.5 text-xs transition-colors ${
-                                    activePriceRange === price.id ? "bg-primary text-black" : "border border-slate-300 bg-slate-100 text-slate-700 dark:border-white/10 dark:bg-white/10 dark:text-white/85"
-                                }`}
-                            >
-                                {price.label}
-                            </button>
-                        ))}
-                    </div>
-
-                    <Button
-                        onClick={() => setMobileFilterOpen(false)}
-                        className="w-full bg-primary text-black hover:bg-primary/90"
-                    >
-                        Apply Filters
-                    </Button>
-                </div>
-            )}
         </section>
     );
 }
+
+
+
+
+
+
 
 
 

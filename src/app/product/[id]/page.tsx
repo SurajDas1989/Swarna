@@ -278,7 +278,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                         <div className="h-px bg-gray-100 dark:bg-white/10 mb-6" />
 
                         {/* Action Buttons â€” Side by Side */}
-                        <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/95 dark:bg-card/95 backdrop-blur-md border-t border-gray-100 dark:border-white/10 shadow-[0_-4px_20px_rgba(0,0,0,0.08)] z-50 flex gap-3 lg:static lg:p-0 lg:bg-transparent lg:border-none lg:shadow-none lg:z-auto lg:mb-4">
+                        <div className="fixed bottom-[76px] left-0 right-0 p-4 bg-white/95 dark:bg-card/95 backdrop-blur-md border-t border-gray-100 dark:border-white/10 shadow-[0_-4px_20px_rgba(0,0,0,0.08)] z-50 flex gap-3 lg:static lg:p-0 lg:bg-transparent lg:border-none lg:shadow-none lg:z-auto lg:mb-4">
                             <Button
                                 onClick={() => {
                                     addToCart(product.id);
@@ -406,3 +406,4 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
         </div>
     );
 }
+

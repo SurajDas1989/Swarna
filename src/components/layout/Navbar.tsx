@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Search, ShoppingCart, Menu, X, User, Heart } from "lucide-react";
@@ -16,6 +16,12 @@ export function Navbar() {
     const { theme, toggleTheme } = useTheme();
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
+    useEffect(() => {
+        const handleOpenMenu = () => setMobileMenuOpen(true);
+        window.addEventListener("open-mobile-menu", handleOpenMenu);
+        return () => window.removeEventListener("open-mobile-menu", handleOpenMenu);
+    }, []);
+
     const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
         setSearchQuery(e.target.value);
         if (e.target.value.length > 0) {
@@ -30,6 +36,8 @@ export function Navbar() {
         { href: '/#about', label: 'About' },
         { href: '/#contact', label: 'Contact' },
     ];
+
+    const whatsappHref = "https://wa.me/919326901595";
 
     return (
         <>
@@ -237,24 +245,6 @@ export function Navbar() {
                             </button>
                         </div>
 
-                        <div className="border-b p-4">
-                            <div className="relative">
-                                <input
-                                    type="text"
-                                    placeholder="Search jewelry..."
-                                    value={searchQuery}
-                                    onChange={(e) => {
-                                        handleSearch(e);
-                                        if (e.target.value.length > 0) {
-                                            setMobileMenuOpen(false);
-                                        }
-                                    }}
-                                    className="w-full rounded-xl border border-gray-200 py-3 pl-10 pr-4 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 dark:border-white/15 dark:bg-white/5 dark:text-foreground"
-                                />
-                                <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-                            </div>
-                        </div>
-
                         <nav className="flex-1 overflow-y-auto p-4">
                             {!user && (
                                 <div className="mb-6 grid grid-cols-2 gap-3">
@@ -313,7 +303,21 @@ export function Navbar() {
                                     Logout Account
                                 </button>
                             ) : (
-                                <p className="text-center text-xs text-gray-500">📞 +91 93269 01595</p>
+                                <a
+                                    href={whatsappHref}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="flex items-center justify-center gap-2 text-center text-xs font-medium text-gray-600 transition-colors hover:text-[#25D366]"
+                                >
+                                    <svg
+                                        aria-hidden="true"
+                                        viewBox="0 0 24 24"
+                                        className="h-4 w-4 fill-current"
+                                    >
+                                        <path d="M19.05 4.91A9.82 9.82 0 0 0 12.03 2C6.61 2 2.2 6.41 2.2 11.83c0 1.73.45 3.43 1.3 4.93L2 22l5.39-1.41a9.8 9.8 0 0 0 4.64 1.18h.01c5.42 0 9.83-4.41 9.83-9.83 0-2.63-1.03-5.1-2.82-7.03Zm-7.02 15.2h-.01a8.16 8.16 0 0 1-4.16-1.14l-.3-.18-3.2.84.86-3.12-.2-.32a8.15 8.15 0 0 1-1.25-4.36c0-4.5 3.66-8.16 8.17-8.16 2.18 0 4.22.85 5.76 2.39a8.1 8.1 0 0 1 2.39 5.77c0 4.5-3.66 8.16-8.16 8.16Zm4.48-6.12c-.25-.13-1.47-.72-1.7-.8-.23-.08-.39-.13-.56.12-.17.25-.64.8-.79.97-.15.17-.29.19-.54.06-.25-.13-1.04-.38-1.98-1.22a7.39 7.39 0 0 1-1.37-1.7c-.14-.25-.02-.38.11-.51.11-.11.25-.29.37-.43.12-.15.16-.25.25-.42.08-.17.04-.32-.02-.45-.06-.13-.56-1.35-.77-1.84-.2-.48-.41-.41-.56-.42h-.48c-.17 0-.45.06-.68.32-.23.25-.87.85-.87 2.08 0 1.22.89 2.4 1.01 2.57.13.17 1.76 2.69 4.27 3.77.6.26 1.07.42 1.44.53.6.19 1.14.16 1.56.1.48-.07 1.47-.6 1.68-1.18.21-.58.21-1.08.15-1.18-.06-.1-.23-.17-.48-.29Z" />
+                                    </svg>
+                                    <span>+91 93269 01595</span>
+                                </a>
                             )}
                         </div>
                     </div>
@@ -322,3 +326,4 @@ export function Navbar() {
         </>
     );
 }
+
