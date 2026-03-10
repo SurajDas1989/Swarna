@@ -245,12 +245,12 @@ export function Navbar() {
 
                     <div className="absolute inset-y-0 left-0 flex w-[85%] max-w-[320px] animate-in slide-in-from-left flex-col bg-white shadow-2xl duration-300 dark:bg-[#1e1e1e]">
                         <div className="flex items-center justify-between border-b p-6">
-                            <Link href="/" className="flex flex-col items-stretch w-[115px]" onClick={() => setMobileMenuOpen(false)}>
+                            <Link href="/" className="flex flex-col items-stretch w-[122px]" onClick={() => setMobileMenuOpen(false)}>
                                 <div className="flex items-baseline gap-0.5 justify-center">
                                     <span className="text-3xl font-bold text-primary" style={{ fontFamily: 'var(--font-grenze-gotisch)', lineHeight: 1 }}>S</span>
-                                    <span className="text-sm font-bold tracking-[0.3em] text-primary uppercase" style={{ fontFamily: 'var(--font-grenze-gotisch)' }}>WARNA</span>
+                                    <span className="text-sm font-bold uppercase tracking-[0.3em] text-primary -mr-[0.3em]" style={{ fontFamily: 'var(--font-grenze-gotisch)' }}>WARNA</span>
                                 </div>
-                                <div className="flex justify-between w-full text-[7.5px] uppercase text-foreground font-semibold mt-[-1px]">
+                                <div className="flex justify-between w-full text-[8px] uppercase text-foreground font-semibold mt-[-2px]">
                                     {"COLLECTION".split('').map((letter, index) => (
                                         <span key={index}>{letter}</span>
                                     ))}
