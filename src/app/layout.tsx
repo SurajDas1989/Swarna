@@ -1,5 +1,5 @@
 ﻿import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Grenze_Gotisch } from "next/font/google";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { CartModal } from "@/components/layout/CartModal";
@@ -21,6 +21,11 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const grenzeGotisch = Grenze_Gotisch({
+  variable: "--font-grenze-gotisch",
+  subsets: ["latin"],
+});
+
 export const metadata: Metadata = {
   title: "Swarna",
   description: "Premium Artificial Jewellery",
@@ -34,7 +39,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="scroll-smooth">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col`}
+        className={`${geistSans.variable} ${geistMono.variable} ${grenzeGotisch.variable} antialiased min-h-screen flex flex-col`}
       >
         <ThemeProvider>
           <AuthProvider>

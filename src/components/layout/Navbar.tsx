@@ -65,9 +65,9 @@ export function Navbar() {
                             </button>
 
                             <Link href="/" className="absolute left-1/2 flex flex-col -translate-x-1/2 items-stretch">
-                                <div className="flex items-baseline gap-0.5">
-                                    <span className="text-4xl font-bold italic text-primary" style={{ fontFamily: 'Georgia, serif', lineHeight: 1 }}>S</span>
-                                    <span className="text-base font-bold uppercase tracking-[0.3em] text-primary -mr-[0.3em]">WARNA</span>
+                                <div className="flex items-baseline gap-0.5 justify-center">
+                                    <span className="text-4xl font-bold text-primary" style={{ fontFamily: 'var(--font-grenze-gotisch)', lineHeight: 1 }}>S</span>
+                                    <span className="text-base font-bold uppercase tracking-[0.3em] text-primary -mr-[0.3em]" style={{ fontFamily: 'var(--font-grenze-gotisch)' }}>WARNA</span>
                                 </div>
                                 <div className="flex justify-between w-full text-[8.5px] uppercase text-foreground font-semibold mt-[-2px]">
                                     {"COLLECTION".split('').map((letter, index) => (
@@ -103,9 +103,9 @@ export function Navbar() {
 
                         <div className="hidden items-center justify-between gap-8 md:flex">
                             <Link href="/" className="shrink-0 flex flex-col items-stretch">
-                                <div className="flex items-baseline gap-0.5">
-                                    <span className="text-4xl font-bold italic text-primary" style={{ fontFamily: 'Georgia, serif', lineHeight: 1 }}>S</span>
-                                    <span className="text-base font-bold uppercase tracking-[0.3em] text-primary -mr-[0.3em]">WARNA</span>
+                                <div className="flex items-baseline gap-0.5 justify-center">
+                                    <span className="text-4xl font-bold text-primary" style={{ fontFamily: 'var(--font-grenze-gotisch)', lineHeight: 1 }}>S</span>
+                                    <span className="text-base font-bold uppercase tracking-[0.3em] text-primary -mr-[0.3em]" style={{ fontFamily: 'var(--font-grenze-gotisch)' }}>WARNA</span>
                                 </div>
                                 <div className="flex justify-between w-full text-[8.5px] uppercase text-foreground font-semibold mt-[-2px]">
                                     {"COLLECTION".split('').map((letter, index) => (
@@ -246,8 +246,8 @@ export function Navbar() {
                     <div className="absolute inset-y-0 left-0 flex w-[85%] max-w-[320px] animate-in slide-in-from-left flex-col bg-white shadow-2xl duration-300 dark:bg-[#1e1e1e]">
                         <div className="flex items-center justify-between border-b p-6">
                             <Link href="/" className="flex items-baseline gap-0.5" onClick={() => setMobileMenuOpen(false)}>
-                                <span className="text-3xl font-bold italic text-primary" style={{ fontFamily: 'Georgia, serif', lineHeight: 1 }}>S</span>
-                                <span className="text-sm font-bold tracking-[0.3em] text-primary uppercase">WARNA</span>
+                                <span className="text-3xl font-bold text-primary" style={{ fontFamily: 'var(--font-grenze-gotisch)', lineHeight: 1 }}>S</span>
+                                <span className="text-sm font-bold tracking-[0.3em] text-primary uppercase" style={{ fontFamily: 'var(--font-grenze-gotisch)' }}>WARNA</span>
                             </Link>
                             <button
                                 onClick={() => setMobileMenuOpen(false)}
