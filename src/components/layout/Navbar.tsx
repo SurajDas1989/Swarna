@@ -64,9 +64,16 @@ export function Navbar() {
                                 <Menu className="h-6 w-6" />
                             </button>
 
-                            <Link href="/" className="absolute left-1/2 flex -translate-x-1/2 items-baseline gap-0.5">
-                                <span className="text-4xl font-bold italic text-primary" style={{ fontFamily: 'Georgia, serif', lineHeight: 1 }}>S</span>
-                                <span className="text-base font-bold uppercase tracking-[0.3em] text-primary">WARNA</span>
+                            <Link href="/" className="absolute left-1/2 flex flex-col -translate-x-1/2 items-stretch">
+                                <div className="flex items-baseline gap-0.5 justify-center">
+                                    <span className="text-4xl font-bold text-primary" style={{ fontFamily: 'var(--font-grenze-gotisch)', lineHeight: 1 }}>S</span>
+                                    <span className="text-base font-bold uppercase tracking-[0.3em] text-primary -mr-[0.3em]" style={{ fontFamily: 'var(--font-grenze-gotisch)' }}>WARNA</span>
+                                </div>
+                                <div className="flex justify-between w-full text-[8.5px] uppercase text-foreground font-semibold mt-[-2px]">
+                                    {"COLLECTION".split('').map((letter, index) => (
+                                        <span key={index}>{letter}</span>
+                                    ))}
+                                </div>
                             </Link>
 
                             <div className="flex items-center gap-4">
@@ -95,9 +102,16 @@ export function Navbar() {
                         </div>
 
                         <div className="hidden items-center justify-between gap-8 md:flex">
-                            <Link href="/" className="shrink-0 flex items-baseline gap-0.5">
-                                <span className="text-4xl font-bold italic text-primary" style={{ fontFamily: 'Georgia, serif', lineHeight: 1 }}>S</span>
-                                <span className="text-base font-bold tracking-[0.3em] text-primary uppercase">WARNA</span>
+                            <Link href="/" className="shrink-0 flex flex-col items-stretch">
+                                <div className="flex items-baseline gap-0.5 justify-center">
+                                    <span className="text-4xl font-bold text-primary" style={{ fontFamily: 'var(--font-grenze-gotisch)', lineHeight: 1 }}>S</span>
+                                    <span className="text-base font-bold uppercase tracking-[0.3em] text-primary -mr-[0.3em]" style={{ fontFamily: 'var(--font-grenze-gotisch)' }}>WARNA</span>
+                                </div>
+                                <div className="flex justify-between w-full text-[8.5px] uppercase text-foreground font-semibold mt-[-2px]">
+                                    {"COLLECTION".split('').map((letter, index) => (
+                                        <span key={index}>{letter}</span>
+                                    ))}
+                                </div>
                             </Link>
 
                             <nav className="hidden md:flex gap-8">
@@ -124,11 +138,10 @@ export function Navbar() {
                                     onClick={toggleTheme}
                                     aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
                                     aria-pressed={theme === 'dark'}
-                                    className={`relative h-6 w-12 overflow-hidden rounded-full border shadow-inner transition-all duration-500 focus:outline-none focus:ring-2 focus:ring-primary/35 ${
-                                        theme === 'dark'
-                                            ? 'border-[#3d3a35] bg-[linear-gradient(90deg,#171717,#2a2927)]'
-                                            : 'border-[#b8962e]/30 bg-[linear-gradient(90deg,#8cc3ef,#62ace6)]'
-                                    }`}
+                                    className={`relative h-6 w-12 overflow-hidden rounded-full border shadow-inner transition-all duration-500 focus:outline-none focus:ring-2 focus:ring-primary/35 ${theme === 'dark'
+                                        ? 'border-[#3d3a35] bg-[linear-gradient(90deg,#171717,#2a2927)]'
+                                        : 'border-[#b8962e]/30 bg-[linear-gradient(90deg,#8cc3ef,#62ace6)]'
+                                        }`}
                                 >
                                     <span
                                         className={`absolute inset-0 transition-opacity duration-500 ${theme === 'dark' ? 'opacity-0' : 'opacity-100'}`}
@@ -151,11 +164,10 @@ export function Navbar() {
                                     </span>
 
                                     <span
-                                        className={`absolute top-0.5 z-10 h-5 w-5 rounded-full shadow-md transition-all duration-500 ${
-                                            theme === 'dark'
-                                                ? 'left-[26px] bg-[#f0e4c3]'
-                                                : 'left-0.5 bg-primary'
-                                        }`}
+                                        className={`absolute top-0.5 z-10 h-5 w-5 rounded-full shadow-md transition-all duration-500 ${theme === 'dark'
+                                            ? 'left-[26px] bg-[#f0e4c3]'
+                                            : 'left-0.5 bg-primary'
+                                            }`}
                                     >
                                         <span className={`absolute left-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-[#d6c39a] transition-opacity duration-300 ${theme === 'dark' ? 'opacity-100' : 'opacity-0'}`} />
                                         <span className={`absolute right-1.5 top-2.5 h-1.5 w-1.5 rounded-full bg-[#d6c39a] transition-opacity duration-300 ${theme === 'dark' ? 'opacity-100' : 'opacity-0'}`} />
@@ -233,9 +245,16 @@ export function Navbar() {
 
                     <div className="absolute inset-y-0 left-0 flex w-[85%] max-w-[320px] animate-in slide-in-from-left flex-col bg-white shadow-2xl duration-300 dark:bg-[#1e1e1e]">
                         <div className="flex items-center justify-between border-b p-6">
-                            <Link href="/" className="flex items-baseline gap-0.5" onClick={() => setMobileMenuOpen(false)}>
-                                <span className="text-3xl font-bold italic text-primary" style={{ fontFamily: 'Georgia, serif', lineHeight: 1 }}>S</span>
-                                <span className="text-sm font-bold tracking-[0.3em] text-primary uppercase">WARNA</span>
+                            <Link href="/" className="flex flex-col items-stretch" onClick={() => setMobileMenuOpen(false)}>
+                                <div className="flex items-baseline gap-0.5 justify-center">
+                                    <span className="text-3xl font-bold text-primary" style={{ fontFamily: 'var(--font-grenze-gotisch)', lineHeight: 1 }}>S</span>
+                                    <span className="text-sm font-bold uppercase tracking-[0.35em] text-primary -mr-[0.35em]" style={{ fontFamily: 'var(--font-grenze-gotisch)' }}>WARNA</span>
+                                </div>
+                                <div className="flex justify-between w-full text-[7px] uppercase text-foreground font-bold mt-[-1px] px-[1px]">
+                                    {"COLLECTION".split('').map((letter, index) => (
+                                        <span key={index}>{letter}</span>
+                                    ))}
+                                </div>
                             </Link>
                             <button
                                 onClick={() => setMobileMenuOpen(false)}
@@ -294,15 +313,16 @@ export function Navbar() {
                             </div>
                         </nav>
 
-                        <div className="border-t bg-gray-50 p-4">
-                            {user ? (
+                        <div className="border-t bg-gray-50/50 p-4 space-y-3">
+                            {user && (
                                 <button
                                     onClick={() => { signOut(); setMobileMenuOpen(false); }}
-                                    className="w-full flex items-center justify-center gap-2 py-4 text-red-500 font-bold hover:bg-red-50 transition-colors uppercase text-xs tracking-widest"
+                                    className="w-full flex items-center justify-center gap-2 py-3 text-red-500 font-bold hover:bg-red-50 transition-colors uppercase text-[10px] tracking-widest border border-red-100 rounded-xl"
                                 >
                                     Logout Account
                                 </button>
-                            ) : (
+                            )}
+                            <div className={user ? "pt-2 border-t border-gray-100" : ""}>
                                 <a
                                     href={whatsappHref}
                                     target="_blank"
@@ -318,7 +338,7 @@ export function Navbar() {
                                     </svg>
                                     <span>+91 93269 01595</span>
                                 </a>
-                            )}
+                            </div>
                         </div>
                     </div>
                 </div>

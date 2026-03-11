@@ -31,7 +31,7 @@ export function Hero() {
             <motion.div
                 className="absolute inset-0 bg-cover bg-center"
                 style={{
-                    backgroundImage: "url('/hero-banner.png')",
+                    backgroundImage: `url('${isMobile ? "/hero-mobile.jpeg" : "/hero-banner.png"}')`,
                     y: isMobile ? mobileParallaxY : 0,
                     scale: 1.08,
                 }}
