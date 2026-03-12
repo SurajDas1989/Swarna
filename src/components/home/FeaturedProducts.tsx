@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
@@ -58,7 +58,6 @@ export function FeaturedProducts() {
         addToCart,
         activeCategory,
         setActiveCategory,
-        setActivePriceRange,
         searchQuery,
         setSearchQuery,
     } = useAppContext();
@@ -154,6 +153,9 @@ export function FeaturedProducts() {
     const handleCategoryChange = (category: string) => {
         setActiveCategory(category);
         setShowAllProducts(false);
+        if (category === "all") {
+            setSearchQuery("");
+        }
     };
 
     const handleSortChange = (nextSort: string) => {
@@ -440,7 +442,6 @@ export function FeaturedProducts() {
                         <Button
                             onClick={() => {
                                 setActiveCategory("all");
-                                setActivePriceRange("all");
                                 setSearchQuery("");
                             }}
                             className="rounded-full bg-primary px-8 text-white hover:bg-primary/90"

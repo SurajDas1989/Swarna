@@ -1,4 +1,4 @@
-﻿import type { Metadata } from "next";
+import type { Metadata } from "next";
 import { Geist, Geist_Mono, Grenze_Gotisch } from "next/font/google";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
@@ -31,6 +31,8 @@ export const metadata: Metadata = {
   description: "Premium Artificial Jewellery",
 };
 
+import { StickyDiscountTab } from "@/components/ui/StickyDiscountTab";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -39,7 +41,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="scroll-smooth">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${grenzeGotisch.variable} antialiased min-h-screen flex flex-col`}
+        className={`${geistSans.variable} ${geistMono.variable} ${grenzeGotisch.variable} antialiased min-h-[100dvh] flex flex-col`}
       >
         <ThemeProvider>
           <AuthProvider>
@@ -47,6 +49,7 @@ export default function RootLayout({
               <ToastProvider>
                 <Navbar />
                 <CartModal />
+                <StickyDiscountTab />
                 <main className="flex-grow pb-24 md:pb-0">{children}</main>
                 <BackToTop />
                 <MobileBottomNav />

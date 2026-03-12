@@ -1,4 +1,4 @@
-﻿import { NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import type { Prisma } from '@/generated/prisma';
 
@@ -25,7 +25,6 @@ const DEFAULT_PRODUCTS = [
 function getFallbackProducts(searchParams: URLSearchParams) {
     const category = searchParams.get('category');
     const search = (searchParams.get('search') || '').toLowerCase();
-    const priceRange = searchParams.get('price');
     const ids = searchParams.get('ids');
     const idFilter = ids ? new Set(ids.split(',')) : null;
 
@@ -44,9 +43,8 @@ function getFallbackProducts(searchParams: URLSearchParams) {
         if (idFilter && !idFilter.has(p.id)) return false;
         if (category && category !== 'all' && category !== 'liked' && p.category !== category) return false;
         if (search && !p.name.toLowerCase().includes(search)) return false;
-        if (priceRange === 'under500' && !(p.price < 500)) return false;
-        if (priceRange === '500to1500' && !(p.price >= 500 && p.price <= 1500)) return false;
-        if (priceRange === 'over1500' && !(p.price > 1500)) return false;
+        
+        
         return true;
     });
 }
@@ -98,7 +96,6 @@ export async function GET(request: Request) {
         const { searchParams } = new URL(request.url);
         const category = searchParams.get('category');
         const search = searchParams.get('search');
-        const priceRange = searchParams.get('price'); // under500, 500to1500, over1500
         const ids = searchParams.get('ids');
 
         const where: Prisma.ProductWhereInput = {};
@@ -126,14 +123,6 @@ export async function GET(request: Request) {
             };
         }
 
-        // 3. Price Filter
-        if (priceRange === 'under500') {
-            where.price = { lt: 500 };
-        } else if (priceRange === '500to1500') {
-            where.price = { gte: 500, lte: 1500 };
-        } else if (priceRange === 'over1500') {
-            where.price = { gt: 1500 };
-        }
 
         let products = await prisma.product.findMany({
             where,
@@ -141,7 +130,7 @@ export async function GET(request: Request) {
             orderBy: { createdAt: 'desc' }
         });
 
-        const isUnfilteredRequest = !category && !search && !priceRange && !ids;
+        const isUnfilteredRequest = !category && !search && !ids;
         if (products.length === 0 && isUnfilteredRequest) {
             await seedIfEmpty();
             products = await prisma.product.findMany({

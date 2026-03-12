@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
+import prisma from '@/lib/prisma';
 
 export async function createServerSupabaseClient() {
     const cookieStore = await cookies();
@@ -37,3 +38,23 @@ export async function getAuthenticatedUser() {
     if (error || !user) return null;
     return user;
 }
+
+/**
+ * Validates that the current user is an admin.
+ * Checks both the JWT metadata and the database record.
+ * Returns the user object if they are an admin, otherwise null.
+ */
+export async function requireAdmin() {
+    const user = await getAuthenticatedUser();
+    if (!user) return null;
+
+    const dbUser = await prisma.user.findUnique({ where: { email: user.email! } });
+    const tokenRole = String(user.app_metadata?.role || user.user_metadata?.role || '').toUpperCase();
+
+    if (dbUser?.role === 'ADMIN' || tokenRole === 'ADMIN') {
+        return dbUser ?? ({ id: user.id, email: user.email, role: 'ADMIN' } as any);
+    }
+
+    return null;
+}
+

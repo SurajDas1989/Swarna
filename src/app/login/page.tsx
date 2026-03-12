@@ -32,7 +32,18 @@ function LoginForm() {
             if (error) {
                 setError(error.message);
             } else {
-                router.push(redirectUrl);
+                // Quick check for admin status to decide direct redirect
+                const { data: { user: signedInUser } } = await supabase.auth.getUser();
+                
+                // If the user has an admin role in metadata or if they were heading to admin anyway
+                const isAdmin = signedInUser?.app_metadata?.role === 'ADMIN' || 
+                                signedInUser?.user_metadata?.role === 'ADMIN';
+
+                if (isAdmin && redirectUrl === '/') {
+                    router.push('/admin');
+                } else {
+                    router.push(redirectUrl);
+                }
                 router.refresh();
             }
         } catch (err: any) {

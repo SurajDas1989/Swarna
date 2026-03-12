@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useMemo, useState, type ComponentType } from "react";
 import Link from "next/link";
@@ -84,8 +84,12 @@ export function MobileBottomNav() {
 
     return (
         <nav
-            className="fixed inset-x-0 bottom-0 z-[60] border-t border-gray-200/70 bg-white/95 px-3 pb-2 pt-2 shadow-[0_-10px_24px_rgba(8,8,8,0.08)] backdrop-blur dark:border-white/10 dark:bg-[#121212]/95 md:hidden"
-            style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 0.5rem)" }}
+            className="fixed inset-x-0 bottom-0 z-[60] border-t border-gray-200/70 bg-white/95 px-3 pb-2 pt-2 shadow-[0_-10px_24px_rgba(8,8,8,0.08)] backdrop-blur dark:border-white/10 dark:bg-[#121212]/95 md:hidden isolate"
+            style={{ 
+                paddingBottom: "calc(env(safe-area-inset-bottom) + 0.5rem)",
+                transform: "translateZ(0)",
+                WebkitTransform: "translateZ(0)"
+            }}
             aria-label="Mobile bottom navigation"
         >
             <div className="mx-auto w-full max-w-md">

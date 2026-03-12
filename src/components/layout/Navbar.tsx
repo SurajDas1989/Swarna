@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -11,8 +11,16 @@ import { useTheme } from "@/context/ThemeContext";
 
 export function Navbar() {
     const router = useRouter();
-    const { wishlistCount, cartCount, setIsCartOpen, searchQuery, setSearchQuery } = useAppContext();
-    const { user, signOut } = useAuth();
+    const { 
+        wishlistCount, 
+        cartCount, 
+        setIsCartOpen, 
+        searchQuery, 
+        setSearchQuery,
+        activeCategory,
+        setActiveCategory,
+    } = useAppContext();
+    const { user, dbUser, signOut } = useAuth();
     const { theme, toggleTheme } = useTheme();
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -33,7 +41,7 @@ export function Navbar() {
         { href: '/#home', label: 'Home' },
         { href: '/#products', label: 'Shop' },
         { href: '/#categories', label: 'Categories' },
-        { href: '/#about', label: 'About' },
+        { href: '/#our-story', label: 'Our Story' },
         { href: '/#contact', label: 'Contact' },
     ];
 
@@ -49,7 +57,6 @@ export function Navbar() {
                                 ✨ Free Shipping on Orders Above ₹799 • Discover the Premium Wedding Collection
                             </div>
                         </div>
-                        <div className="relative z-10 hidden shrink-0 bg-foreground pl-6 font-medium dark:bg-[#111] sm:block">📞 Call: +91 93269 01595</div>
                     </div>
                 </div>
 
@@ -210,6 +217,16 @@ export function Navbar() {
                                                         <p className="text-xs text-gray-400 font-medium uppercase tracking-wider">Account</p>
                                                         <p className="text-sm font-semibold truncate text-foreground">{user.user_metadata?.full_name || user.email}</p>
                                                     </div>
+                                                    
+                                                    {dbUser?.role === 'ADMIN' && (
+                                                        <>
+                                                            <Link href="/admin" className="block px-4 py-2.5 text-sm font-bold text-primary hover:bg-primary/5 transition-colors">
+                                                                Admin Dashboard
+                                                            </Link>
+                                                            <div className="h-px bg-gray-100 dark:bg-white/10 my-1 mx-4" />
+                                                        </>
+                                                    )}
+
                                                     <Link href="/profile" className="block px-4 py-2.5 text-sm text-foreground hover:bg-gray-50 dark:hover:bg-white/10 transition-colors">Your Profile</Link>
                                                     <Link href="/profile#orders" className="block px-4 py-2.5 text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/10 hover:text-primary transition-all">Order History</Link>
                                                     <div className="h-px bg-gray-100 dark:bg-white/10 my-1 mx-4" />
@@ -244,7 +261,7 @@ export function Navbar() {
                     />
 
                     <div className="absolute inset-y-0 left-0 flex w-[85%] max-w-[320px] animate-in slide-in-from-left flex-col bg-white shadow-2xl duration-300 dark:bg-[#1e1e1e]">
-                        <div className="flex items-center justify-between border-b p-6">
+                        <div className="flex items-center justify-between border-b px-6 py-5">
                             <Link href="/" className="flex flex-col items-stretch" onClick={() => setMobileMenuOpen(false)}>
                                 <div className="flex items-baseline gap-0.5 justify-center">
                                     <span className="text-3xl font-bold text-primary" style={{ fontFamily: 'var(--font-grenze-gotisch)', lineHeight: 1 }}>S</span>
@@ -256,89 +273,152 @@ export function Navbar() {
                                     ))}
                                 </div>
                             </Link>
-                            <button
-                                onClick={() => setMobileMenuOpen(false)}
-                                className="rounded-full p-2 transition-colors hover:bg-gray-100"
-                            >
+                            <button onClick={() => setMobileMenuOpen(false)} className="rounded-full p-2 transition-colors hover:bg-gray-100">
                                 <X className="h-5 w-5 text-gray-500" />
                             </button>
                         </div>
 
-                        <nav className="flex-1 overflow-y-auto p-4">
-                            {!user && (
-                                <div className="mb-6 grid grid-cols-2 gap-3">
-                                    <Link href="/login" onClick={() => setMobileMenuOpen(false)} className="block">
-                                        <Button className="h-12 w-full rounded-xl bg-gray-900 text-white shadow-md transition-transform active:scale-95">Login</Button>
-                                    </Link>
-                                    <Link href="/signup" onClick={() => setMobileMenuOpen(false)} className="block">
-                                        <Button variant="outline" className="h-12 w-full rounded-xl border-primary/20 text-primary transition-transform active:scale-95">Sign Up</Button>
+                        <nav className="flex-1 overflow-y-auto p-6 space-y-9">
+                            {/* Auth Section (Mobile) */}
+                            {user ? (
+                                <div className="space-y-4">
+                                    <h3 className="text-xl font-medium text-foreground px-0">Account</h3>
+                                    <div className="flex flex-col gap-3 pl-4 pt-1">
+                                        {dbUser?.role === 'ADMIN' && (
+                                            <Link 
+                                                href="/admin"
+                                                onClick={() => setMobileMenuOpen(false)}
+                                                className="text-[17px] font-bold text-primary hover:text-primary-dark transition-colors"
+                                            >
+                                                Admin Dashboard
+                                            </Link>
+                                        )}
+                                        <Link 
+                                            href="/profile"
+                                            onClick={() => setMobileMenuOpen(false)}
+                                            className="text-[17px] font-normal text-muted-foreground hover:text-primary transition-colors"
+                                        >
+                                            Your Profile
+                                        </Link>
+                                        <Link 
+                                            href="/profile#orders"
+                                            onClick={() => setMobileMenuOpen(false)}
+                                            className="text-[17px] font-normal text-muted-foreground hover:text-primary transition-colors"
+                                        >
+                                            Order History
+                                        </Link>
+                                        <button 
+                                            onClick={() => {
+                                                setMobileMenuOpen(false);
+                                                signOut();
+                                            }}
+                                            className="text-[17px] font-medium text-red-500 hover:text-red-600 transition-colors text-left mt-2"
+                                        >
+                                            Logout
+                                        </button>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="space-y-4">
+                                    <Link 
+                                        href="/login"
+                                        onClick={() => setMobileMenuOpen(false)}
+                                        className="text-[17px] font-bold text-primary hover:text-primary-dark transition-colors block"
+                                    >
+                                        Login / Create Account
                                     </Link>
                                 </div>
                             )}
 
-                            <div className="space-y-1">
-                                {navLinks.map(link => (
-                                    <Link
-                                        key={link.href}
-                                        href={link.href}
-                                        onClick={() => setMobileMenuOpen(false)}
-                                        className="block rounded-xl px-4 py-3.5 font-medium text-foreground transition-all hover:bg-primary/5 hover:text-primary"
-                                    >
-                                        {link.label}
-                                    </Link>
-                                ))}
+                            {/* Section 1: Shop */}
+                            <div className="space-y-4">
+                                <h3 className="text-xl font-medium text-foreground px-0">Shop</h3>
+                                <div className="flex flex-col gap-3 pl-4 pt-1">
+                                    {[
+                                        { label: "Jhumka Earrings", search: "Jhumka", category: "earrings" },
+                                        { label: "Necklaces", category: "necklaces" },
+                                        { label: "Earrings", category: "earrings" },
+                                        { label: "Bangles", category: "bangles" }
+                                    ].map((item) => (
+                                        <button 
+                                            key={item.label}
+                                            onClick={() => {
+                                                setActiveCategory(item.category || 'all');
+                                                setSearchQuery(item.search || "");
+                                                setMobileMenuOpen(false);
+                                                router.push('/#products');
+                                            }}
+                                            className="text-[17px] font-normal text-muted-foreground hover:text-primary transition-colors text-left"
+                                        >
+                                            {item.label}
+                                        </button>
+                                    ))}
+                                </div>
                             </div>
 
-                            <div className="mt-6 space-y-1 border-t pt-6">
-                                {user && (
-                                    <>
-                                        <Link
-                                            href="/profile"
-                                            onClick={() => setMobileMenuOpen(false)}
-                                            className="flex items-center gap-3 rounded-xl px-4 py-3.5 font-medium transition-all hover:bg-primary/5 hover:text-primary"
-                                        >
-                                            <User className="h-5 w-5" />
-                                            My Profile
-                                        </Link>
-                                        <Link
-                                            href="/profile#orders"
-                                            onClick={() => setMobileMenuOpen(false)}
-                                            className="flex items-center gap-3 rounded-xl px-4 py-3.5 font-medium transition-all hover:bg-primary/5 hover:text-primary"
-                                        >
-                                            <ShoppingCart className="h-5 w-5" />
-                                            Order History
-                                        </Link>
-                                    </>
-                                )}
+                            {/* Section 3: New In */}
+                            <div className="space-y-4">
+                                <h3 className="text-xl font-medium text-foreground px-0">New In</h3>
+                                <div className="flex flex-col gap-3 pl-4 pt-1">
+                                    <button 
+                                        onClick={() => {
+                                            setActiveCategory('all');
+                                            setSearchQuery("");
+                                            setMobileMenuOpen(false);
+                                            router.push('/#products');
+                                        }}
+                                        className="text-[17px] font-normal text-muted-foreground hover:text-primary transition-colors text-left"
+                                    >
+                                        Recently Added
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Section 4: About */}
+                            <div className="space-y-4">
+                                <h3 className="text-xl font-medium text-foreground px-0">Our Story</h3>
+                                <div className="flex flex-col gap-3 pl-4 pt-1">
+                                    {[
+                                        { label: "Our Story", href: "/#our-story" },
+                                        { label: "Size Guide", href: "/size-guide" },
+                                        { label: "Customer Care", href: whatsappHref, external: true }
+                                    ].map((item) => (
+                                        item.external ? (
+                                            <a 
+                                                key={item.label}
+                                                href={item.href}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="text-[17px] font-normal text-muted-foreground hover:text-primary transition-colors"
+                                            >
+                                                {item.label}
+                                            </a>
+                                        ) : (
+                                            <Link 
+                                                key={item.label}
+                                                href={item.href}
+                                                onClick={() => setMobileMenuOpen(false)}
+                                                className="text-[17px] font-normal text-muted-foreground hover:text-primary transition-colors"
+                                            >
+                                                {item.label}
+                                            </Link>
+                                        )
+                                    ))}
+                                </div>
                             </div>
                         </nav>
 
-                        <div className="border-t bg-gray-50/50 p-4 space-y-3">
-                            {user && (
-                                <button
-                                    onClick={() => { signOut(); setMobileMenuOpen(false); }}
-                                    className="w-full flex items-center justify-center gap-2 py-3 text-red-500 font-bold hover:bg-red-50 transition-colors uppercase text-[10px] tracking-widest border border-red-100 rounded-xl"
-                                >
-                                    Logout Account
-                                </button>
-                            )}
-                            <div className={user ? "pt-2 border-t border-gray-100" : ""}>
-                                <a
-                                    href={whatsappHref}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    className="flex items-center justify-center gap-2 text-center text-xs font-medium text-gray-600 transition-colors hover:text-[#25D366]"
-                                >
-                                    <svg
-                                        aria-hidden="true"
-                                        viewBox="0 0 24 24"
-                                        className="h-4 w-4 fill-current"
-                                    >
-                                        <path d="M19.05 4.91A9.82 9.82 0 0 0 12.03 2C6.61 2 2.2 6.41 2.2 11.83c0 1.73.45 3.43 1.3 4.93L2 22l5.39-1.41a9.8 9.8 0 0 0 4.64 1.18h.01c5.42 0 9.83-4.41 9.83-9.83 0-2.63-1.03-5.1-2.82-7.03Zm-7.02 15.2h-.01a8.16 8.16 0 0 1-4.16-1.14l-.3-.18-3.2.84.86-3.12-.2-.32a8.15 8.15 0 0 1-1.25-4.36c0-4.5 3.66-8.16 8.17-8.16 2.18 0 4.22.85 5.76 2.39a8.1 8.1 0 0 1 2.39 5.77c0 4.5-3.66 8.16-8.16 8.16Zm4.48-6.12c-.25-.13-1.47-.72-1.7-.8-.23-.08-.39-.13-.56.12-.17.25-.64.8-.79.97-.15.17-.29.19-.54.06-.25-.13-1.04-.38-1.98-1.22a7.39 7.39 0 0 1-1.37-1.7c-.14-.25-.02-.38.11-.51.11-.11.25-.29.37-.43.12-.15.16-.25.25-.42.08-.17.04-.32-.02-.45-.06-.13-.56-1.35-.77-1.84-.2-.48-.41-.41-.56-.42h-.48c-.17 0-.45.06-.68.32-.23.25-.87.85-.87 2.08 0 1.22.89 2.4 1.01 2.57.13.17 1.76 2.69 4.27 3.77.6.26 1.07.42 1.44.53.6.19 1.14.16 1.56.1.48-.07 1.47-.6 1.68-1.18.21-.58.21-1.08.15-1.18-.06-.1-.23-.17-.48-.29Z" />
-                                    </svg>
-                                    <span>+91 93269 01595</span>
-                                </a>
-                            </div>
+                        {/* Support Footer */}
+                        <div className="border-t bg-muted/20 p-6">
+                            <a href={whatsappHref} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 text-muted-foreground hover:text-primary transition-colors">
+                                <div className="p-2 bg-green-500/10 rounded-lg">
+                                    <svg viewBox="0 0 24 24" className="h-5 w-5 fill-green-500"><path d="M19.05 4.91A9.82 9.82 0 0 0 12.03 2C6.61 2 2.2 6.41 2.2 11.83c0 1.73.45 3.43 1.3 4.93L2 22l5.39-1.41a9.8 9.8 0 0 0 4.64 1.18h.01c5.42 0 9.83-4.41 9.83-9.83 0-2.63-1.03-5.1-2.82-7.03Zm-7.02 15.2h-.01a8.16 8.16 0 0 1-4.16-1.14l-.3-.18-3.2.84.86-3.12-.2-.32a8.15 8.15 0 0 1-1.25-4.36c0-4.5 3.66-8.16 8.17-8.16 2.18 0 4.22.85 5.76 2.39a8.1 8.1 0 0 1 2.39 5.77c0 4.5-3.66 8.16-8.16 8.16Zm4.48-6.12c-.25-.13-1.47-.72-1.7-.8-.23-.08-.39-.13-.56.12-.17.25-.64.8-.79.97-.15.17-.29.19-.54.06-.25-.13-1.04-.38-1.98-1.22a7.39 7.39 0 0 1-1.37-1.7c-.14-.25-.02-.38.11-.51.11-.11.25-.29.37-.43.12-.15.16-.25.25-.42.08-.17.04-.32-.02-.45-.06-.13-.56-1.35-.77-1.84-.2-.48-.41-.41-.56-.42h-.48c-.17 0-.45.06-.68.32-.23.25-.87.85-.87 2.08 0 1.22.89 2.4 1.01 2.57.13.17 1.76 2.69 4.27 3.77.6.26 1.07.42 1.44.53.6.19 1.14.16 1.56.1.48-.07 1.47-.6 1.68-1.18.21-.58.21-1.08.15-1.18-.06-.1-.23-.17-.48-.29Z" /></svg>
+                                </div>
+                                <div className="text-left">
+                                    <div className="text-[10px] uppercase font-bold tracking-widest leading-none mb-1">Support</div>
+                                    <div className="text-sm font-bold text-foreground">+91 93269 01595</div>
+                                </div>
+                            </a>
                         </div>
                     </div>
                 </div>
