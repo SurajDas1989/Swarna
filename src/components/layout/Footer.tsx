@@ -3,7 +3,7 @@ export function Footer() {
         <footer className="bg-foreground dark:bg-[#111] text-white pt-12 pb-4">
             <div className="container mx-auto px-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
-                    <div id="about">
+                    <div>
                         <h3 className="text-primary font-bold text-lg mb-4">About Swarna</h3>
                         <p className="text-gray-300 text-sm leading-relaxed mb-4">
                             Your destination for premium artificial jewellery. We offer exquisite designs for every occasion
@@ -24,7 +24,7 @@ export function Footer() {
                             <li><a href="/#products" className="text-gray-300 hover:text-primary transition-colors text-sm">Shop</a></li>
                             <li><a href="/size-guide" className="text-gray-300 hover:text-primary transition-colors text-sm">Size Guide</a></li>
                             <li><a href="/#categories" className="text-gray-300 hover:text-primary transition-colors text-sm">Categories</a></li>
-                            <li><a href="/#about" className="text-gray-300 hover:text-primary transition-colors text-sm">About Us</a></li>
+                            <li><a href="/#our-story" className="text-gray-300 hover:text-primary transition-colors text-sm">Our Story</a></li>
                             <li><a href="/#contact" className="text-gray-300 hover:text-primary transition-colors text-sm">Contact</a></li>
                         </ul>
                     </div>

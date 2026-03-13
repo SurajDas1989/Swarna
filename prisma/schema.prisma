@@ -137,3 +137,15 @@ model CartItem {
 
   @@map("cart_items")
 }
+
+model DiscountCode {
+  id        String   @id @default(uuid())
+  email     String?  @unique
+  phone     String?  @unique
+  code      String   @unique
+  claimedAt DateTime @default(now())
+  isUsed    Boolean  @default(false)
+
+  @@map("discount_codes")
+}
+

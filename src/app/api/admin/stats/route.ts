@@ -1,20 +1,6 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import { getAuthenticatedUser } from '@/lib/supabase-server';
-
-async function requireAdmin() {
-    const user = await getAuthenticatedUser();
-    if (!user) return null;
-
-    const dbUser = await prisma.user.findUnique({ where: { email: user.email! } });
-    const tokenRole = String(user.app_metadata?.role || user.user_metadata?.role || '').toUpperCase();
-
-    if (dbUser?.role === 'ADMIN' || tokenRole === 'ADMIN') {
-        return dbUser ?? ({ id: user.id, email: user.email, role: 'ADMIN' } as any);
-    }
-
-    return null;
-}
+import { requireAdmin } from '@/lib/supabase-server';
 
 export async function GET() {
     try {
@@ -44,5 +30,4 @@ export async function GET() {
         return NextResponse.json({ error: 'Failed to fetch stats' }, { status: 500 });
     }
 }
-
 

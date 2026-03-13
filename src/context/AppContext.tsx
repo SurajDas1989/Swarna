@@ -61,9 +61,6 @@ interface AppContextType {
     activeCategory: string;
     setActiveCategory: (category: string) => void;
 
-    // Price range state
-    activePriceRange: string;
-    setActivePriceRange: (range: string) => void;
 
     // Search state
     searchQuery: string;
@@ -92,8 +89,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     // Global category filter state
     const [activeCategory, setActiveCategory] = useState<string>('all');
 
-    // Global price range state
-    const [activePriceRange, setActivePriceRange] = useState<string>('all');
 
     // Search state
     const [searchQuery, setSearchQuery] = useState("");
@@ -256,7 +251,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
                 const params = new URLSearchParams();
                 if (activeCategory !== 'all') params.append('category', activeCategory);
                 if (searchQuery) params.append('search', searchQuery);
-                if (activePriceRange !== 'all') params.append('price', activePriceRange);
+                
 
                 const res = await fetch(`/api/products?${params.toString()}`, { cache: 'no-store' });
                 if (!res.ok) {
@@ -279,7 +274,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         }, 300);
 
         return () => clearTimeout(timeoutId);
-    }, [activeCategory, searchQuery, activePriceRange]);
+    }, [activeCategory, searchQuery]);
 
     const addToWishlist = async (productId: string) => {
         setWishlist(prev => {
@@ -403,8 +398,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
                 activeCategory,
                 setActiveCategory,
 
-                activePriceRange,
-                setActivePriceRange,
 
                 searchQuery,
                 setSearchQuery,

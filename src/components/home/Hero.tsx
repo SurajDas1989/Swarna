@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState } from "react";
 import { motion, useScroll, useTransform } from "framer-motion";
@@ -31,7 +31,7 @@ export function Hero() {
             <motion.div
                 className="absolute inset-0 bg-cover bg-center"
                 style={{
-                    backgroundImage: `url('${isMobile ? "/hero-mobile.jpeg" : "/hero-banner.png"}')`,
+                    backgroundImage: `url('/hero-mobile.jpeg')`,
                     y: isMobile ? mobileParallaxY : 0,
                     scale: 1.08,
                 }}

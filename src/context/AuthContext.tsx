@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation';
 interface AuthContextType {
     user: User | null;
     session: Session | null;
+    dbUser: any | null;
     loading: boolean;
     signOut: () => Promise<void>;
 }
@@ -17,6 +18,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [user, setUser] = useState<User | null>(null);
     const [session, setSession] = useState<Session | null>(null);
+    const [dbUser, setDbUser] = useState<any | null>(null);
     const [loading, setLoading] = useState(true);
     const supabase = createClient();
     const router = useRouter();
@@ -25,7 +27,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (!currentUser?.email) return;
 
         try {
-            await fetch('/api/auth/sync', {
+            const res = await fetch('/api/auth/sync', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -35,6 +37,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                     phone: currentUser.phone || currentUser.user_metadata?.phone || '',
                 }),
             });
+            
+            if (res.ok) {
+                const data = await res.json();
+                setDbUser(data);
+            }
         } catch (error) {
             console.error('Failed to sync auth user to DB', error);
         }
@@ -48,22 +55,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                     console.error('Failed to get auth session', error);
                     setSession(null);
                     setUser(null);
+                    setDbUser(null);
                     return;
                 }
 
                 setSession(session);
                 setUser(session?.user || null);
-                setLoading(false);
-
+                
                 // Keep initial render unblocked even if sync API is slow/failing.
                 if (session?.user) {
-                    void syncUserToDb(session.user);
+                    syncUserToDb(session.user);
+                } else {
+                    setLoading(false);
                 }
             } catch (error) {
                 console.error('Unexpected auth session error', error);
                 setSession(null);
                 setUser(null);
-            } finally {
+                setDbUser(null);
                 setLoading(false);
             }
         };
@@ -71,14 +80,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
             setSession(session);
             setUser(session?.user || null);
-            setLoading(false);
-
-            if ((_event === 'SIGNED_IN' || _event === 'TOKEN_REFRESHED') && session?.user) {
+            
+            if (_event === 'SIGNED_OUT') {
+                setDbUser(null);
+                setLoading(false);
+            } else if ((_event === 'SIGNED_IN' || _event === 'TOKEN_REFRESHED') && session?.user) {
                 await syncUserToDb(session.user);
+                setLoading(false);
+            } else {
+                setLoading(false);
             }
         });
 
         setData();
+// ... rest of the inactivity logic remains the same
 
         // --- Auto Logout Logic ---
         const INACTIVITY_LIMIT = 10 * 60 * 1000; // 10 minutes
@@ -126,7 +141,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
 
     return (
-        <AuthContext.Provider value={{ user, session, loading, signOut }}>
+        <AuthContext.Provider value={{ user, session, dbUser, loading, signOut }}>
             {children}
         </AuthContext.Provider>
     );
