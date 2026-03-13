@@ -11,6 +11,7 @@ interface DiscountModalProps {
 
 export function DiscountModal({ isOpen, onClose }: DiscountModalProps) {
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [discountCode, setDiscountCode] = useState("");
@@ -50,6 +51,12 @@ export function DiscountModal({ isOpen, onClose }: DiscountModalProps) {
       return;
     }
 
+    if (!phone || phone.replace(/\D/g, '').length < 10) {
+      toast.error("Please enter a valid phone number (at least 10 digits).");
+      return;
+    }
+
+
     setIsLoading(true);
 
     try {
@@ -58,7 +65,7 @@ export function DiscountModal({ isOpen, onClose }: DiscountModalProps) {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email, phone }),
       });
 
       const data = await res.json();
@@ -147,6 +154,20 @@ export function DiscountModal({ isOpen, onClose }: DiscountModalProps) {
                   placeholder="Enter your email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  disabled={isLoading}
+                  required
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all placeholder:text-gray-400 dark:placeholder:text-gray-500"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label htmlFor="discount-phone" className="sr-only">Phone Number</label>
+                <input
+                  id="discount-phone"
+                  type="tel"
+                  placeholder="Enter your phone number"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
                   disabled={isLoading}
                   required
                   className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all placeholder:text-gray-400 dark:placeholder:text-gray-500"

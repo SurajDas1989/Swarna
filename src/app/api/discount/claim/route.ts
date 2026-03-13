@@ -47,7 +47,7 @@ export async function POST(request: Request) {
         }
 
         const body = await request.json();
-        const { email } = body;
+        const { email, phone } = body;
 
         if (!email || typeof email !== 'string' || !isValidEmail(email)) {
             return NextResponse.json(
@@ -56,11 +56,24 @@ export async function POST(request: Request) {
             );
         }
 
-        const lowerEmail = email.toLowerCase().trim();
+        if (!phone || typeof phone !== 'string' || phone.length < 10) {
+            return NextResponse.json(
+                { error: "Valid phone number is required for verification." },
+                { status: 400 }
+            );
+        }
 
-        // Check if email already exists
-        const existingRecord = await prisma.discountCode.findUnique({
-            where: { email: lowerEmail }
+        const lowerEmail = email.toLowerCase().trim();
+        const cleanPhone = phone.replace(/\D/g, ''); // Keep only digits
+
+        // Check if either email OR phone already exists
+        const existingRecord = await prisma.discountCode.findFirst({
+            where: {
+                OR: [
+                    { email: lowerEmail },
+                    { phone: cleanPhone }
+                ]
+            }
         });
 
         if (existingRecord) {
@@ -68,7 +81,7 @@ export async function POST(request: Request) {
             return NextResponse.json({
                 success: true,
                 code: existingRecord.code,
-                message: "Email already registered. Here is your code."
+                message: "This email or phone is already registered. Here is your code."
             });
         }
 
@@ -99,6 +112,7 @@ export async function POST(request: Request) {
         const newRecord = await prisma.discountCode.create({
             data: {
                 email: lowerEmail,
+                phone: cleanPhone,
                 code: newCode
             }
         });
@@ -106,7 +120,7 @@ export async function POST(request: Request) {
         return NextResponse.json({
             success: true,
             code: newRecord.code,
-            message: "Discount code generated successfully."
+            message: "Discount code generated successfully!"
         });
 
     } catch (error) {
