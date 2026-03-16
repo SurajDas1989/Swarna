@@ -15,6 +15,8 @@ interface Order {
     guestLastName?: string | null;
     user?: { firstName?: string | null; lastName?: string | null; email?: string | null } | null;
     items: { quantity: number; price: number; product: { name: string; images: string[] } }[];
+    refundedAmount?: number;
+    storeCreditUsed?: number;
 }
 
 const ALL_STATUSES = ["ALL", "PENDING", "PROCESSING", "SHIPPED", "DELIVERED", "CANCELLED", "PAID"];
@@ -40,6 +42,13 @@ export default function AdminOrdersPage() {
     const [filter, setFilter] = useState("ALL");
     const [search, setSearch] = useState("");
     const [updatingId, setUpdatingId] = useState<string | null>(null);
+
+    // Refund Modal State
+    const [refundMethod, setRefundMethod] = useState<'ORIGINAL' | 'STORE_CREDIT_ONLY'>('ORIGINAL');
+    const [refundAmount, setRefundAmount] = useState('');
+    const [refundReason, setRefundReason] = useState('');
+    const [refundingOrder, setRefundingOrder] = useState<Order | null>(null);
+    const [isRefunding, setIsRefunding] = useState(false);
 
     const fetchOrders = async () => {
         setLoading(true);
@@ -78,6 +87,37 @@ export default function AdminOrdersPage() {
             customerName.toLowerCase().includes(search.toLowerCase());
         return matchesFilter && matchesSearch;
     });
+
+    const handleRefundSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!refundingOrder) return;
+        setIsRefunding(true);
+
+        try {
+            const res = await fetch(`/api/admin/orders/${refundingOrder.id}/refund`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    refundAmount: parseFloat(refundAmount),
+                    reason: refundReason,
+                    refundMethod: refundMethod
+                })
+            });
+
+            if (!res.ok) {
+                const data = await res.json();
+                throw new Error(data.error || 'Failed to process refund');
+            }
+
+            alert("Refund processed successfully!");
+            setRefundingOrder(null);
+            fetchOrders();
+        } catch (err: any) {
+            alert(err.message);
+        } finally {
+            setIsRefunding(false);
+        }
+    };
 
     return (
         <div>
@@ -186,17 +226,26 @@ export default function AdminOrdersPage() {
                                                 })}
                                             </td>
 
-                                            <td className="px-6 py-4">
+                                            <td className="px-6 py-4 flex gap-2 items-center">
                                                 <select
                                                     value={order.status}
                                                     disabled={updatingId === order.id}
                                                     onChange={e => updateStatus(order.id, e.target.value)}
                                                     className={`text-xs font-medium px-2.5 py-1.5 rounded-lg border cursor-pointer focus:outline-none transition-all disabled:opacity-50 ${STATUS_COLORS[order.status] ?? ""} bg-transparent`}
                                                 >
-                                                    {["PENDING", "PROCESSING", "SHIPPED", "DELIVERED", "CANCELLED"].map(s => (
+                                                    {["PENDING", "PROCESSING", "SHIPPED", "DELIVERED", "CANCELLED", "PAID"].map(s => (
                                                         <option key={s} value={s} className="bg-[#1a1a1a] text-white">{s}</option>
                                                     ))}
                                                 </select>
+
+                                                {(order.status === 'PAID' || order.status === 'PROCESSING') && (order.total - Number(order.refundedAmount || 0)) > 0 && (
+                                                    <button 
+                                                        onClick={() => setRefundingOrder(order)}
+                                                        className="text-xs bg-red-500/10 text-red-500 hover:bg-red-500/20 px-2 py-1.5 rounded border border-red-500/20 transition-all font-medium"
+                                                    >
+                                                        Refund
+                                                    </button>
+                                                )}
                                             </td>
                                         </tr>
                                     );
@@ -206,6 +255,76 @@ export default function AdminOrdersPage() {
                     </div>
                 )}
             </div>
+
+            {/* Refund Dialog Modal */}
+            {refundingOrder && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+                    <div className="bg-[#1a1a1a] rounded-2xl w-full max-w-md p-6 border border-white/10 shadow-xl">
+                        <h2 className="text-xl font-bold text-white mb-4">Refund Order</h2>
+                        <div className="text-sm text-gray-400 mb-6">
+                            <p>Order Total: {formatInr(refundingOrder.total)}</p>
+                            <p>Already Refunded: {formatInr(Number(refundingOrder.refundedAmount || 0))}</p>
+                            <p>Max Refundable: <span className="text-primary font-bold">{formatInr(refundingOrder.total - Number(refundingOrder.refundedAmount || 0))}</span></p>
+                        </div>
+                        
+                        <form onSubmit={handleRefundSubmit} className="space-y-4">
+                            <div>
+                                <label className="block text-xs text-gray-400 mb-1">Refund Method</label>
+                                <select 
+                                    value={refundMethod}
+                                    onChange={(e) => setRefundMethod(e.target.value as any)}
+                                    className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-primary"
+                                >
+                                    <option value="ORIGINAL" className="bg-[#1a1a1a]">Split (Wallet First, then Razorpay)</option>
+                                    <option value="STORE_CREDIT_ONLY" className="bg-[#1a1a1a]">100% Store Credit Only (Fast)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-xs text-gray-400 mb-1">Refund Amount (₹)</label>
+                                <input
+                                    type="number"
+                                    required
+                                    min="1"
+                                    step="0.01"
+                                    max={refundingOrder.total - Number(refundingOrder.refundedAmount || 0)}
+                                    value={refundAmount}
+                                    onChange={e => setRefundAmount(e.target.value)}
+                                    className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-primary"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs text-gray-400 mb-1">Reason for Refund</label>
+                                <input
+                                    type="text"
+                                    required
+                                    placeholder="e.g. Customer requested cancellation"
+                                    value={refundReason}
+                                    onChange={e => setRefundReason(e.target.value)}
+                                    className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-primary"
+                                />
+                            </div>
+
+                            <div className="flex gap-3 pt-4">
+                                <button
+                                    type="button"
+                                    onClick={() => setRefundingOrder(null)}
+                                    className="flex-1 px-4 py-2 border border-white/10 text-white rounded-xl hover:bg-white/5 transition-colors text-sm"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={isRefunding}
+                                    className="flex-1 px-4 py-2 bg-primary text-background font-medium rounded-xl hover:bg-primary/90 transition-colors text-sm disabled:opacity-50"
+                                >
+                                    {isRefunding ? 'Processing...' : 'Issue Refund'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
 
             {!loading && filtered.length > 0 && (
                 <div className="mt-4 text-right text-sm text-gray-500">

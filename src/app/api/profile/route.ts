@@ -15,7 +15,12 @@ export async function GET() {
 
         let dbUser = await prisma.user.findUnique({
             where: { email: user.email! },
-        });
+            include: {
+                creditLog: {
+                    orderBy: { createdAt: 'desc' },
+                }
+            } as any
+        }) as any;
 
         // Auto-create user in DB if they signed up via Supabase but weren't synced yet
         if (!dbUser) {
@@ -26,7 +31,10 @@ export async function GET() {
                     firstName: user.user_metadata?.full_name?.split(' ')[0] || '',
                     lastName: user.user_metadata?.full_name?.split(' ').slice(1).join(' ') || '',
                 },
-            });
+                include: {
+                    creditLog: true
+                }
+            }) as any;
         }
 
         return NextResponse.json(dbUser);

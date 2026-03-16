@@ -1,7 +1,8 @@
-﻿import { NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getAuthenticatedUser } from '@/lib/supabase-server';
 import { sendOrderReceiptEmail } from '@/lib/email';
+import { reserveStoreCredit, mutateStoreCredit } from '@/lib/services/storeCredit';
 
 interface CheckoutItem {
     id: string;
@@ -37,7 +38,7 @@ export async function POST(request: Request) {
         const authUser = await getAuthenticatedUser();
 
         const body = await request.json();
-        const { items, total, shipping, paymentMethod } = body;
+        const { items, total, shipping, paymentMethod, useStoreCredit } = body;
 
         if (!Array.isArray(items) || items.length === 0) {
             return NextResponse.json({ error: 'Cart is empty' }, { status: 400 });
@@ -84,27 +85,72 @@ export async function POST(request: Request) {
             receiptEmail = dbUser.email;
         }
 
-        const order = await prisma.order.create({
-            data: {
-                userId: dbUserId,
-                guestEmail: dbUserId ? null : shipping.email,
-                guestPhone: dbUserId ? null : normalizedPhone,
-                guestFirstName: dbUserId ? null : shipping.firstName,
-                guestLastName: dbUserId ? null : shipping.lastName,
-                guestAddress: dbUserId ? null : formattedAddress,
-                orderNumber,
-                total,
-                status: 'PENDING',
-                items: {
-                    create: (items as CheckoutItem[]).map((item) => ({
-                        productId: item.id,
-                        quantity: item.quantity,
-                        price: item.price,
-                    })),
+        // Ensure atomic completion of store credit usages to prevent double-spending
+        const orderResult = await prisma.$transaction(async (tx) => {
+            let finalCreditUsed = 0;
+            let finalOrderStatus = 'PENDING';
+            let checkoutTotal = parseFloat(total);
+
+            // Fetch the most real-time user credit state from DB, NEVER trust the client
+            if (useStoreCredit && dbUserId) {
+                 const currentUser = await tx.user.findUnique({ where: { id: dbUserId }});
+                 if (currentUser && Number(currentUser.storeCredit) > 0) {
+                     // Calculate real-time available credit
+                     const userCredit = Number(currentUser.storeCredit) - Number(currentUser.reservedStoreCredit);
+                     
+                     if (userCredit >= checkoutTotal) {
+                         // Full Coverage: Credit covers the entire order
+                         finalCreditUsed = checkoutTotal;
+                         finalOrderStatus = 'PAID'; // Paid instantly via credit
+                     } else {
+                         // Partial Coverage: Credit covers part of it, Razorpay handles the rest
+                         finalCreditUsed = userCredit;
+                     }
+
+                     // STEP 1: RESERVE THE CREDIT (Locks it so other tabs can't spend it)
+                     if (finalCreditUsed > 0) {
+                         if (finalOrderStatus === 'PAID') {
+                             // If it's fully paid instantly, we can just mutate and deduct it right away
+                             // Because there is no Razorpay webhook to wait for.
+                             await mutateStoreCredit({
+                                 userId: dbUserId,
+                                 amount: -finalCreditUsed,
+                                 type: 'SPENT',
+                                 reason: `Purchased used for Order ${orderNumber}`
+                             });
+                         } else {
+                             // Partial payment. Reserve it while we wait for Razorpay to finish.
+                             await reserveStoreCredit(dbUserId, finalCreditUsed);
+                         }
+                     }
+                 }
+            }
+
+            return await tx.order.create({
+                data: {
+                    userId: dbUserId,
+                    guestEmail: dbUserId ? null : shipping.email,
+                    guestPhone: dbUserId ? null : normalizedPhone,
+                    guestFirstName: dbUserId ? null : shipping.firstName,
+                    guestLastName: dbUserId ? null : shipping.lastName,
+                    guestAddress: dbUserId ? null : formattedAddress,
+                    orderNumber,
+                    total, // Keep original total
+                    storeCreditUsed: finalCreditUsed, // How much of it was credit
+                    status: finalOrderStatus as any,
+                    items: {
+                        create: (items as CheckoutItem[]).map((item) => ({
+                            productId: item.id,
+                            quantity: item.quantity,
+                            price: item.price,
+                        })),
+                    },
                 },
-            },
-            include: { items: { include: { product: true } } },
+                include: { items: { include: { product: true } } },
+            });
         });
+
+        const order = orderResult;
 
         if (paymentMethod === 'cod') {
             await prisma.order.update({

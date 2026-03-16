@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAppContext, OrderDetails } from "@/context/AppContext";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
-import { CreditCard, Truck, ShieldCheck, ArrowLeft, Loader2, LogIn, UserRound } from "lucide-react";
+import { CreditCard, Truck, ShieldCheck, ArrowLeft, Loader2, LogIn, UserRound, Wallet } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import Script from "next/script";
@@ -66,8 +66,11 @@ export default function CheckoutPage() {
         city: "",
         state: "",
         zipCode: "",
-        paymentMethod: "credit-card"
+        paymentMethod: "credit-card",
+        useStoreCredit: false
     });
+    
+    const [availableCredit, setAvailableCredit] = useState(0);
 
     useEffect(() => {
         if (cart.length === 0 && !isSubmitting && !loading) {
@@ -95,15 +98,27 @@ export default function CheckoutPage() {
                         phone: prev.phone || data.phone || "",
                         address: prev.address || (data.address ? data.address.split("\n")[0] : "")
                     }));
+                    if (data.storeCredit && Number(data.storeCredit) > 0) {
+                        setAvailableCredit(Number(data.storeCredit));
+                    }
                 }
             })
             .catch(console.error);
     }, [user]);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
+        const { name, value, type } = e.target;
+        if (type === 'checkbox') {
+             const checked = (e.target as HTMLInputElement).checked;
+             setFormData(prev => ({ ...prev, [name]: checked }));
+        } else {
+             setFormData(prev => ({ ...prev, [name]: value }));
+        }
     };
+
+    const finalCalculatedTotal = formData.useStoreCredit 
+        ? Math.max(0, cartFinalTotal - availableCredit)
+        : cartFinalTotal;
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -133,6 +148,7 @@ export default function CheckoutPage() {
                         pincode: formData.zipCode
                     },
                     paymentMethod: formData.paymentMethod,
+                    useStoreCredit: formData.useStoreCredit
                 }),
             });
             const dbOrder = await res.json();
@@ -145,15 +161,16 @@ export default function CheckoutPage() {
 
             const localOrderId = dbOrder.orderNumber || dbOrderId || `SW-${new Date().toISOString().slice(2, 10).replace(/-/g, "")}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
 
-            if (formData.paymentMethod === "cod") {
-                finalizeOrder(localOrderId, "cod");
+            if (formData.paymentMethod === "cod" || finalCalculatedTotal === 0) {
+                // If the total is completely covered by store credit, we don't need a payment gateway
+                finalizeOrder(localOrderId, finalCalculatedTotal === 0 ? "store-credit" : "cod");
                 return;
             }
 
             const orderRes = await fetch("/api/payment/create-order", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ amount: cartFinalTotal })
+                body: JSON.stringify({ amount: finalCalculatedTotal })
             });
             const rzpOrder = await orderRes.json();
 
@@ -277,6 +294,31 @@ export default function CheckoutPage() {
                             </div>
                         )}
 
+                        {user && availableCredit > 0 && (
+                            <div className="bg-primary/5 dark:bg-primary/10 rounded-xl shadow-sm border border-primary/20 p-5 mb-6 flex items-center justify-between">
+                                <div>
+                                    <h3 className="font-semibold text-primary flex items-center gap-2">
+                                        <Wallet className="w-5 h-5" /> Store Credit Available
+                                    </h3>
+                                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                                        You have <strong className="text-foreground">{formatInr(availableCredit)}</strong> available to use.
+                                    </p>
+                                </div>
+                                <div>
+                                    <label className="relative inline-flex items-center cursor-pointer">
+                                        <input 
+                                            type="checkbox" 
+                                            name="useStoreCredit" 
+                                            className="sr-only peer" 
+                                            checked={formData.useStoreCredit}
+                                            onChange={handleInputChange}
+                                        />
+                                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary"></div>
+                                    </label>
+                                </div>
+                            </div>
+                        )}
+
                         <form onSubmit={handleSubmit} className="bg-white dark:bg-card rounded-xl shadow-sm border border-gray-100 dark:border-white/10 p-8">
                             <div className="mb-10">
                                 <h2 className="text-xl font-semibold mb-6 flex items-center gap-2">
@@ -330,26 +372,28 @@ export default function CheckoutPage() {
                                 </div>
                             </div>
 
-                            <div>
-                                <h2 className="text-xl font-semibold mb-6 flex items-center gap-2">
-                                    <CreditCard className="w-5 h-5 text-primary" />
-                                    Payment Method
-                                </h2>
-                                <div className="space-y-3">
-                                    <label className={`block border rounded-lg p-4 cursor-pointer transition-colors ${formData.paymentMethod === "credit-card" ? "border-primary bg-primary/5" : "border-gray-200 dark:border-white/15 hover:bg-gray-50 dark:hover:bg-white/5"}`}>
-                                        <div className="flex items-center gap-3">
-                                            <input type="radio" name="paymentMethod" value="credit-card" checked={formData.paymentMethod === "credit-card"} onChange={handleInputChange} className="w-4 h-4 text-primary focus:ring-primary" />
-                                            <span className="font-medium">Credit / Debit Card / UPI</span>
-                                        </div>
-                                    </label>
-                                    <label className={`block border rounded-lg p-4 cursor-pointer transition-colors ${formData.paymentMethod === "cod" ? "border-primary bg-primary/5" : "border-gray-200 dark:border-white/15 hover:bg-gray-50 dark:hover:bg-white/5"}`}>
-                                        <div className="flex items-center gap-3">
-                                            <input type="radio" name="paymentMethod" value="cod" checked={formData.paymentMethod === "cod"} onChange={handleInputChange} className="w-4 h-4 text-primary focus:ring-primary" />
-                                            <span className="font-medium">Cash on Delivery</span>
-                                        </div>
-                                    </label>
+                            {finalCalculatedTotal > 0 && (
+                                <div>
+                                    <h2 className="text-xl font-semibold mb-6 flex items-center gap-2">
+                                        <CreditCard className="w-5 h-5 text-primary" />
+                                        Payment Method
+                                    </h2>
+                                    <div className="space-y-3">
+                                        <label className={`block border rounded-lg p-4 cursor-pointer transition-colors ${formData.paymentMethod === "credit-card" ? "border-primary bg-primary/5" : "border-gray-200 dark:border-white/15 hover:bg-gray-50 dark:hover:bg-white/5"}`}>
+                                            <div className="flex items-center gap-3">
+                                                <input type="radio" name="paymentMethod" value="credit-card" checked={formData.paymentMethod === "credit-card"} onChange={handleInputChange} className="w-4 h-4 text-primary focus:ring-primary" />
+                                                <span className="font-medium">Credit / Debit Card / UPI</span>
+                                            </div>
+                                        </label>
+                                        <label className={`block border rounded-lg p-4 cursor-pointer transition-colors ${formData.paymentMethod === "cod" ? "border-primary bg-primary/5" : "border-gray-200 dark:border-white/15 hover:bg-gray-50 dark:hover:bg-white/5"}`}>
+                                            <div className="flex items-center gap-3">
+                                                <input type="radio" name="paymentMethod" value="cod" checked={formData.paymentMethod === "cod"} onChange={handleInputChange} className="w-4 h-4 text-primary focus:ring-primary" />
+                                                <span className="font-medium">Cash on Delivery</span>
+                                            </div>
+                                        </label>
+                                    </div>
                                 </div>
-                            </div>
+                            )}
 
                             <Button
                                 type="submit"
@@ -359,7 +403,7 @@ export default function CheckoutPage() {
                                 {isSubmitting ? (
                                     <span className="flex items-center gap-2"><Loader2 className="w-5 h-5 animate-spin" /> Processing Order...</span>
                                 ) : (
-                                    <span className="flex items-center gap-2"><ShieldCheck className="w-5 h-5" /> Place Order - {formatInr(cartFinalTotal)}</span>
+                                    <span className="flex items-center gap-2"><ShieldCheck className="w-5 h-5" /> Place Order - {formatInr(finalCalculatedTotal)}</span>
                                 )}
                             </Button>
                         </form>
@@ -397,9 +441,15 @@ export default function CheckoutPage() {
                                         <span>{formatInr(deliveryCharge)}</span>
                                     )}
                                 </div>
+                                {formData.useStoreCredit && (
+                                    <div className="flex justify-between text-gray-600">
+                                        <span>Store Credit</span>
+                                        <span className="text-primary font-medium">-{formatInr(Math.min(cartFinalTotal, availableCredit))}</span>
+                                    </div>
+                                )}
                                 <div className="flex justify-between text-lg font-bold pt-4 border-t">
                                     <span>Total</span>
-                                    <span className="text-primary">{formatInr(cartFinalTotal)}</span>
+                                    <span className="text-primary">{formatInr(finalCalculatedTotal)}</span>
                                 </div>
                             </div>
                         </div>
