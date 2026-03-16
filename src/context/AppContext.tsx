@@ -61,6 +61,10 @@ interface AppContextType {
     activeCategory: string;
     setActiveCategory: (category: string) => void;
 
+    // Price range filtering
+    activePriceRange: string;
+    setActivePriceRange: (range: string) => void;
+
 
     // Search state
     searchQuery: string;
@@ -88,6 +92,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
     // Global category filter state
     const [activeCategory, setActiveCategory] = useState<string>('all');
+
+    // Global price range filter state
+    const [activePriceRange, setActivePriceRange] = useState<string>('all');
 
 
     // Search state
@@ -397,6 +404,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
                 activeCategory,
                 setActiveCategory,
+
+                activePriceRange,
+                setActivePriceRange,
 
 
                 searchQuery,

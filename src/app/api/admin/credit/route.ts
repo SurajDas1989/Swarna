@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase-server';
+import { createServerSupabaseClient } from '@/lib/supabase-server';
 import prisma from '@/lib/prisma';
 
 export async function POST(request: Request) {
     try {
-        const supabase = await createClient();
+        const supabase = await createServerSupabaseClient();
         const { data: { session } } = await supabase.auth.getSession();
 
         if (!session?.user) {

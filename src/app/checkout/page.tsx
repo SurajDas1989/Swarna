@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAppContext, OrderDetails } from "@/context/AppContext";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
-import { CreditCard, Truck, ShieldCheck, ArrowLeft, Loader2, LogIn, UserRound } from "lucide-react";
+import { CreditCard, Truck, ShieldCheck, ArrowLeft, Loader2, LogIn, UserRound, Wallet } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import Script from "next/script";
