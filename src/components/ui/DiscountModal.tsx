@@ -131,9 +131,9 @@ export function DiscountModal({ isOpen, onClose }: DiscountModalProps) {
            <div className="absolute inset-0 bg-[linear-gradient(45deg,#d4af37_0%,#f0e4c3_100%)] dark:bg-[linear-gradient(45deg,#2a2411_0%,#4a4022_100%)] opacity-80" />
            <div className="absolute inset-0 bg-black/20" /> {/* Dimmer for text readability */}
            <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-6 text-white drop-shadow-md">
-               <h2 className="text-3xl md:text-4xl font-bold mb-2" style={{ fontFamily: 'Georgia, serif' }}>
+               <div role="heading" aria-level={2} className="text-3xl md:text-4xl font-bold mb-2" style={{ fontFamily: 'Georgia, serif' }}>
                  Get 10% OFF
-               </h2>
+               </div>
                {!isSuccess && (
                  <p className="text-sm md:text-base font-medium opacity-90">
                    Sign up to unlock your instant discount!
@@ -207,7 +207,7 @@ export function DiscountModal({ isOpen, onClose }: DiscountModalProps) {
                  <Check className="w-8 h-8 text-green-600 dark:text-green-400" />
                </div>
                
-               <h3 className="text-xl font-bold text-foreground mb-2">Your Code is Ready!</h3>
+               <div role="heading" aria-level={3} className="text-xl font-bold text-foreground mb-2">Your Code is Ready!</div>
                <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
                  Use the code below during checkout to apply your 10% discount.
                </p>

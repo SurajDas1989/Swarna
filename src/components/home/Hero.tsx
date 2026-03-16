@@ -42,7 +42,7 @@ export function Hero() {
             >
                 <Image
                     src="/hero-mobile.jpeg"
-                    alt="Discover Timeless Elegance"
+                    alt="Woman wearing premium Swarna artificial jewellery necklace and earrings"
                     fill
                     priority
                     className="object-cover"
@@ -53,14 +53,14 @@ export function Hero() {
             <div className="absolute inset-0 bg-black/55" />
 
             <div className="container relative z-10 mx-auto px-4">
-                <motion.h1
+                <motion.h2
                     className="mb-6 text-4xl font-bold tracking-tight text-primary sm:text-5xl md:text-6xl"
                     initial={{ opacity: 0, y: 24 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.55, delay: 0.1 }}
                 >
                     Discover Timeless Elegance
-                </motion.h1>
+                </motion.h2>
 
                 <motion.p
                     className="mx-auto mb-10 max-w-2xl text-lg font-light opacity-90 sm:text-xl md:text-2xl"

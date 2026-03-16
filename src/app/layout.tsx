@@ -28,6 +28,9 @@ const grenzeGotisch = Grenze_Gotisch({
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://swarna.vercel.app'),
+  alternates: {
+    canonical: '/',
+  },
   title: {
     template: "%s | Swarna",
     default: "Swarna - Premium Artificial Jewellery",
