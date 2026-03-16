@@ -29,6 +29,9 @@ const grenzeGotisch = Grenze_Gotisch({
 export const metadata: Metadata = {
   title: "Swarna",
   description: "Premium Artificial Jewellery",
+  verification: {
+    google: "bSx1uXuKeRmpCwplbYbVo9EdV3d9WijCaWCkgreqCvs",
+  },
 };
 
 import { StickyDiscountTab } from "@/components/ui/StickyDiscountTab";
