@@ -1,7 +1,8 @@
-﻿import { NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import crypto from 'crypto';
 import prisma from '@/lib/prisma';
 import { sendOrderReceiptEmail } from '@/lib/email';
+import { mutateStoreCredit } from '@/lib/services/storeCredit';
 
 export async function POST(request: Request) {
     try {
@@ -32,6 +33,24 @@ export async function POST(request: Request) {
             },
             include: { user: true },
         });
+
+        // If the order had store credit reserved, finalize the deduction now that payment succeeded
+        if (updatedOrder.userId && updatedOrder.storeCreditUsed && Number(updatedOrder.storeCreditUsed) > 0) {
+            try {
+                // This releases the hold and permanently subtracts the spent credit from the ledger.
+                // We use our central service so the Ledger record is accurately written.
+                await mutateStoreCredit({
+                    userId: updatedOrder.userId,
+                    amount: -Number(updatedOrder.storeCreditUsed),
+                    type: 'SPENT',
+                    reason: `Purchased used for Order SW-${updatedOrder.id.substring(0, 5)}...`,
+                    referenceId: updatedOrder.id
+                });
+            } catch (err) {
+                 console.error("Critical Error: Failed to finalize store credit deduction after Razorpay success.", err);
+                 // We don't block the checkout success response here, but this needs logging/alerting
+            }
+        }
 
         const orderWithDetails = await prisma.order.findUnique({
             where: { id: orderId },

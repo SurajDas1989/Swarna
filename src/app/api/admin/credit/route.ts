@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase-server';
 import prisma from '@/lib/prisma';
+import { mutateStoreCredit } from '@/lib/services/storeCredit';
 
 export async function POST(request: Request) {
     try {
@@ -29,47 +30,14 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Invalid amount. Cannot be zero.' }, { status: 400 });
         }
 
-        // Run as an atomic transaction to ensure ledger and balance stay perfectly synchronized
-        const result = await prisma.$transaction(async (tx) => {
-            // 1. Get current user
-            const targetUser = await tx.user.findUnique({
-                where: { id: userId }
-            });
-
-            if (!targetUser) {
-                throw new Error("Target user not found");
-            }
-
-            // 2. Prevent negative balance
-            const currentCredit = parseFloat(targetUser.storeCredit.toString());
-            const newCredit = currentCredit + numericAmount;
-
-            if (newCredit < 0) {
-                throw new Error(`Insufficient store credit. User only has ${currentCredit} available to deduct.`);
-            }
-
-            // 3. Create the ledger entry
-            const transactionRecord = await tx.storeCreditTransaction.create({
-                data: {
-                    userId,
-                    amount: numericAmount,
-                    reason,
-                    referenceId: referenceId || null,
-                    adminId: session.user.id
-                }
-            });
-
-            // 4. Update the user's total active credit balance
-            const updatedUser = await tx.user.update({
-                where: { id: userId },
-                data: {
-                    storeCredit: {
-                        increment: numericAmount
-                    }
-                }
-            });
-
-            return { transactionRecord, updatedStoreCredit: updatedUser.storeCredit };
+        // 2. Call the Central Service to mutate the ledger atomically
+        const result = await mutateStoreCredit({
+            userId,
+            amount: numericAmount, // Positive value since admin is issuing generic credit
+            type: 'ADMIN_ADJUSTMENT', // Using the new explicit Enum
+            reason,
+            referenceId,
+            adminId: session.user.id
         });
 
         return NextResponse.json(result);

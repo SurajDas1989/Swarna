@@ -14,20 +14,22 @@ datasource db {
 }
 
 model User {
-  id        String    @id @default(uuid())
-  email     String    @unique
-  firstName String?
-  lastName  String?
-  phone     String?
-  address     String?
-  storeCredit Decimal   @default(0) @db.Decimal(10, 2)
-  role        Role      @default(CUSTOMER)
-  orders      Order[]
-  wishlist    Product[] @relation("UserWishlist")
-  cart        Cart?
-  creditLog   StoreCreditTransaction[]
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id                      String                   @id @default(uuid())
+  email                   String                   @unique
+  firstName               String?
+  lastName                String?
+  phone                   String?
+  address                 String?
+  storeCredit             Decimal                  @default(0) @db.Decimal(10, 2)
+  reservedStoreCredit     Decimal                  @default(0) @db.Decimal(10, 2)
+  reservedCreditUpdatedAt DateTime?
+  role                    Role                     @default(CUSTOMER)
+  orders                  Order[]
+  wishlist                Product[]                @relation("UserWishlist")
+  cart                    Cart?
+  creditLog               StoreCreditTransaction[]
+  createdAt               DateTime                 @default(now())
+  updatedAt               DateTime                 @updatedAt
 
   @@map("users")
 }
@@ -69,29 +71,31 @@ model Product {
 }
 
 model Order {
-  id              String      @id @default(uuid())
-  orderNumber     String?     @unique
+  id          String  @id @default(uuid())
+  orderNumber String? @unique
 
-  userId          String?
-  user            User?       @relation(fields: [userId], references: [id])
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id])
 
-  guestEmail      String?
-  guestPhone      String?
-  guestFirstName  String?
-  guestLastName   String?
-  guestAddress    String?
+  guestEmail     String?
+  guestPhone     String?
+  guestFirstName String?
+  guestLastName  String?
+  guestAddress   String?
 
   status          OrderStatus @default(PENDING)
   total           Decimal     @db.Decimal(10, 2)
   storeCreditUsed Decimal     @default(0) @db.Decimal(10, 2)
+  razorpayAmount  Decimal     @default(0) @db.Decimal(10, 2)
+  refundedAmount  Decimal     @default(0) @db.Decimal(10, 2)
 
   razorpayOrderId String?
   paymentId       String?
 
-  items           OrderItem[]
+  items OrderItem[]
 
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([userId])
   @@map("orders")
@@ -142,26 +146,35 @@ model CartItem {
 }
 
 model DiscountCode {
-  id        String   @id @default(uuid())
-  email     String?  @unique
-  phone     String?  @unique
-  code      String   @unique
-  isUsed    Boolean  @default(false)
+  id     String  @id @default(uuid())
+  email  String? @unique
+  phone  String? @unique
+  code   String  @unique
+  isUsed Boolean @default(false)
 
   @@map("discount_codes")
 }
 
-model StoreCreditTransaction {
-  id          String   @id @default(uuid())
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  amount      Decimal  @db.Decimal(10, 2) // positive for credit added, negative for usage
-  reason      String
-  referenceId String?  // Optional order ID or refund ID
-  adminId     String?  // If an admin manually added it
-  createdAt   DateTime @default(now())
-
-  @@index([userId])
-  @@map("store_credit_transactions")
+enum StoreCreditTransactionType {
+  EARNED
+  REFUNDED
+  SPENT
+  ADMIN_ADJUSTMENT
 }
 
+model StoreCreditTransaction {
+  id           String                     @id @default(uuid())
+  userId       String
+  user         User                       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type         StoreCreditTransactionType
+  amount       Decimal                    @db.Decimal(10, 2) // positive for credit added, negative for usage
+  balanceAfter Decimal                    @db.Decimal(10, 2)
+  reason       String
+  referenceId  String? // Optional order ID or refund ID
+  adminId      String? // If an admin manually added it
+  createdAt    DateTime                   @default(now())
+
+  @@unique([referenceId, type])
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("store_credit_transactions")
+}
