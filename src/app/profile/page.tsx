@@ -20,6 +20,13 @@ interface UserProfile {
     lastName: string | null;
     phone: string | null;
     address: string | null;
+    storeCredit?: number;
+    creditLog?: {
+        id: string;
+        amount: string;
+        reason: string;
+        createdAt: string;
+    }[];
 }
 
 interface OrderItem {
@@ -78,7 +85,7 @@ export default function ProfilePage() {
     const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
 
     // Active tab
-    const [activeTab, setActiveTab] = useState<"profile" | "orders" | "wishlist">("profile");
+    const [activeTab, setActiveTab] = useState<"profile" | "orders" | "wishlist" | "wallet">("profile");
     const [wishlistProducts, setWishlistProducts] = useState<Product[]>([]);
 
     // Redirect if not logged in
@@ -94,6 +101,8 @@ export default function ProfilePage() {
             setActiveTab("orders");
         } else if (window.location.hash === "#wishlist") {
             setActiveTab("wishlist");
+        } else if (window.location.hash === "#wallet") {
+            setActiveTab("wallet");
         }
     }, []);
 
@@ -316,6 +325,18 @@ export default function ProfilePage() {
                                         {wishlistProducts.length}
                                     </span>
                                 )}
+                            </span>
+                        </button>
+                        <button
+                            onClick={() => setActiveTab("wallet")}
+                            className={`px-6 py-4 text-sm font-semibold border-b-2 transition-all ${activeTab === "wallet"
+                                ? "border-primary text-primary"
+                                : "border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                                }`}
+                        >
+                            <span className="flex items-center gap-2">
+                                <ShoppingBag className="w-4 h-4" /> {/* Or use Wallet icon if imported */}
+                                Wallet
                             </span>
                         </button>
                     </div>
@@ -660,6 +681,60 @@ export default function ProfilePage() {
                                         </div>
                                     )
                                 })}
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {/* ===================== WALLET TAB ===================== */}
+                {activeTab === "wallet" && (
+                    <div className="max-w-3xl">
+                        {profileLoading ? (
+                             <div className="animate-pulse h-64 bg-gray-100 dark:bg-[#1a1a1a] rounded-2xl"></div>
+                        ) : (
+                            <div className="space-y-6">
+                                {/* Current Balance Card */}
+                                <div className="bg-gradient-to-br from-[#1a1a1a] to-[#2c2c2c] rounded-2xl p-8 text-white shadow-xl relative overflow-hidden">
+                                     <div className="absolute top-0 right-0 w-64 h-64 bg-primary/20 rounded-full blur-[80px] -mr-20 -mt-20"></div>
+                                     <h3 className="text-white/80 font-medium mb-2 relative z-10">Available Store Credit</h3>
+                                     <div className="text-4xl md:text-5xl font-bold text-primary relative z-10" style={{ fontFamily: "Georgia, serif" }}>
+                                         {formatPrice(profile?.storeCredit?.toString() || "0")}
+                                     </div>
+                                     <p className="text-white/60 text-sm mt-4 relative z-10 max-w-sm">
+                                         Store credit can be applied automatically during checkout. It never expires and can be used on any product.
+                                     </p>
+                                </div>
+
+                                {/* Ledger History */}
+                                <div className="bg-white dark:bg-[#1a1a1a] rounded-2xl border border-gray-100 dark:border-white/10 shadow-sm overflow-hidden">
+                                    <div className="p-6 border-b border-gray-100 dark:border-white/10">
+                                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Transaction History</h3>
+                                    </div>
+                                    
+                                    {!profile?.creditLog || profile.creditLog.length === 0 ? (
+                                        <div className="py-12 text-center text-gray-500">
+                                            <p>No transactions found.</p>
+                                        </div>
+                                    ) : (
+                                        <div className="divide-y divide-gray-100 dark:divide-white/10">
+                                            {profile.creditLog.map((log) => {
+                                                const amount = parseFloat(log.amount);
+                                                const isPositive = amount > 0;
+                                                return (
+                                                    <div key={log.id} className="p-5 md:p-6 flex items-center justify-between hover:bg-gray-50/50 dark:hover:bg-white/5 transition-colors">
+                                                        <div>
+                                                            <p className="font-medium text-gray-900 dark:text-white mb-1">{log.reason}</p>
+                                                            <p className="text-xs text-gray-500">{formatDate(log.createdAt)}</p>
+                                                        </div>
+                                                        <div className={`font-bold ${isPositive ? 'text-success' : 'text-gray-900 dark:text-white'}`}>
+                                                            {isPositive ? '+' : ''}{formatPrice(log.amount)}
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         )}
                     </div>

@@ -19,13 +19,15 @@ model User {
   firstName String?
   lastName  String?
   phone     String?
-  address   String?
-  role      Role      @default(CUSTOMER)
-  orders    Order[]
-  wishlist  Product[] @relation("UserWishlist")
-  cart      Cart?
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  address     String?
+  storeCredit Decimal   @default(0) @db.Decimal(10, 2)
+  role        Role      @default(CUSTOMER)
+  orders      Order[]
+  wishlist    Product[] @relation("UserWishlist")
+  cart        Cart?
+  creditLog   StoreCreditTransaction[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   @@map("users")
 }
@@ -81,6 +83,7 @@ model Order {
 
   status          OrderStatus @default(PENDING)
   total           Decimal     @db.Decimal(10, 2)
+  storeCreditUsed Decimal     @default(0) @db.Decimal(10, 2)
 
   razorpayOrderId String?
   paymentId       String?
@@ -143,9 +146,22 @@ model DiscountCode {
   email     String?  @unique
   phone     String?  @unique
   code      String   @unique
-  claimedAt DateTime @default(now())
   isUsed    Boolean  @default(false)
 
   @@map("discount_codes")
+}
+
+model StoreCreditTransaction {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  amount      Decimal  @db.Decimal(10, 2) // positive for credit added, negative for usage
+  reason      String
+  referenceId String?  // Optional order ID or refund ID
+  adminId     String?  // If an admin manually added it
+  createdAt   DateTime @default(now())
+
+  @@index([userId])
+  @@map("store_credit_transactions")
 }
 
