@@ -8,6 +8,7 @@ import { About } from "@/components/home/About";
 export default function Home() {
   return (
     <div className="flex flex-col min-h-screen">
+      <h1 className="sr-only">Swarna - Premium Artificial Jewellery & Accessories</h1>
       <Hero />
       <CategoryGrid />
       <FeaturedProducts />
