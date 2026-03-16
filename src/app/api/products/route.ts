@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import type { Prisma } from '@/generated/prisma';
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 60; // Cache for 60 seconds
 
 const DEFAULT_CATEGORIES = [
     { name: 'Necklaces', slug: 'necklaces' },
@@ -154,7 +154,7 @@ export async function GET(request: Request) {
 
         return NextResponse.json(formatted, {
             headers: {
-                'Cache-Control': 'no-store, max-age=0',
+                'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',
             },
         });
     } catch (error) {
@@ -162,7 +162,7 @@ export async function GET(request: Request) {
         const { searchParams } = new URL(request.url);
         return NextResponse.json(getFallbackProducts(searchParams), {
             headers: {
-                'Cache-Control': 'no-store, max-age=0',
+                'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',
             },
         });
     }

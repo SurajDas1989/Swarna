@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { motion, useScroll, useTransform } from "framer-motion";
 import { Button } from "@/components/ui/button";
 
+import Image from "next/image";
+
 export function Hero() {
     const [isMobile, setIsMobile] = useState(false);
     const { scrollY } = useScroll();
@@ -29,16 +31,25 @@ export function Hero() {
             className="relative overflow-hidden py-24 text-center text-white"
         >
             <motion.div
-                className="absolute inset-0 bg-cover bg-center"
+                className="absolute inset-0"
                 style={{
-                    backgroundImage: `url('/hero-mobile.jpeg')`,
                     y: isMobile ? mobileParallaxY : 0,
                     scale: 1.08,
                 }}
                 initial={{ scale: 1.12, opacity: 0.9 }}
                 animate={{ scale: 1.08, opacity: 1 }}
                 transition={{ duration: 0.9, ease: "easeOut" }}
-            />
+            >
+                <Image
+                    src="/hero-mobile.jpeg"
+                    alt="Discover Timeless Elegance"
+                    fill
+                    priority
+                    className="object-cover"
+                    sizes="100vw"
+                    quality={90}
+                />
+            </motion.div>
             <div className="absolute inset-0 bg-black/55" />
 
             <div className="container relative z-10 mx-auto px-4">

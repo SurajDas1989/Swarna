@@ -1,8 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { DiscountModal } from "./DiscountModal";
+import dynamic from "next/dynamic";
 import { useAuth } from "@/context/AuthContext";
+
+const DiscountModal = dynamic(() => import('./DiscountModal').then((mod) => mod.DiscountModal), {
+  ssr: false,
+});
 
 export function StickyDiscountTab() {
   const [isModalOpen, setIsModalOpen] = useState(false);

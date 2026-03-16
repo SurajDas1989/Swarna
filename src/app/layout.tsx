@@ -27,8 +27,34 @@ const grenzeGotisch = Grenze_Gotisch({
 });
 
 export const metadata: Metadata = {
-  title: "Swarna",
-  description: "Premium Artificial Jewellery",
+  metadataBase: new URL('https://swarna.vercel.app'),
+  title: {
+    template: "%s | Swarna",
+    default: "Swarna - Premium Artificial Jewellery",
+  },
+  description: "Discover premium artificial jewellery that perfectly blends traditional craftsmanship with modern design.",
+  keywords: ["artificial jewellery", "fake jewellery", "premium jewellery", "necklace", "earrings", "bangles", "Swarna"],
+  authors: [{ name: "Swarna" }],
+  openGraph: {
+    type: "website",
+    locale: "en_IN",
+    url: "https://swarna.vercel.app",
+    title: "Swarna - Premium Artificial Jewellery",
+    description: "Discover premium artificial jewellery that perfectly blends traditional craftsmanship with modern design.",
+    siteName: "Swarna",
+    images: [{
+      url: "/og-image.jpg", // Assuming an og-image will be added later or fallback to a default
+      width: 1200,
+      height: 630,
+      alt: "Swarna Jewellery"
+    }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Swarna - Premium Artificial Jewellery",
+    description: "Discover premium artificial jewellery that perfectly blends traditional craftsmanship with modern design.",
+    creator: "@swarnajewellery",
+  },
   verification: {
     google: "bSx1uXuKeRmpCwplbYbVo9EdV3d9WijCaWCkgreqCvs",
   },

@@ -253,7 +253,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
                 if (searchQuery) params.append('search', searchQuery);
                 
 
-                const res = await fetch(`/api/products?${params.toString()}`, { cache: 'no-store' });
+                const res = await fetch(`/api/products?${params.toString()}`);
                 if (!res.ok) {
                     throw new Error(`Products API returned ${res.status}`);
                 }
