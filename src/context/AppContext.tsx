@@ -24,6 +24,10 @@ export interface OrderDetails {
     paymentMethod?: string;
     items: CartItem[];
     total: number;
+    mrpTotal?: number;
+    discountOnMRP?: number;
+    couponDiscount?: number;
+    storeCreditUsed?: number;
     shipping: number;
     finalTotal: number;
     billingInfo: {
@@ -53,6 +57,8 @@ interface AppContextType {
     clearCart: () => void;
     cartCount: number;
     cartTotal: number;
+    cartMRP: number;
+    cartDiscount: number;
     deliveryCharge: number;
     cartFinalTotal: number;
     isCartOpen: boolean;
@@ -377,6 +383,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
     const cartCount = cart.reduce((total, item) => total + item.quantity, 0);
     const cartTotal = cart.reduce((total, item) => total + (item.price * item.quantity), 0);
+    const cartMRP = cart.reduce((total, item) => total + ((item.originalPrice || item.price) * item.quantity), 0);
+    const cartDiscount = cartMRP - cartTotal;
     const deliveryCharge = cartTotal > 0 && cartTotal < 799 ? 99 : 0;
     const cartFinalTotal = cartTotal + deliveryCharge;
 
@@ -397,6 +405,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
                 clearCart,
                 cartCount,
                 cartTotal,
+                cartMRP,
+                cartDiscount,
                 deliveryCharge,
                 cartFinalTotal,
                 isCartOpen,

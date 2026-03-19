@@ -53,7 +53,7 @@ const formatInr = (value: number) => new Intl.NumberFormat("en-IN", {
 
 export default function CheckoutPage() {
     const router = useRouter();
-    const { cart, cartTotal, deliveryCharge, cartFinalTotal, placeOrder } = useAppContext();
+    const { cart, cartTotal, cartMRP, cartDiscount, deliveryCharge, cartFinalTotal, placeOrder } = useAppContext();
     const { user, loading } = useAuth();
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -304,8 +304,12 @@ export default function CheckoutPage() {
             paymentMethod,
             items: [...cart],
             total: cartTotal,
+            mrpTotal: cartMRP,
+            discountOnMRP: cartDiscount,
+            couponDiscount: couponDiscountAmount,
+            storeCreditUsed: formData.useStoreCredit ? Math.min(afterShippingTotal, availableCredit) : 0,
             shipping: deliveryCharge,
-            finalTotal: cartFinalTotal,
+            finalTotal: finalCalculatedTotal,
             billingInfo: {
                 firstName: formData.firstName,
                 lastName: formData.lastName,
@@ -550,34 +554,82 @@ export default function CheckoutPage() {
                                 )}
                             </div>
 
-                            <div className="pt-4 border-t space-y-3">
-                                <div className="flex justify-between text-gray-600">
-                                    <span>Subtotal</span>
-                                    <span>{formatInr(cartTotal)}</span>
-                                </div>
-                                {couponApplied && couponDiscountAmount > 0 && (
-                                    <div className="flex justify-between text-green-600">
-                                        <span>Coupon ({appliedCouponCode})</span>
-                                        <span className="font-medium">-{formatInr(Math.round(couponDiscountAmount))}</span>
+                            <div className="bg-white dark:bg-card border border-stone-200 dark:border-white/10 rounded-xl overflow-hidden mb-6 mt-4">
+                                {cartDiscount > 0 && (
+                                    <div className="bg-[#10b981] text-white text-center py-1.5 text-xs sm:text-sm font-bold relative overflow-hidden flex items-center justify-center">
+                                        <span className="relative z-10">{formatInr(cartDiscount)} Saved so far!</span>
                                     </div>
                                 )}
-                                <div className="flex justify-between text-gray-600">
-                                    <span>Shipping</span>
-                                    {deliveryCharge === 0 ? (
-                                        <span className="text-success font-medium">Free</span>
-                                    ) : (
-                                        <span>{formatInr(deliveryCharge)}</span>
-                                    )}
-                                </div>
-                                {formData.useStoreCredit && (
-                                    <div className="flex justify-between text-gray-600">
-                                        <span>Store Credit</span>
-                                        <span className="text-primary font-medium">-{formatInr(Math.min(afterShippingTotal, availableCredit))}</span>
+                                <div className="p-4 sm:p-5">
+                                    <div className="flex justify-between items-center mb-4">
+                                        <h3 className="font-bold text-foreground sm:text-lg">Order Summary</h3>
+                                        {cartDiscount > 0 && (
+                                            <span className="bg-[#10b981]/10 text-[#10b981] text-xs font-semibold px-2 py-1 rounded">
+                                                {formatInr(cartDiscount)} saved so far
+                                            </span>
+                                        )}
                                     </div>
-                                )}
-                                <div className="flex justify-between text-lg font-bold pt-4 border-t">
-                                    <span>Total</span>
-                                    <span className="text-primary">{formatInr(finalCalculatedTotal)}</span>
+
+                                    <div className="space-y-3 text-sm sm:text-base">
+                                        <div className="flex justify-between text-gray-600 dark:text-gray-400">
+                                            <span>MRP total</span>
+                                            <span className="font-medium text-foreground">{formatInr(cartMRP)}</span>
+                                        </div>
+                                        
+                                        <div className="flex justify-between text-gray-600 dark:text-gray-400">
+                                            <span>Discount on MRP</span>
+                                            <span className="font-medium text-[#10b981]">
+                                                {cartDiscount > 0 ? `-${formatInr(cartDiscount)}` : `${formatInr(0)}`}
+                                            </span>
+                                        </div>
+
+                                        <div className="flex justify-between text-gray-600 dark:text-gray-400">
+                                            <span>Cart Subtotal</span>
+                                            <span className="font-medium text-foreground">{formatInr(cartTotal)}</span>
+                                        </div>
+
+                                        <div className="flex justify-between text-gray-600 dark:text-gray-400">
+                                            <span>Total discount</span>
+                                            <span className="font-medium text-[#10b981]">
+                                                {cartDiscount + couponDiscountAmount > 0 ? `-${formatInr(cartDiscount + couponDiscountAmount)}` : `${formatInr(0)}`}
+                                            </span>
+                                        </div>
+
+                                        {couponApplied && couponDiscountAmount > 0 && (
+                                            <div className="flex justify-between text-gray-600 dark:text-gray-400">
+                                                <span>Coupon ({appliedCouponCode})</span>
+                                                <span className="font-medium text-[#10b981]">- {formatInr(couponDiscountAmount)}</span>
+                                            </div>
+                                        )}
+
+                                        <div className="flex justify-between text-gray-600 dark:text-gray-400 pb-3 border-b border-dashed border-stone-200 dark:border-white/10">
+                                            <span>Shipping Charges</span>
+                                            {deliveryCharge === 0 ? (
+                                                <span className="font-bold text-[#10b981]">FREE</span>
+                                            ) : (
+                                                <span className="font-medium text-foreground">{formatInr(deliveryCharge)}</span>
+                                            )}
+                                        </div>
+
+                                        {formData.useStoreCredit && (
+                                            <div className="flex justify-between text-gray-600 dark:text-gray-400">
+                                                <span>Store Credit</span>
+                                                <span className="text-primary font-medium">-{formatInr(Math.min(afterShippingTotal, availableCredit))}</span>
+                                            </div>
+                                        )}
+
+                                        <div className="flex justify-between text-gray-600 dark:text-gray-400 pt-1">
+                                            <span>Total savings</span>
+                                            <span className="font-bold text-[#10b981]">
+                                                {cartDiscount > 0 || couponDiscountAmount > 0 ? `${formatInr(cartDiscount + couponDiscountAmount)}` : `${formatInr(0)}`}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="bg-stone-50 dark:bg-white/5 p-4 sm:p-5 flex justify-between items-center border-t border-stone-200 dark:border-white/10">
+                                    <span className="font-bold text-foreground text-base sm:text-lg">Estimated Total</span>
+                                    <span className="font-bold text-foreground text-lg sm:text-xl">{formatInr(finalCalculatedTotal)}</span>
                                 </div>
                             </div>
                         </div>

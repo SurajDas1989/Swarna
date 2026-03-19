@@ -16,6 +16,8 @@ export function CartModal() {
         removeFromCart,
         updateCartQuantity,
         cartTotal,
+        cartMRP,
+        cartDiscount,
         deliveryCharge,
         cartFinalTotal
     } = useAppContext();
@@ -137,42 +139,90 @@ export function CartModal() {
                             )}
                         </div>
 
-                        {/* Footer / Summary if not empty */}
-                        {cart.length > 0 && (
-                            <div className="p-5 sm:p-6 bg-gray-50 dark:bg-[#1e1e1e] border-t shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] pb-8 sm:pb-6">
-                                {deliveryCharge > 0 && (
-                                    <div className="mb-4 p-3 bg-primary/10 border border-primary/20 rounded-lg text-center">
-                                        <p className="text-xs sm:text-sm font-medium text-primary-dark">
-                                            Add <span className="font-bold">{"\u20B9"}{799 - cartTotal}</span> more for Free Shipping!
-                                        </p>
+                            <div className="p-0 sm:p-0 bg-gray-50 dark:bg-[#1e1e1e] border-t shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+                                {cartDiscount > 0 && (
+                                    <div className="bg-[#10b981] text-white text-center py-1.5 text-xs sm:text-sm font-bold relative overflow-hidden flex items-center justify-center">
+                                        <span className="relative z-10">{"\u20B9"}{cartDiscount.toLocaleString("en-IN")} Saved so far!</span>
                                     </div>
                                 )}
-                                <div className="space-y-3 mb-6">
-                                    <div className="flex justify-between text-sm sm:text-base text-gray-600 dark:text-gray-400">
-                                        <span>Subtotal</span>
-                                        <span className="font-semibold text-foreground">{"\u20B9"}{cartTotal}</span>
+                                
+                                <div className="p-5 sm:p-6 pb-8 sm:pb-6">
+                                    {deliveryCharge > 0 && (
+                                        <div className="mb-4 p-3 bg-primary/10 border border-primary/20 rounded-lg text-center">
+                                            <p className="text-xs sm:text-sm font-medium text-primary-dark">
+                                                Add <span className="font-bold">{"\u20B9"}{799 - cartTotal}</span> more for Free Shipping!
+                                            </p>
+                                        </div>
+                                    )}
+
+                                    <div className="bg-white dark:bg-card border border-stone-200 dark:border-white/10 rounded-xl overflow-hidden mb-6">
+                                        <div className="p-4 sm:p-5">
+                                            <div className="flex justify-between items-center mb-4">
+                                                <h3 className="font-bold text-foreground sm:text-lg">Order Summary</h3>
+                                                {cartDiscount > 0 && (
+                                                    <span className="bg-[#10b981]/10 text-[#10b981] text-xs font-semibold px-2 py-1 rounded">
+                                                        {"\u20B9"}{cartDiscount.toLocaleString("en-IN")} saved so far
+                                                    </span>
+                                                )}
+                                            </div>
+
+                                            <div className="space-y-3 text-sm sm:text-base">
+                                                <div className="flex justify-between text-gray-600 dark:text-gray-400">
+                                                    <span>MRP total</span>
+                                                    <span className="font-medium text-foreground">{"\u20B9"}{cartMRP.toLocaleString("en-IN")}</span>
+                                                </div>
+                                                
+                                                <div className="flex justify-between text-gray-600 dark:text-gray-400">
+                                                    <span>Discount on MRP</span>
+                                                    <span className="font-medium text-[#10b981]">
+                                                        {cartDiscount > 0 ? `-\u20B9${cartDiscount.toLocaleString("en-IN")}` : `\u20B90`}
+                                                    </span>
+                                                </div>
+
+                                                <div className="flex justify-between text-gray-600 dark:text-gray-400">
+                                                    <span>Cart Subtotal</span>
+                                                    <span className="font-medium text-foreground">{"\u20B9"}{cartTotal.toLocaleString("en-IN")}</span>
+                                                </div>
+
+                                                <div className="flex justify-between text-gray-600 dark:text-gray-400">
+                                                    <span>Total discount</span>
+                                                    <span className="font-medium text-[#10b981]">
+                                                        {cartDiscount > 0 ? `-\u20B9${cartDiscount.toLocaleString("en-IN")}` : `\u20B90`}
+                                                    </span>
+                                                </div>
+
+                                                <div className="flex justify-between text-gray-600 dark:text-gray-400 pb-3 border-b border-dashed border-stone-200 dark:border-white/10">
+                                                    <span>Shipping Charges</span>
+                                                    {deliveryCharge === 0 ? (
+                                                        <span className="font-bold text-[#10b981]">FREE</span>
+                                                    ) : (
+                                                        <span className="font-medium text-foreground">{"\u20B9"}{deliveryCharge}</span>
+                                                    )}
+                                                </div>
+
+                                                <div className="flex justify-between text-gray-600 dark:text-gray-400 pt-1">
+                                                    <span>Total savings</span>
+                                                    <span className="font-bold text-[#10b981]">
+                                                        {cartDiscount > 0 ? `\u20B9${cartDiscount.toLocaleString("en-IN")}` : `\u20B90`}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="bg-stone-50 dark:bg-white/5 p-4 sm:p-5 flex justify-between items-center border-t border-stone-200 dark:border-white/10">
+                                            <span className="font-bold text-foreground text-base sm:text-lg">Estimated Total</span>
+                                            <span className="font-bold text-foreground text-lg sm:text-xl">{"\u20B9"}{cartFinalTotal.toLocaleString("en-IN")}</span>
+                                        </div>
                                     </div>
-                                    <div className="flex justify-between text-sm sm:text-base text-gray-600 dark:text-gray-400">
-                                        <span>Shipping</span>
-                                        {deliveryCharge === 0 ? (
-                                            <span className="font-semibold text-success">Free</span>
-                                        ) : (
-                                            <span className="font-semibold text-foreground">{"\u20B9"}{deliveryCharge}</span>
-                                        )}
-                                    </div>
-                                    <div className="flex justify-between text-lg font-bold pt-4 border-t">
-                                        <span>Total</span>
-                                        <span className="text-primary">{"\u20B9"}{cartFinalTotal}</span>
-                                    </div>
+
+                                    <button
+                                        onClick={handleCheckout}
+                                        className="w-full py-3.5 sm:py-4 bg-foreground dark:bg-primary hover:bg-primary dark:hover:bg-primary-dark text-white dark:text-background font-bold rounded-lg transition-colors flex items-center justify-center gap-2 shadow-md hover:shadow-lg"
+                                    >
+                                        <span>Proceed to Checkout</span>
+                                    </button>
                                 </div>
-                                <button
-                                    onClick={handleCheckout}
-                                    className="w-full py-3.5 sm:py-4 bg-foreground dark:bg-primary hover:bg-primary dark:hover:bg-primary-dark text-white dark:text-background font-bold rounded-lg transition-colors flex items-center justify-center gap-2"
-                                >
-                                    <span>Proceed to Checkout</span>
-                                </button>
                             </div>
-                        )}
                     </motion.div>
                 </div>
             )}

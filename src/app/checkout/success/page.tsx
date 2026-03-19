@@ -109,9 +109,10 @@ export default function OrderSuccessPage() {
                                 </div>
                                 <div>
                                     <h3 className="mb-3 flex items-center gap-2 font-semibold text-gray-900">
-                                        <Package className="h-4 w-4 text-primary" /> Order Summary
+                                        <Package className="h-4 w-4 text-primary" /> Order Items & Summary
                                     </h3>
-                                    <div className="space-y-3">
+                                    
+                                    <div className="space-y-3 mb-6">
                                         {order.items.map((item) => (
                                             <div key={item.id} className="flex items-center gap-3 text-sm">
                                                 <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded border border-stone-200 shadow-sm">
@@ -123,6 +124,66 @@ export default function OrderSuccessPage() {
                                                 </div>
                                             </div>
                                         ))}
+                                    </div>
+
+                                    <div className="bg-white rounded-xl border border-stone-200 overflow-hidden">
+                                        <div className="p-4">
+                                            <div className="space-y-3 text-sm">
+                                                <div className="flex justify-between text-gray-600">
+                                                    <span>MRP total</span>
+                                                    <span className="font-medium text-gray-900">{formatInr(order.mrpTotal || order.total)}</span>
+                                                </div>
+                                                
+                                                <div className="flex justify-between text-gray-600">
+                                                    <span>Discount on MRP</span>
+                                                    <span className="font-medium text-[#10b981]">
+                                                        {order.discountOnMRP && order.discountOnMRP > 0 ? `-${formatInr(order.discountOnMRP)}` : `${formatInr(0)}`}
+                                                    </span>
+                                                </div>
+
+                                                <div className="flex justify-between text-gray-600">
+                                                    <span>Cart Subtotal</span>
+                                                    <span className="font-medium text-gray-900">{formatInr(order.total)}</span>
+                                                </div>
+
+                                                <div className="flex justify-between text-gray-600">
+                                                    <span>Total discount</span>
+                                                    <span className="font-medium text-[#10b981]">
+                                                        {(order.discountOnMRP || 0) + (order.couponDiscount || 0) > 0 ? `-${formatInr((order.discountOnMRP || 0) + (order.couponDiscount || 0))}` : `${formatInr(0)}`}
+                                                    </span>
+                                                </div>
+
+                                                {order.couponDiscount && order.couponDiscount > 0 ? (
+                                                    <div className="flex justify-between text-gray-600">
+                                                        <span>Coupon Discount</span>
+                                                        <span className="font-medium text-[#10b981]">- {formatInr(order.couponDiscount)}</span>
+                                                    </div>
+                                                ) : null}
+
+                                                <div className="flex justify-between text-gray-600 pb-3 border-b border-dashed border-stone-200">
+                                                    <span>Shipping Charges</span>
+                                                    {order.shipping === 0 ? (
+                                                        <span className="font-bold text-[#10b981]">FREE</span>
+                                                    ) : (
+                                                        <span className="font-medium text-gray-900">{formatInr(order.shipping)}</span>
+                                                    )}
+                                                </div>
+
+                                                {order.storeCreditUsed && order.storeCreditUsed > 0 ? (
+                                                    <div className="flex justify-between text-gray-600">
+                                                        <span>Store Credit</span>
+                                                        <span className="text-primary font-medium">-{formatInr(order.storeCreditUsed)}</span>
+                                                    </div>
+                                                ) : null}
+
+                                                <div className="flex justify-between text-gray-600 pt-1">
+                                                    <span>Total savings</span>
+                                                    <span className="font-bold text-[#10b981]">
+                                                        {(order.discountOnMRP || 0) + (order.couponDiscount || 0) > 0 ? `${formatInr((order.discountOnMRP || 0) + (order.couponDiscount || 0))}` : `${formatInr(0)}`}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
