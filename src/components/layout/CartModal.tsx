@@ -130,7 +130,7 @@ export function CartModal() {
                                                     </div>
 
                                                     {/* Price */}
-                                                    <p className="font-bold text-primary">₹{item.price * item.quantity}</p>
+                                                    <p className="font-bold text-primary">{"\u20B9"}{item.price * item.quantity}</p>
                                                 </div>
                                             </div>
                                         </div>
@@ -145,7 +145,7 @@ export function CartModal() {
                                 <div className="space-y-3 mb-6">
                                     <div className="flex justify-between text-gray-600 dark:text-gray-400">
                                         <span>Subtotal</span>
-                                        <span className="font-semibold text-foreground">₹{cartTotal}</span>
+                                        <span className="font-semibold text-foreground">{"\u20B9"}{cartTotal}</span>
                                     </div>
                                     <div className="flex justify-between text-gray-600 dark:text-gray-400 items-center">
                                         <span>Shipping</span>
@@ -153,14 +153,14 @@ export function CartModal() {
                                             <span className="font-semibold text-success">Free</span>
                                         ) : (
                                             <div className="flex flex-col items-end">
-                                                <span className="font-semibold text-foreground">₹{deliveryCharge}</span>
-                                                <span className="text-xs text-primary mt-1">Add ₹{799 - cartTotal} more for Free Shipping!</span>
+                                                <span className="font-semibold text-foreground">{"\u20B9"}{deliveryCharge}</span>
+                                                <span className="text-xs text-primary mt-1">Add {"\u20B9"}{799 - cartTotal} more for Free Shipping!</span>
                                             </div>
                                         )}
                                     </div>
                                     <div className="flex justify-between text-lg font-bold pt-4 border-t">
                                         <span>Total</span>
-                                        <span className="text-primary">₹{cartFinalTotal}</span>
+                                        <span className="text-primary">{"\u20B9"}{cartFinalTotal}</span>
                                     </div>
                                 </div>
                                 <button

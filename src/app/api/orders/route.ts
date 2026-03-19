@@ -38,7 +38,7 @@ export async function POST(request: Request) {
         const authUser = await getAuthenticatedUser();
 
         const body = await request.json();
-        const { items, total, shipping, paymentMethod, useStoreCredit } = body;
+        const { items, total, shipping, paymentMethod, useStoreCredit, discountCode } = body;
 
         if (!Array.isArray(items) || items.length === 0) {
             return NextResponse.json({ error: 'Cart is empty' }, { status: 400 });
@@ -90,7 +90,73 @@ export async function POST(request: Request) {
             let finalCreditUsed = 0;
             let finalOrderStatus = 'PENDING';
             let checkoutTotal = parseFloat(total);
+            let couponDiscountAmount = 0;
+            let appliedCouponCode: string | null = null;
 
+            // ===== STEP 0: ATOMIC COUPON REDEMPTION =====
+            if (discountCode && typeof discountCode === 'string' && discountCode.trim()) {
+                const code = discountCode.trim().toUpperCase();
+
+                // Atomic conditional update: only succeeds if isUsed is still false
+                const updated = await tx.discountCode.updateMany({
+                    where: {
+                        code,
+                        isUsed: false,
+                    },
+                    data: {
+                        isUsed: true,
+                        usedAt: new Date(),
+                        usedByUserId: dbUserId,
+                        usedByEmail: shipping.email?.toLowerCase(),
+                    },
+                });
+
+                if (updated.count === 0) {
+                    throw new Error('Coupon code is invalid or has already been used.');
+                }
+
+                // Fetch the coupon details for discount calculation
+                const coupon = await tx.discountCode.findUnique({ where: { code } });
+
+                if (coupon) {
+                    // Check expiry
+                    if (coupon.expiresAt && new Date(coupon.expiresAt) < new Date()) {
+                        // Rollback: un-use the coupon since it's expired
+                        await tx.discountCode.update({
+                            where: { code },
+                            data: { isUsed: false, usedAt: null, usedByUserId: null, usedByEmail: null },
+                        });
+                        throw new Error('This coupon has expired.');
+                    }
+
+                    // Check user binding (email match)
+                    if (coupon.email) {
+                        const orderEmail = shipping.email?.toLowerCase().trim();
+                        if (orderEmail && orderEmail !== coupon.email) {
+                            // Rollback
+                            await tx.discountCode.update({
+                                where: { code },
+                                data: { isUsed: false, usedAt: null, usedByUserId: null, usedByEmail: null },
+                            });
+                            throw new Error('This coupon is not valid for your account.');
+                        }
+                    }
+
+                    // Calculate discount amount (null maxDiscountAmount = no cap)
+                    const rawDiscount = checkoutTotal * (coupon.discountPercent / 100);
+                    couponDiscountAmount = coupon.maxDiscountAmount
+                        ? Math.min(rawDiscount, Number(coupon.maxDiscountAmount))
+                        : rawDiscount;
+
+                    // Round to 2 decimal places
+                    couponDiscountAmount = Math.round(couponDiscountAmount * 100) / 100;
+
+                    checkoutTotal = Math.max(0, checkoutTotal - couponDiscountAmount);
+                    appliedCouponCode = code;
+                }
+            }
+
+            // ===== STEP 1: STORE CREDIT =====
             // Fetch the most real-time user credit state from DB, NEVER trust the client
             if (useStoreCredit && dbUserId) {
                  const currentUser = await tx.user.findUnique({ where: { id: dbUserId }});
@@ -126,7 +192,7 @@ export async function POST(request: Request) {
                  }
             }
 
-            return await tx.order.create({
+            const createdOrder = await tx.order.create({
                 data: {
                     userId: dbUserId,
                     guestEmail: dbUserId ? null : shipping.email,
@@ -135,8 +201,8 @@ export async function POST(request: Request) {
                     guestLastName: dbUserId ? null : shipping.lastName,
                     guestAddress: dbUserId ? null : formattedAddress,
                     orderNumber,
-                    total, // Keep original total
-                    storeCreditUsed: finalCreditUsed, // How much of it was credit
+                    total, // Keep original total (pre-discount)
+                    storeCreditUsed: finalCreditUsed,
                     status: finalOrderStatus as any,
                     items: {
                         create: (items as CheckoutItem[]).map((item) => ({
@@ -148,6 +214,16 @@ export async function POST(request: Request) {
                 },
                 include: { items: { include: { product: true } } },
             });
+
+            // Link coupon to order
+            if (appliedCouponCode) {
+                await tx.discountCode.update({
+                    where: { code: appliedCouponCode },
+                    data: { orderId: createdOrder.id },
+                });
+            }
+
+            return createdOrder;
         });
 
         const order = orderResult;

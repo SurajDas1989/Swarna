@@ -126,8 +126,8 @@ export default function WishlistPage() {
                                     <div className="mt-auto">
                                         {/* Price */}
                                         <div className="flex items-center gap-3 mb-6">
-                                            <span className="text-2xl font-bold text-primary">₹{product.price}</span>
-                                            <span className="text-base text-gray-400 line-through">₹{product.originalPrice}</span>
+                                            <span className="text-2xl font-bold text-primary">{"\u20B9"}{product.price}</span>
+                                            <span className="text-base text-gray-400 line-through">{"\u20B9"}{product.originalPrice}</span>
                                             <span className="bg-red-500 text-white px-2 py-0.5 rounded text-xs font-bold shrink-0">
                                                 {discount}% OFF
                                             </span>

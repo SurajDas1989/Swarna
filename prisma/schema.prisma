@@ -146,12 +146,22 @@ model CartItem {
 }
 
 model DiscountCode {
-  id     String  @id @default(uuid())
-  email  String? @unique
-  phone  String? @unique
-  code   String  @unique
-  isUsed Boolean @default(false)
+  id                String    @id @default(uuid())
+  email             String?
+  phone             String?
+  code              String    @unique
+  isUsed            Boolean   @default(false)
+  usedAt            DateTime?
+  usedByUserId      String?
+  usedByEmail       String?
+  discountPercent   Int       @default(10)
+  maxDiscountAmount Decimal?  @db.Decimal(10, 2)
+  expiresAt         DateTime?
+  orderId           String?
+  createdAt         DateTime  @default(now())
 
+  @@index([code])
+  @@index([email])
   @@map("discount_codes")
 }
 

@@ -66,23 +66,30 @@ export async function POST(request: Request) {
         const lowerEmail = email.toLowerCase().trim();
         const cleanPhone = phone.replace(/\D/g, ''); // Keep only digits
 
-        // Check if either email OR phone already exists
+        // Check if either email OR phone already has an active (unused, unexpired) code
         const existingRecord = await prisma.discountCode.findFirst({
             where: {
                 OR: [
                     { email: lowerEmail },
                     { phone: cleanPhone }
-                ]
-            }
+                ],
+                isUsed: false,
+            },
+            orderBy: { createdAt: 'desc' }
         });
 
         if (existingRecord) {
-            // Return existing code
-            return NextResponse.json({
-                success: true,
-                code: existingRecord.code,
-                message: "This email or phone is already registered. Here is your code."
-            });
+            // Check if their existing code is expired
+            if (existingRecord.expiresAt && new Date(existingRecord.expiresAt) < new Date()) {
+                // Expired — generate a new one below
+            } else {
+                // Return existing valid code
+                return NextResponse.json({
+                    success: true,
+                    code: existingRecord.code,
+                    message: "This email or phone is already registered. Here is your code."
+                });
+            }
         }
 
         // Generate a uniquely collision-resistant code
@@ -108,12 +115,18 @@ export async function POST(request: Request) {
             );
         }
 
-        // Save new record
+        // Save new record with expiry and discount config
+        const expiresAt = new Date();
+        expiresAt.setDate(expiresAt.getDate() + 30); // 30-day expiry
+
         const newRecord = await prisma.discountCode.create({
             data: {
                 email: lowerEmail,
                 phone: cleanPhone,
-                code: newCode
+                code: newCode,
+                discountPercent: 10,
+                maxDiscountAmount: 500,
+                expiresAt,
             }
         });
 

@@ -54,7 +54,7 @@ export function Navbar() {
                     <div className="container relative mx-auto flex items-center justify-between px-4">
                         <div className="flex w-full items-center overflow-hidden whitespace-nowrap">
                             <div className="inline-block animate-[marquee_20s_linear_infinite] font-medium tracking-wide">
-                                ✨ Free Shipping on Orders Above ₹799 • Discover the Premium Wedding Collection
+                                {"\u2728 Free Shipping on Orders Above \u20B9799 \u2022 Discover the Premium Wedding Collection"}
                             </div>
                         </div>
                     </div>

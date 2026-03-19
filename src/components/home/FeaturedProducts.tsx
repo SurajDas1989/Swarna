@@ -358,6 +358,7 @@ export function FeaturedProducts() {
                                                 </span>
                                             </button>
 
+                                            <Link href={`/product/${product.id}`} className="block">
                                             <Image
                                                 src={product.image}
                                                 alt={product.name}
@@ -367,6 +368,7 @@ export function FeaturedProducts() {
                                                 className="object-contain p-4 drop-shadow-lg transition-transform duration-700 ease-in-out group-hover:scale-108 group-hover:rotate-[0.7deg] lg:p-8"
                                                 sizes="(max-width: 768px) 50vw, (max-width: 1200px) 25vw, 25vw"
                                             />
+                                        </Link>
 
                                             <div className="absolute inset-x-0 bottom-0 hidden translate-y-4 p-4 opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100 lg:block">
                                                 <Button

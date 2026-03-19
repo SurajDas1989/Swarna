@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { use, useState, useEffect } from "react";
 import Image from "next/image";
@@ -258,12 +258,12 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                         {/* Price Block */}
                         <div className="bg-gray-50 dark:bg-white/5 rounded-xl p-5 mb-6 border border-gray-100 dark:border-white/10">
                             <div className="flex items-baseline gap-3 mb-1">
-                                <span className="text-3xl sm:text-4xl font-bold text-primary">â‚¹{product.price}</span>
-                                <span className="text-lg text-gray-400 line-through">â‚¹{product.originalPrice}</span>
+                                <span className="text-3xl sm:text-4xl font-bold text-primary">{"\u20B9"}{product.price}</span>
+                                <span className="text-lg text-gray-400 line-through">{"\u20B9"}{product.originalPrice}</span>
                             </div>
                             <div className="flex items-center gap-2">
                                 <span className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 px-2.5 py-0.5 rounded-full text-xs font-bold">
-                                    Save â‚¹{product.originalPrice - product.price}
+                                    Save {"\u20B9"}{product.originalPrice - product.price}
                                 </span>
                                 <span className="text-xs text-gray-500 dark:text-gray-400">Inclusive of all taxes</span>
                             </div>
@@ -346,7 +346,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                         {/* Trust Badges */}
                         <div className="grid grid-cols-3 gap-3">
                             {[
-                                { icon: Truck, title: 'Free Shipping', desc: 'Orders above â‚¹799' },
+                                { icon: Truck, title: 'Free Shipping', desc: 'Orders above \u20B9799' },
                                 { icon: RotateCcw, title: 'Easy Returns', desc: '7 day policy' },
                                 { icon: ShieldCheck, title: 'Quality', desc: 'Guaranteed' },
                             ].map((badge) => (
@@ -392,8 +392,8 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                                                 {rp.name}
                                             </h3>
                                             <div className="flex items-center gap-2">
-                                                <span className="font-bold text-primary">â‚¹{rp.price}</span>
-                                                <span className="text-sm text-gray-400 line-through">â‚¹{rp.originalPrice}</span>
+                                                <span className="font-bold text-primary">{"\u20B9"}{rp.price}</span>
+                                                <span className="text-sm text-gray-400 line-through">{"\u20B9"}{rp.originalPrice}</span>
                                             </div>
                                         </div>
                                     </Link>

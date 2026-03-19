@@ -162,7 +162,7 @@ export function UserManagementClient({ initialUsers }: { initialUsers: UserType[
 
             <form onSubmit={handleIssueCredit} className="space-y-4">
               <div>
-                <label className="block text-sm font-semibold mb-1">Amount (₹)</label>
+                <label className="block text-sm font-semibold mb-1">Amount ({"\u20B9"})</label>
                 <p className="text-xs text-gray-500 mb-2">Use positive numbers to add credit, negative to deduct.</p>
                 <input
                   type="number"

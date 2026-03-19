@@ -280,7 +280,7 @@ export default function AdminOrdersPage() {
                                 </select>
                             </div>
                             <div>
-                                <label className="block text-xs text-gray-400 mb-1">Refund Amount (₹)</label>
+                                <label className="block text-xs text-gray-400 mb-1">Refund Amount ({"\u20B9"})</label>
                                 <input
                                     type="number"
                                     required

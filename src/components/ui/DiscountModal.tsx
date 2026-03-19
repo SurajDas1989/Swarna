@@ -82,6 +82,8 @@ export function DiscountModal({ isOpen, onClose }: DiscountModalProps) {
       
       // Store that they claimed it so we don't bother them again.
       localStorage.setItem("discountModalClaimed", "true");
+      // Save the actual code for auto-fill at checkout
+      localStorage.setItem("claimedDiscountCode", data.code);
       // Hide the tab completely for a long time since they got the code
       localStorage.setItem("discountModalDismissedAt", (Date.now() + (365 * 24 * 60 * 60 * 1000)).toString()); 
 
