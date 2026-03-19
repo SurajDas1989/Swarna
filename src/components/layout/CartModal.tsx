@@ -138,7 +138,7 @@ export function CartModal() {
                                 </div>
                             )}
                         </div>
-
+                        {cart.length > 0 && (
                             <div className="p-0 sm:p-0 bg-gray-50 dark:bg-[#1e1e1e] border-t shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
                                 {cartDiscount > 0 && (
                                     <div className="bg-[#10b981] text-white text-center py-1.5 text-xs sm:text-sm font-bold relative overflow-hidden flex items-center justify-center">
@@ -223,6 +223,7 @@ export function CartModal() {
                                     </button>
                                 </div>
                             </div>
+                        )}
                     </motion.div>
                 </div>
             )}
