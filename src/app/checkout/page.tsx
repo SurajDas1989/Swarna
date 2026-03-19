@@ -9,6 +9,7 @@ import { CreditCard, Truck, ShieldCheck, ArrowLeft, Loader2, LogIn, UserRound, W
 import Image from "next/image";
 import Link from "next/link";
 import Script from "next/script";
+import { formatInr } from "@/lib/utils";
 
 interface RazorpaySuccessResponse {
     razorpay_order_id: string;
@@ -45,15 +46,25 @@ const INDIAN_STATES = [
     "Delhi", "Jammu and Kashmir", "Ladakh", "Lakshadweep", "Puducherry"
 ];
 
-const formatInr = (value: number) => new Intl.NumberFormat("en-IN", {
-    style: "currency",
-    currency: "INR",
-    maximumFractionDigits: 0,
-}).format(value);
 
 export default function CheckoutPage() {
     const router = useRouter();
-    const { cart, cartTotal, cartMRP, cartDiscount, deliveryCharge, cartFinalTotal, placeOrder } = useAppContext();
+    const { 
+        cart, 
+        cartTotal, 
+        cartMRP, 
+        cartDiscount, 
+        deliveryCharge, 
+        cartFinalTotal, 
+        placeOrder,
+        couponApplied,
+        appliedCouponCode,
+        couponDiscount,
+        couponMaxDiscount,
+        couponDiscountAmount,
+        applyCoupon,
+        removeCoupon
+    } = useAppContext();
     const { user, loading } = useAuth();
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -116,25 +127,10 @@ export default function CheckoutPage() {
         }
     };
 
-    // Coupon state
+    // local UI state for coupon input
     const [couponCode, setCouponCode] = useState("");
-    const [couponApplied, setCouponApplied] = useState(false);
-    const [couponDiscount, setCouponDiscount] = useState(0); // percent
-    const [couponMaxDiscount, setCouponMaxDiscount] = useState<number | null>(null);
     const [couponError, setCouponError] = useState("");
     const [couponLoading, setCouponLoading] = useState(false);
-    const [appliedCouponCode, setAppliedCouponCode] = useState("");
-
-    // Auto-fill coupon from localStorage on mount
-    useEffect(() => {
-        const savedCode = localStorage.getItem("claimedDiscountCode");
-        if (savedCode && !couponApplied) {
-            setCouponCode(savedCode);
-            // Auto-validate
-            handleApplyCoupon(savedCode);
-        }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
 
     const handleApplyCoupon = async (codeOverride?: string) => {
         const code = (codeOverride || couponCode).trim().toUpperCase();
@@ -144,45 +140,21 @@ export default function CheckoutPage() {
         }
         setCouponLoading(true);
         setCouponError("");
-        try {
-            const res = await fetch("/api/discount/validate", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ code, email: formData.email || undefined }),
-            });
-            const data = await res.json();
-            if (data.valid) {
-                setCouponApplied(true);
-                setCouponDiscount(data.discountPercent);
-                setCouponMaxDiscount(data.maxDiscountAmount);
-                setAppliedCouponCode(code);
-                setCouponError("");
-            } else {
-                setCouponError(data.error || "Invalid coupon code.");
-                setCouponApplied(false);
-            }
-        } catch {
-            setCouponError("Failed to validate coupon. Please try again.");
-        } finally {
-            setCouponLoading(false);
+        
+        const result = await applyCoupon(code);
+        if (!result.valid) {
+            setCouponError(result.error || "Invalid coupon code.");
         }
+        setCouponLoading(false);
     };
 
     const handleRemoveCoupon = () => {
-        setCouponApplied(false);
-        setCouponDiscount(0);
-        setCouponMaxDiscount(null);
-        setAppliedCouponCode("");
+        removeCoupon();
         setCouponError("");
         setCouponCode("");
     };
 
-    // Calculate coupon discount amount
-    const couponDiscountAmount = couponApplied
-        ? couponMaxDiscount !== null
-            ? Math.min(cartTotal * (couponDiscount / 100), couponMaxDiscount)
-            : cartTotal * (couponDiscount / 100)
-        : 0;
+    // Calculate totals using context values
     const afterCouponTotal = Math.max(0, cartTotal - Math.round(couponDiscountAmount));
     const afterShippingTotal = afterCouponTotal + deliveryCharge;
 

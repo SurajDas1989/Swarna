@@ -63,6 +63,15 @@ interface AppContextType {
     cartFinalTotal: number;
     isCartOpen: boolean;
     setIsCartOpen: (isOpen: boolean) => void;
+
+    // Coupon state
+    couponApplied: boolean;
+    appliedCouponCode: string;
+    couponDiscount: number;
+    couponMaxDiscount: number | null;
+    couponDiscountAmount: number;
+    applyCoupon: (code: string) => Promise<{ valid: boolean; error?: string }>;
+    removeCoupon: () => void;
     // Category state for filtering from Homepage Category Grid
     activeCategory: string;
     setActiveCategory: (category: string) => void;
@@ -113,6 +122,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     // Order state
     const [recentOrder, setRecentOrder] = useState<OrderDetails | null>(null);
 
+    // Coupon state
+    const [couponApplied, setCouponApplied] = useState(false);
+    const [appliedCouponCode, setAppliedCouponCode] = useState("");
+    const [couponDiscount, setCouponDiscount] = useState(0);
+    const [couponMaxDiscount, setCouponMaxDiscount] = useState<number | null>(null);
+
     // Load initial state from localStorage
     useEffect(() => {
         const savedWishlist = localStorage.getItem('jewelluxe_wishlist');
@@ -130,6 +145,19 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
                 setCart(JSON.parse(savedCart));
             } catch (e) {
                 console.error("Failed to parse cart from local storage");
+            }
+        }
+
+        const savedCoupon = localStorage.getItem('jewelluxe_coupon');
+        if (savedCoupon) {
+            try {
+                const { applied, code, discount, maxDiscount } = JSON.parse(savedCoupon);
+                setCouponApplied(applied);
+                setAppliedCouponCode(code);
+                setCouponDiscount(discount);
+                setCouponMaxDiscount(maxDiscount);
+            } catch (e) {
+                console.error("Failed to parse coupon from local storage");
             }
         }
     }, []);
@@ -256,6 +284,16 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         }
     }, [cart, user]);
 
+    // Save coupon to localStorage
+    useEffect(() => {
+        localStorage.setItem('jewelluxe_coupon', JSON.stringify({
+            applied: couponApplied,
+            code: appliedCouponCode,
+            discount: couponDiscount,
+            maxDiscount: couponMaxDiscount
+        }));
+    }, [couponApplied, appliedCouponCode, couponDiscount, couponMaxDiscount]);
+
     // Fetch Products dynamically based on filters
     useEffect(() => {
         const fetchProducts = async () => {
@@ -379,14 +417,59 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const placeOrder = (details: OrderDetails) => {
         setRecentOrder(details);
         clearCart();
+        removeCoupon(); // Clear coupon after order
+    };
+
+    const applyCoupon = async (code: string) => {
+        const trimmedCode = code.trim().toUpperCase();
+        if (!trimmedCode) return { valid: false, error: "Please enter a coupon code." };
+
+        // Skip if already applied
+        if (couponApplied && appliedCouponCode === trimmedCode) {
+            return { valid: true };
+        }
+
+        try {
+            const res = await fetch("/api/discount/validate", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ code: trimmedCode }),
+            });
+            const data = await res.json();
+            if (data.valid) {
+                setCouponApplied(true);
+                setAppliedCouponCode(trimmedCode);
+                setCouponDiscount(data.discountPercent);
+                setCouponMaxDiscount(data.maxDiscountAmount);
+                return { valid: true };
+            } else {
+                return { valid: false, error: data.error || "Invalid coupon code." };
+            }
+        } catch (error) {
+            return { valid: false, error: "Failed to validate coupon." };
+        }
+    };
+
+    const removeCoupon = () => {
+        setCouponApplied(false);
+        setAppliedCouponCode("");
+        setCouponDiscount(0);
+        setCouponMaxDiscount(null);
     };
 
     const cartCount = cart.reduce((total, item) => total + item.quantity, 0);
     const cartTotal = cart.reduce((total, item) => total + (item.price * item.quantity), 0);
     const cartMRP = cart.reduce((total, item) => total + ((item.originalPrice || item.price) * item.quantity), 0);
     const cartDiscount = cartMRP - cartTotal;
-    const deliveryCharge = cartTotal > 0 && cartTotal < 799 ? 99 : 0;
-    const cartFinalTotal = cartTotal + deliveryCharge;
+    
+    const couponDiscountAmount = couponApplied
+        ? couponMaxDiscount !== null
+            ? Math.min(cartTotal * (couponDiscount / 100), couponMaxDiscount)
+            : cartTotal * (couponDiscount / 100)
+        : 0;
+
+    const deliveryCharge = cartTotal > 0 && (cartTotal - couponDiscountAmount) < 799 ? 99 : 0;
+    const cartFinalTotal = cartTotal - Math.round(couponDiscountAmount) + deliveryCharge;
 
     return (
         <AppContext.Provider
@@ -411,6 +494,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
                 cartFinalTotal,
                 isCartOpen,
                 setIsCartOpen,
+
+                couponApplied,
+                appliedCouponCode,
+                couponDiscount,
+                couponMaxDiscount,
+                couponDiscountAmount,
+                applyCoupon,
+                removeCoupon,
 
                 activeCategory,
                 setActiveCategory,
