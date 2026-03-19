@@ -390,7 +390,7 @@ export default function CheckoutPage() {
                             </div>
                         )}
 
-                        <form onSubmit={handleSubmit} className="bg-white dark:bg-card rounded-xl shadow-sm border border-gray-100 dark:border-white/10 p-8">
+                        <form onSubmit={handleSubmit} className="bg-white dark:bg-card rounded-xl shadow-sm border border-gray-100 dark:border-white/10 p-5 sm:p-8">
                             <div className="mb-10">
                                 <h2 className="text-xl font-semibold mb-6 flex items-center gap-2">
                                     <Truck className="w-5 h-5 text-primary" />

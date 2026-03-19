@@ -80,9 +80,9 @@ export function CartModal() {
                             ) : (
                                 <div className="space-y-6">
                                     {cart.map((item) => (
-                                        <div key={item.id} className="flex gap-4 py-4 border-b">
+                                        <div key={item.id} className="flex gap-3 sm:gap-4 py-4 border-b">
                                             {/* Item Image */}
-                                            <div className="w-24 h-24 rounded-lg overflow-hidden relative shadow-sm shrink-0">
+                                            <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-lg overflow-hidden relative shadow-sm shrink-0">
                                                 <Image
                                                     src={item.image}
                                                     alt={item.name}
@@ -90,39 +90,37 @@ export function CartModal() {
                                                     placeholder="blur"
                                                     blurDataURL={getBlurDataUrl()}
                                                     className="object-cover"
-                                                    sizes="96px"
+                                                    sizes="(max-width: 640px) 80px, 96px"
                                                 />
                                             </div>
 
                                             {/* Item Details */}
-                                            <div className="flex-1 flex flex-col justify-between">
-                                                <div>
-                                                    <div className="flex justify-between items-start">
-                                                        <h3 className="font-semibold text-foreground line-clamp-2 pr-4">{item.name}</h3>
-                                                        <button
-                                                            onClick={() => removeFromCart(item.id)}
-                                                            className="text-gray-400 hover:text-red-500 transition-colors p-1"
-                                                        >
-                                                            <Trash2 className="w-4 h-4" />
-                                                        </button>
-                                                    </div>
-                                                    <p className="text-sm text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-1">{item.category}</p>
+                                            <div className="flex-1 flex flex-col min-w-0">
+                                                <div className="flex justify-between items-start">
+                                                    <h3 className="font-semibold text-foreground text-sm sm:text-base line-clamp-2 pr-2">{item.name}</h3>
+                                                    <button
+                                                        onClick={() => removeFromCart(item.id)}
+                                                        className="text-gray-400 hover:text-red-500 transition-colors p-1 shrink-0"
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </button>
                                                 </div>
+                                                <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-0.5">{item.category}</p>
 
-                                                <div className="flex items-center justify-between mt-4">
+                                                <div className="flex items-center justify-between mt-auto pt-3">
                                                     {/* Quantity Controls */}
-                                                    <div className="flex items-center border dark:border-white/15 rounded-md bg-white dark:bg-white/5">
+                                                    <div className="flex items-center border dark:border-white/15 rounded-md bg-white dark:bg-white/5 scale-90 sm:scale-100 origin-left">
                                                         <button
-                                                            className="px-3 py-1 hover:bg-gray-100 dark:hover:bg-white/10 text-gray-600 dark:text-gray-300 transition-colors rounded-l-md"
+                                                            className="px-2 sm:px-3 py-0.5 sm:py-1 hover:bg-gray-100 dark:hover:bg-white/10 text-gray-600 dark:text-gray-300 transition-colors rounded-l-md"
                                                             onClick={() => updateCartQuantity(item.id, item.quantity - 1)}
                                                         >
                                                             -
                                                         </button>
-                                                        <span className="px-3 py-1 text-sm font-semibold min-w-[2rem] text-center border-x">
+                                                        <span className="px-2 sm:px-3 py-0.5 sm:py-1 text-xs sm:text-sm font-semibold min-w-[1.5rem] sm:min-w-[2rem] text-center border-x">
                                                             {item.quantity}
                                                         </span>
                                                         <button
-                                                            className="px-3 py-1 hover:bg-gray-100 dark:hover:bg-white/10 text-gray-600 dark:text-gray-300 transition-colors rounded-r-md"
+                                                            className="px-2 sm:px-3 py-0.5 sm:py-1 hover:bg-gray-100 dark:hover:bg-white/10 text-gray-600 dark:text-gray-300 transition-colors rounded-r-md"
                                                             onClick={() => updateCartQuantity(item.id, item.quantity + 1)}
                                                         >
                                                             +
@@ -130,7 +128,7 @@ export function CartModal() {
                                                     </div>
 
                                                     {/* Price */}
-                                                    <p className="font-bold text-primary">{"\u20B9"}{item.price * item.quantity}</p>
+                                                    <p className="font-bold text-primary text-sm sm:text-base">{"\u20B9"}{item.price * item.quantity}</p>
                                                 </div>
                                             </div>
                                         </div>
@@ -141,21 +139,25 @@ export function CartModal() {
 
                         {/* Footer / Summary if not empty */}
                         {cart.length > 0 && (
-                            <div className="p-6 bg-gray-50 dark:bg-[#1e1e1e] border-t shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+                            <div className="p-5 sm:p-6 bg-gray-50 dark:bg-[#1e1e1e] border-t shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] pb-8 sm:pb-6">
+                                {deliveryCharge > 0 && (
+                                    <div className="mb-4 p-3 bg-primary/10 border border-primary/20 rounded-lg text-center">
+                                        <p className="text-xs sm:text-sm font-medium text-primary-dark">
+                                            Add <span className="font-bold">{"\u20B9"}{799 - cartTotal}</span> more for Free Shipping!
+                                        </p>
+                                    </div>
+                                )}
                                 <div className="space-y-3 mb-6">
-                                    <div className="flex justify-between text-gray-600 dark:text-gray-400">
+                                    <div className="flex justify-between text-sm sm:text-base text-gray-600 dark:text-gray-400">
                                         <span>Subtotal</span>
                                         <span className="font-semibold text-foreground">{"\u20B9"}{cartTotal}</span>
                                     </div>
-                                    <div className="flex justify-between text-gray-600 dark:text-gray-400 items-center">
+                                    <div className="flex justify-between text-sm sm:text-base text-gray-600 dark:text-gray-400">
                                         <span>Shipping</span>
                                         {deliveryCharge === 0 ? (
                                             <span className="font-semibold text-success">Free</span>
                                         ) : (
-                                            <div className="flex flex-col items-end">
-                                                <span className="font-semibold text-foreground">{"\u20B9"}{deliveryCharge}</span>
-                                                <span className="text-xs text-primary mt-1">Add {"\u20B9"}{799 - cartTotal} more for Free Shipping!</span>
-                                            </div>
+                                            <span className="font-semibold text-foreground">{"\u20B9"}{deliveryCharge}</span>
                                         )}
                                     </div>
                                     <div className="flex justify-between text-lg font-bold pt-4 border-t">
@@ -165,7 +167,7 @@ export function CartModal() {
                                 </div>
                                 <button
                                     onClick={handleCheckout}
-                                    className="w-full py-4 bg-foreground dark:bg-primary hover:bg-primary dark:hover:bg-primary-dark text-white dark:text-background font-bold rounded-lg transition-colors flex items-center justify-center gap-2"
+                                    className="w-full py-3.5 sm:py-4 bg-foreground dark:bg-primary hover:bg-primary dark:hover:bg-primary-dark text-white dark:text-background font-bold rounded-lg transition-colors flex items-center justify-center gap-2"
                                 >
                                     <span>Proceed to Checkout</span>
                                 </button>

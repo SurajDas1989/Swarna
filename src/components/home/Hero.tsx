@@ -28,7 +28,7 @@ export function Hero() {
     return (
         <section
             id="home"
-            className="relative overflow-hidden py-24 text-center text-white"
+            className="relative overflow-hidden py-16 sm:py-24 text-center text-white"
         >
             <motion.div
                 className="absolute inset-0"
@@ -54,7 +54,7 @@ export function Hero() {
 
             <div className="container relative z-10 mx-auto px-4">
                 <motion.h2
-                    className="mb-6 text-4xl font-bold tracking-tight text-primary sm:text-5xl md:text-6xl"
+                    className="mb-4 sm:mb-6 text-3xl font-bold tracking-tight text-primary sm:text-5xl md:text-6xl"
                     initial={{ opacity: 0, y: 24 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.55, delay: 0.1 }}
