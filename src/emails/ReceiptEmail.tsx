@@ -1,4 +1,4 @@
-﻿import {
+import {
     Body,
     Column,
     Container,
@@ -35,6 +35,10 @@ interface AddressInfo {
 }
 
 interface OrderSummaryInfo {
+    mrpTotal?: number;
+    discountOnMRP?: number;
+    couponDiscount?: number;
+    storeCreditUsed?: number;
     subtotal?: number;
     discount?: number;
     shipping?: number;
@@ -92,11 +96,14 @@ export const ReceiptEmail = ({
     summary,
 }: ReceiptEmailProps) => {
     const orderRef = getOrderReference({ orderNumber, orderId });
+    const mrpTotal = summary?.mrpTotal ?? items.reduce((sum, item) => sum + (Number(item.price) * Number(item.quantity)), 0);
+    const discountOnMRP = summary?.discountOnMRP ?? 0;
+    const couponDiscount = summary?.couponDiscount ?? 0;
+    const storeCreditUsed = summary?.storeCreditUsed ?? 0;
     const subtotal = summary?.subtotal ?? items.reduce((sum, item) => sum + Number(item.price) * Number(item.quantity), 0);
-    const discount = summary?.discount ?? 0;
     const shipping = summary?.shipping ?? 0;
     const taxes = summary?.taxes ?? 0;
-    const saved = summary?.saved ?? Math.max(0, discount * -1);
+    const saved = summary?.saved ?? (discountOnMRP + couponDiscount);
 
     return (
         <Html>
@@ -139,15 +146,38 @@ export const ReceiptEmail = ({
 
                         <Hr style={divider} />
 
-                        <Row style={calcRow}><Column><Text style={calcLabel}>Subtotal</Text></Column><Column align="right"><Text style={calcValue}>{formatMoney(subtotal)}</Text></Column></Row>
-                        <Row style={calcRow}><Column><Text style={calcLabel}>Order discount</Text></Column><Column align="right"><Text style={calcValue}>{discount ? `- ${formatMoney(Math.abs(discount))}` : formatMoney(0)}</Text></Column></Row>
-                        <Row style={calcRow}><Column><Text style={calcLabel}>Shipping</Text></Column><Column align="right"><Text style={calcValue}>{formatMoney(shipping)}</Text></Column></Row>
-                        <Row style={calcRow}><Column><Text style={calcLabel}>Taxes</Text></Column><Column align="right"><Text style={calcValue}>{formatMoney(taxes)}</Text></Column></Row>
+                        <Row style={calcRow}><Column><Text style={calcLabel}>MRP total</Text></Column><Column align="right"><Text style={calcValue}>{formatMoney(mrpTotal)}</Text></Column></Row>
+                        {discountOnMRP > 0 && (
+                            <Row style={calcRow}><Column><Text style={calcLabel}>Discount on MRP</Text></Column><Column align="right"><Text style={calcValueSaved}>- {formatMoney(discountOnMRP)}</Text></Column></Row>
+                        )}
+                        <Row style={calcRow}><Column><Text style={calcLabel}>Cart Subtotal</Text></Column><Column align="right"><Text style={calcValue}>{formatMoney(subtotal)}</Text></Column></Row>
+                        
+                        {(discountOnMRP + couponDiscount) > 0 && (
+                            <Row style={calcRow}><Column><Text style={calcLabel}>Total discount</Text></Column><Column align="right"><Text style={calcValueSaved}>- {formatMoney(discountOnMRP + couponDiscount)}</Text></Column></Row>
+                        )}
+
+                        {couponDiscount > 0 && (
+                            <Row style={calcRow}><Column><Text style={calcLabel}>Coupon Discount</Text></Column><Column align="right"><Text style={calcValueSaved}>- {formatMoney(couponDiscount)}</Text></Column></Row>
+                        )}
+
+                        <Row style={calcRow}><Column><Text style={calcLabel}>Shipping Charges</Text></Column><Column align="right"><Text style={shipping === 0 ? calcValueSaved : calcValue}>{shipping === 0 ? "FREE" : formatMoney(shipping)}</Text></Column></Row>
+                        
+                        {storeCreditUsed > 0 && (
+                            <Row style={calcRow}><Column><Text style={calcLabel}>Store Credit</Text></Column><Column align="right"><Text style={calcValueSaved}>- {formatMoney(storeCreditUsed)}</Text></Column></Row>
+                        )}
+
+                        {taxes > 0 && (
+                            <Row style={calcRow}><Column><Text style={calcLabel}>Taxes</Text></Column><Column align="right"><Text style={calcValue}>{formatMoney(taxes)}</Text></Column></Row>
+                        )}
 
                         <Hr style={divider} />
 
                         <Row style={totalRow}><Column><Text style={totalLabel}>Total</Text></Column><Column align="right"><Text style={totalValue}>{formatMoney(total)}</Text></Column></Row>
-                        {saved > 0 ? <Text style={savedText}>You saved {formatMoney(saved)}</Text> : null}
+                        {saved > 0 ? (
+                            <Section style={savedBadge}>
+                                <Text style={savedBadgeText}>{formatMoney(saved)} Saved so far!</Text>
+                            </Section>
+                        ) : null}
                     </Section>
 
                     <Section style={contentCard}>
@@ -196,10 +226,13 @@ const divider = { borderColor: "#e5e7eb", margin: "16px 0" };
 const calcRow = { padding: "4px 0" };
 const calcLabel = { margin: "0", color: "#6b7280", fontSize: "16px" };
 const calcValue = { margin: "0", color: "#374151", fontSize: "16px", fontWeight: "600" };
+const calcValueSaved = { margin: "0", color: "#10b981", fontSize: "16px", fontWeight: "600" };
 const totalRow = { paddingTop: "10px" };
 const totalLabel = { margin: "0", color: "#374151", fontSize: "24px", fontWeight: "600" };
 const totalValue = { margin: "0", color: "#374151", fontSize: "34px", fontWeight: "700" };
-const savedText = { margin: "10px 0 0", color: "#6b7280", fontSize: "14px", textAlign: "right" as const };
+const savedBadge = { backgroundColor: "#10b981", borderRadius: "4px", padding: "8px 12px", marginTop: "16px", textAlign: "center" as const };
+const savedBadgeText = { margin: "0", color: "#ffffff", fontSize: "16px", fontWeight: "700" };
+const savedText = { margin: "10px 0 0", color: "#10b981", fontSize: "14px", textAlign: "right" as const };
 const addressCol = { verticalAlign: "top" as const, width: "50%", paddingRight: "12px" };
 const addressHeading = { margin: "0 0 8px", color: "#374151", fontSize: "18px", fontWeight: "700" };
 const addressLine = { margin: "0 0 4px", color: "#6b7280", fontSize: "15px", lineHeight: "22px" };

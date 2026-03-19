@@ -220,6 +220,9 @@ export default function CheckoutPage() {
                     paymentMethod: formData.paymentMethod,
                     useStoreCredit: formData.useStoreCredit,
                     discountCode: appliedCouponCode || undefined,
+                    mrpTotal: cartMRP,
+                    discountOnMRP: cartDiscount,
+                    shippingAmount: deliveryCharge,
                 }),
             });
             const dbOrder = await res.json();

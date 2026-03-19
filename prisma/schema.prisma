@@ -85,6 +85,10 @@ model Order {
 
   status          OrderStatus @default(PENDING)
   total           Decimal     @db.Decimal(10, 2)
+  mrpTotal          Decimal?    @db.Decimal(10, 2)
+  discountOnMRP      Decimal?    @db.Decimal(10, 2)
+  couponDiscount    Decimal?    @db.Decimal(10, 2)
+  shippingAmount     Decimal?    @default(0) @db.Decimal(10, 2)
   storeCreditUsed Decimal     @default(0) @db.Decimal(10, 2)
   razorpayAmount  Decimal     @default(0) @db.Decimal(10, 2)
   refundedAmount  Decimal     @default(0) @db.Decimal(10, 2)

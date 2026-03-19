@@ -38,7 +38,7 @@ export async function POST(request: Request) {
         const authUser = await getAuthenticatedUser();
 
         const body = await request.json();
-        const { items, total, shipping, paymentMethod, useStoreCredit, discountCode } = body;
+        const { items, total, shipping, paymentMethod, useStoreCredit, discountCode, mrpTotal, discountOnMRP, shippingAmount } = body;
 
         if (!Array.isArray(items) || items.length === 0) {
             return NextResponse.json({ error: 'Cart is empty' }, { status: 400 });
@@ -86,12 +86,13 @@ export async function POST(request: Request) {
         }
 
         // Ensure atomic completion of store credit usages to prevent double-spending
+        let finalCreditUsed = 0;
+        let couponDiscountAmount = 0;
+        let appliedCouponCode: string | null = null;
+
         const orderResult = await prisma.$transaction(async (tx) => {
-            let finalCreditUsed = 0;
             let finalOrderStatus = 'PENDING';
             let checkoutTotal = parseFloat(total);
-            let couponDiscountAmount = 0;
-            let appliedCouponCode: string | null = null;
 
             // ===== STEP 0: ATOMIC COUPON REDEMPTION =====
             if (discountCode && typeof discountCode === 'string' && discountCode.trim()) {
@@ -202,7 +203,11 @@ export async function POST(request: Request) {
                     guestAddress: dbUserId ? null : formattedAddress,
                     orderNumber,
                     total, // Keep original total (pre-discount)
-                    storeCreditUsed: finalCreditUsed,
+                    mrpTotal: Number(mrpTotal) || 0,
+                    discountOnMRP: Number(discountOnMRP) || 0,
+                    couponDiscount: Number(couponDiscountAmount) || 0,
+                    shippingAmount: Number(shippingAmount) || 0,
+                    storeCreditUsed: Number(finalCreditUsed) || 0,
                     status: finalOrderStatus as any,
                     items: {
                         create: (items as CheckoutItem[]).map((item) => ({
@@ -255,11 +260,14 @@ export async function POST(request: Request) {
                     billing: shipping,
                     paymentMethod: 'cod',
                     summary: {
+                        mrpTotal: Number(order.mrpTotal) || subtotal,
+                        discountOnMRP: Number(order.discountOnMRP) || 0,
+                        couponDiscount: Number(order.couponDiscount) || 0,
+                        storeCreditUsed: Number(order.storeCreditUsed) || 0,
                         subtotal,
-                        discount: 0,
-                        shipping: 0,
+                        shipping: Number(order.shippingAmount) || 0,
                         taxes: 0,
-                        saved: 0,
+                        saved: (Number(order.discountOnMRP) || 0) + (Number(order.couponDiscount) || 0),
                     },
                 },
             };

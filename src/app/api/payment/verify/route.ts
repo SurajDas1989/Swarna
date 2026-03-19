@@ -89,11 +89,14 @@ export async function POST(request: Request) {
                     billing: shipping,
                     paymentMethod: 'razorpay',
                     summary: {
+                        mrpTotal: Number(orderWithDetails.mrpTotal) || subtotal,
+                        discountOnMRP: Number(orderWithDetails.discountOnMRP) || 0,
+                        couponDiscount: Number(orderWithDetails.couponDiscount) || 0,
+                        storeCreditUsed: Number(orderWithDetails.storeCreditUsed) || 0,
                         subtotal,
-                        discount: 0,
-                        shipping: 0,
+                        shipping: Number(orderWithDetails.shippingAmount) || 0,
                         taxes: 0,
-                        saved: 0,
+                        saved: (Number(orderWithDetails.discountOnMRP) || 0) + (Number(orderWithDetails.couponDiscount) || 0),
                     },
                 },
             };
