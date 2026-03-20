@@ -92,6 +92,9 @@ interface AppContextType {
     // Order state
     recentOrder: OrderDetails | null;
     placeOrder: (details: OrderDetails) => void;
+
+    // Prepaid Discount
+    prepaidDiscountAmount: number;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -468,7 +471,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
             : cartTotal * (couponDiscount / 100)
         : 0;
 
-    const deliveryCharge = cartTotal > 0 && (cartTotal - couponDiscountAmount) < 799 ? 99 : 0;
+    const deliveryCharge = cartTotal > 0 && cartTotal < 799 ? 99 : 0;
+    
+    // Prepaid Discount is 5% of cartTotal (after MRP discount, before coupon?)
+    // User logic: cartTotal is the subtotal after MRP discount.
+    // We'll calculate it on cartTotal.
+    const prepaidDiscountAmount = Math.round(cartTotal * 0.05);
+    
     const cartFinalTotal = cartTotal - Math.round(couponDiscountAmount) + deliveryCharge;
 
     return (
@@ -517,7 +526,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
                 isProductsLoading,
 
                 recentOrder,
-                placeOrder
+                placeOrder,
+
+                prepaidDiscountAmount
             }}
         >
             {children}

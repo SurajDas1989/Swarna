@@ -10,6 +10,7 @@ import { useToast } from "@/components/ui/Toast";
 import { Heart, ShoppingCart, Star, Truck, ShieldCheck, RotateCcw, Flame, ChevronRight, Zap } from "lucide-react";
 import { getBlurDataUrl } from "@/lib/utils/imageBlur";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { AdaptiveContainer, Row, Stack } from "@/components/layout/LayoutPrimitives";
 
 const RECENTLY_VIEWED_KEY = "jewelluxe_recently_viewed";
 
@@ -65,7 +66,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
 
     if (isLoading) {
         return (
-            <div className="bg-gray-50 dark:bg-background min-h-screen pb-24 lg:pb-0">
+            <div className="bg-gray-50 dark:bg-background min-h-dvh pb-24 lg:pb-0">
                 {/* Breadcrumb Skeleton */}
                 <div className="bg-white dark:bg-card border-b dark:border-white/10 p-4">
                     <div className="container mx-auto flex gap-2">
@@ -126,7 +127,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
 
     if (!product) {
         return (
-            <div className="container mx-auto px-4 py-20 text-center min-h-[60vh] flex flex-col items-center justify-center">
+            <div className="container mx-auto px-4 py-20 text-center min-h-[60dvh] flex flex-col items-center justify-center">
                 <div className="text-6xl mb-6">ðŸ˜•</div>
                 <h1 className="text-3xl font-bold mb-4 text-foreground">Product Not Found</h1>
                 <p className="text-gray-500 mb-8">The product you&apos;re looking for doesn&apos;t exist or has been removed.</p>
@@ -151,7 +152,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     };
 
     return (
-        <div className="bg-gray-50 dark:bg-background min-h-screen pb-24 lg:pb-0">
+        <div className="bg-gray-50 dark:bg-background min-h-dvh pb-24 lg:pb-0">
             {/* Breadcrumb */}
             <div className="bg-white dark:bg-card border-b dark:border-white/10">
                 <div className="container mx-auto px-4 py-4">
@@ -168,11 +169,11 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             </div>
 
             {/* Product Details */}
-            <div className="container mx-auto px-4 py-6 lg:py-10">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-12">
+            <AdaptiveContainer className="py-6 lg:py-10">
+                <Row gap={6} className="lg:gap-12">
 
-                    {/* LEFT â€” Image Gallery */}
-                    <div className="space-y-4">
+                    {/* LEFT — Image Gallery */}
+                    <div className="w-full lg:w-1/2 space-y-4">
                         {/* Main Image */}
                         <div className="relative aspect-square bg-white dark:bg-card rounded-2xl overflow-hidden border border-gray-100 dark:border-white/10 shadow-sm group">
                             <Image
@@ -189,15 +190,9 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                             <span className="absolute top-5 left-5 bg-red-500 text-white px-4 py-1.5 rounded-full text-sm font-bold shadow-lg">
                                 {discount}% OFF
                             </span>
-                            {/* Free Delivery Badge */}
-                            {product.price >= 799 && (
-                                <span className="absolute top-5 right-5 bg-emerald-500 text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-lg flex items-center gap-1">
-                                    <Truck className="w-3.5 h-3.5" /> Free Delivery
-                                </span>
-                            )}
                         </div>
 
-                        {/* Thumbnail Strip */}
+                    {/* Thumbnail Strip */}
                         <div className="flex gap-3 overflow-x-auto pb-1 hide-scrollbar">
                             {[0, 1, 2, 3].map((idx) => (
                                 <button
@@ -222,8 +217,8 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                         </div>
                     </div>
 
-                    {/* RIGHT â€” Product Info */}
-                    <div className="flex flex-col">
+                    {/* RIGHT — Product Info */}
+                    <div className="w-full lg:w-1/2 flex flex-col min-w-0">
                         {/* Category */}
                         <p className="text-xs uppercase tracking-[0.2em] text-gray-500 dark:text-gray-400 font-semibold mb-2">
                             Swarna Jewellery
@@ -256,29 +251,35 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                         </div>
 
                         {/* Price Block */}
-                        <div className="bg-gray-50 dark:bg-white/5 rounded-xl p-5 mb-6 border border-gray-100 dark:border-white/10">
+                        <div className="bg-gray-50/50 dark:bg-white/5 rounded-xl p-5 mb-6">
                             <div className="flex items-baseline gap-3 mb-1">
                                 <span className="text-3xl sm:text-4xl font-bold text-primary">{"\u20B9"}{product.price}</span>
                                 <span className="text-lg text-gray-400 line-through">{"\u20B9"}{product.originalPrice}</span>
                             </div>
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 mb-3">
                                 <span className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 px-2.5 py-0.5 rounded-full text-xs font-bold">
                                     Save {"\u20B9"}{product.originalPrice - product.price}
                                 </span>
                                 <span className="text-xs text-gray-500 dark:text-gray-400">Inclusive of all taxes</span>
                             </div>
+                            {/* Relocated Free Delivery Badge */}
+                            {product.price >= 799 && (
+                                <div className="inline-flex items-center gap-1.5 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 px-3 py-1.5 rounded-full text-xs font-semibold border border-emerald-100 dark:border-emerald-800/30">
+                                    <Truck className="w-4 h-4" /> Free Delivery
+                                </div>
+                            )}
                         </div>
 
                         {/* Description */}
-                        <p className="text-gray-600 dark:text-gray-300 leading-relaxed mb-6 text-sm sm:text-base">
+                        <p className="text-gray-600 dark:text-gray-300 leading-relaxed mb-6 text-sm sm:text-base max-w-prose">
                             {product.description}
                         </p>
 
                         {/* Divider */}
                         <div className="h-px bg-gray-100 dark:bg-white/10 mb-6" />
 
-                        {/* Action Buttons â€” Side by Side */}
-                        <div className="fixed bottom-[76px] left-0 right-0 p-4 bg-white/95 dark:bg-card/95 backdrop-blur-md border-t border-gray-100 dark:border-white/10 shadow-[0_-4px_20px_rgba(0,0,0,0.08)] z-50 flex gap-3 lg:static lg:p-0 lg:bg-transparent lg:border-none lg:shadow-none lg:z-auto lg:mb-4">
+                        {/* Action Buttons — Side by Side */}
+                        <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/95 dark:bg-card/95 backdrop-blur-md border-t border-gray-100 dark:border-white/10 shadow-[0_-4px_20px_rgba(0,0,0,0.08)] z-50 flex gap-3 lg:static lg:max-w-md lg:p-0 lg:bg-transparent lg:border-none lg:shadow-none lg:z-auto lg:mb-4" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 80px)' }}>
                             <Button
                                 onClick={() => {
                                     addToCart(product.id);
@@ -286,17 +287,17 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                                     setIsCartOpen(true);
                                 }}
                                 variant="outline"
-                                className="flex-1 border-2 border-foreground dark:border-primary text-foreground dark:text-primary hover:bg-foreground hover:text-white dark:hover:bg-primary dark:hover:text-background font-semibold py-6 sm:py-7 text-sm sm:text-base transition-all duration-300"
+                                className="flex-1 border-2 border-foreground dark:border-primary text-foreground dark:text-primary hover:bg-foreground hover:text-white dark:hover:bg-primary dark:hover:text-background font-semibold py-6 sm:py-7 text-sm sm:text-base transition-all duration-300 cta-element"
                             >
                                 <ShoppingCart className="w-5 h-5 mr-2" />
-                                Add to Cart
+                                <span className="truncate">Add to Cart</span>
                             </Button>
                             <Button
                                 onClick={handleBuyNow}
-                                className="flex-1 bg-foreground dark:bg-primary hover:bg-primary dark:hover:bg-primary-dark text-white dark:text-background font-semibold py-6 sm:py-7 text-sm sm:text-base transition-all duration-300 shadow-lg hover:shadow-xl"
+                                className="flex-1 bg-foreground dark:bg-primary hover:bg-primary dark:hover:bg-primary-dark text-white dark:text-background font-semibold py-6 sm:py-7 text-sm sm:text-base transition-all duration-300 shadow-lg hover:shadow-xl cta-element"
                             >
                                 <Zap className="w-5 h-5 mr-2" />
-                                Buy Now
+                                <span className="truncate">Buy Now</span>
                             </Button>
                         </div>
 
@@ -358,7 +359,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                             ))}
                         </div>
                     </div>
-                </div>
+                </Row>
 
                 {/* Related Products */}
                 {relatedProducts.length > 0 && (
@@ -402,7 +403,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                         </div>
                     </div>
                 )}
-            </div>
+            </AdaptiveContainer>
         </div>
     );
 }

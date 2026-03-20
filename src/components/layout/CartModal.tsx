@@ -9,6 +9,7 @@ import { getBlurDataUrl } from "@/lib/utils/imageBlur";
 import { motion, AnimatePresence } from "framer-motion";
 import confetti from "canvas-confetti";
 import { formatInr } from "@/lib/utils";
+import { InputButtonGroup } from "@/components/layout/LayoutPrimitives";
 
 export function CartModal() {
     const router = useRouter();
@@ -33,7 +34,7 @@ export function CartModal() {
     const [couponCode, setCouponCode] = useState("");
     const [couponError, setCouponError] = useState("");
     const [couponLoading, setCouponLoading] = useState(false);
-    const [isSummaryExpanded, setIsSummaryExpanded] = useState(false);
+    const [isSummaryExpanded, setIsSummaryExpanded] = useState(true);
 
     const prevCouponApplied = useRef<boolean | null>(null);
 
@@ -100,7 +101,7 @@ export function CartModal() {
                         animate={{ x: 0 }}
                         exit={{ x: "100%" }}
                         transition={{ type: "spring", bounce: 0, duration: 0.4 }}
-                        className="relative w-full max-w-[450px] bg-background h-full shadow-2xl flex flex-col"
+                        className="relative w-full max-w-[450px] bg-background h-[100dvh] shadow-2xl flex flex-col modal-container"
                     >
 
                         {/* Header */}
@@ -243,11 +244,11 @@ export function CartModal() {
                                                 </div>
                                             ) : (
                                                 <div className="space-y-4 relative z-10">
-                                                    <div className="relative group">
-                                                        <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
-                                                            <Tag className="w-4 h-4 text-primary opacity-40 group-focus-within:opacity-100 transition-opacity" />
-                                                        </div>
-                                                        <div className="bg-stone-50/50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl overflow-hidden flex transition-all focus-within:border-primary/50 focus-within:ring-4 focus-within:ring-primary/5">
+                                                    <InputButtonGroup>
+                                                        <div className="relative flex-1 min-w-0">
+                                                            <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
+                                                                <Tag className="w-4 h-4 text-primary opacity-40 group-focus-within:opacity-100 transition-opacity" />
+                                                            </div>
                                                             <input
                                                                 type="text"
                                                                 placeholder="ENTER COUPON CODE"
@@ -256,17 +257,17 @@ export function CartModal() {
                                                                     setCouponCode(e.target.value.toUpperCase());
                                                                     setCouponError("");
                                                                 }}
-                                                                className="flex-1 pl-11 pr-4 py-4 text-[11px] font-bold bg-transparent outline-none uppercase tracking-[0.2em] placeholder:text-gray-400 placeholder:tracking-normal"
+                                                                className="w-full pl-11 pr-4 py-4 text-[11px] font-bold bg-transparent outline-none uppercase tracking-[0.2em] placeholder:text-gray-400 placeholder:tracking-normal border border-gray-200 dark:border-white/10 rounded-l-xl focus:border-primary/50"
                                                             />
-                                                            <button
-                                                                onClick={handleApplyCoupon}
-                                                                disabled={couponLoading || !couponCode.trim()}
-                                                                className="px-8 py-4 text-[11px] font-black uppercase tracking-widest transition-all disabled:opacity-50 disabled:text-gray-400 text-primary hover:bg-primary/5 active:scale-95 border-l border-gray-100 dark:border-white/5"
-                                                            >
-                                                                {couponLoading ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : "Apply"}
-                                                            </button>
                                                         </div>
-                                                    </div>
+                                                        <button
+                                                            onClick={handleApplyCoupon}
+                                                            disabled={couponLoading || !couponCode.trim()}
+                                                            className="px-8 py-4 text-[11px] font-black uppercase tracking-widest transition-all disabled:opacity-50 disabled:text-gray-400 text-primary hover:bg-primary/5 active:scale-95 border border-l-0 border-gray-200 dark:border-white/10 rounded-r-xl shrink-0"
+                                                        >
+                                                            {couponLoading ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : "Apply"}
+                                                        </button>
+                                                    </InputButtonGroup>
                                                     {couponError && (
                                                         <p className="text-[10px] font-bold text-red-500 px-1 uppercase tracking-wider flex items-center gap-1 mt-1 transition-all animate-in fade-in slide-in-from-top-1">
                                                             <div className="w-1 h-1 bg-red-500 rounded-full" />
@@ -319,16 +320,15 @@ export function CartModal() {
                                                             <span>Cart Subtotal</span>
                                                             <span className="text-foreground">{formatInr(cartTotal)}</span>
                                                         </div>
+                                                        {couponApplied && couponDiscountAmount > 0 && (
+                                                            <div className="flex justify-between items-center text-primary/80">
+                                                                <span>Coupon ({appliedCouponCode})</span>
+                                                                <span>-{formatInr(couponDiscountAmount)}</span>
+                                                            </div>
+                                                        )}
                                                         <div className="flex justify-between items-center text-primary/80">
                                                             <span>Total discount</span>
                                                             <span>-{formatInr(cartDiscount + couponDiscountAmount)}</span>
-                                                        </div>
-                                                        <div className="flex justify-between items-center text-primary group">
-                                                            <span className="flex items-center gap-1.5 cursor-help">
-                                                                Prepaid Discount
-                                                                <div className="w-3.5 h-3.5 border-2 border-primary/30 rounded-full flex items-center justify-center text-[8px] font-black">i</div>
-                                                            </span>
-                                                            <span>-₹50.00</span>
                                                         </div>
                                                         <div className="flex justify-between items-center">
                                                             <span>Shipping Charges</span>
@@ -345,7 +345,7 @@ export function CartModal() {
                                     </AnimatePresence>
 
                                     {/* Footer Action Area */}
-                                    <div className="p-6 pt-8 space-y-6">
+                                    <div className="p-6 pt-8 space-y-6 pb-[calc(env(safe-area-inset-bottom)+1.5rem)] md:pb-8">
                                         {/* Estimated Total Bar */}
                                         <div 
                                             className="flex items-center justify-between cursor-pointer group"
@@ -377,19 +377,10 @@ export function CartModal() {
                                         <div className="pb-4">
                                             <button
                                                 onClick={handleCheckout}
-                                                className="w-full py-3.5 bg-foreground hover:bg-black text-background dark:text-primary font-black text-sm uppercase tracking-[0.2em] rounded-xl transition-all flex items-center justify-between px-6 shadow-xl shadow-black/10 active:scale-[0.98] group"
+                                                className="w-full py-3.5 bg-foreground hover:bg-black text-background dark:text-primary font-black text-sm uppercase tracking-[0.2em] rounded-xl transition-all flex items-center justify-center gap-2 px-6 shadow-xl shadow-black/10 active:scale-[0.98] group cta-element"
                                             >
-                                                <span>Checkout</span>
-                                                <div className="flex items-center gap-3">
-                                                    <div className="flex items-center gap-1.5 opacity-80 scale-90">
-                                                        <div className="w-7 h-4.5 bg-white/20 rounded-sm flex items-center justify-center text-[8px] font-bold tracking-tighter">P</div>
-                                                        <div className="w-7 h-4.5 bg-white/20 rounded-sm flex items-center justify-center text-[8px] font-bold tracking-tighter">PP</div>
-                                                        <div className="w-7 h-4.5 bg-white/20 rounded-sm flex items-center justify-center">
-                                                            <CreditCard className="w-2.5 h-2.5" />
-                                                        </div>
-                                                    </div>
-                                                    <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                                                </div>
+                                                Checkout
+                                                <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                                             </button>
                                         </div>
                                     </div>

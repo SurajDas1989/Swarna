@@ -1,10 +1,12 @@
+import { Logo } from "@/components/ui/Logo";
+
 export function Footer() {
     return (
         <footer className="bg-foreground dark:bg-[#111] text-white pt-12 pb-4">
             <div className="container mx-auto px-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
                     <div>
-                        <h3 className="text-primary font-bold text-lg mb-4">About Swarna</h3>
+                        <Logo className="h-10 w-auto mb-6 brightness-0 invert" />
                         <p className="text-gray-300 text-sm leading-relaxed mb-4">
                             Your destination for premium artificial jewellery. We offer exquisite designs for every occasion
                             at affordable prices.
@@ -33,7 +35,7 @@ export function Footer() {
                         <h3 className="text-primary font-bold text-lg mb-4">Customer Service</h3>
                         <ul className="space-y-2">
                             <li><a href="#" className="text-gray-300 hover:text-primary transition-colors text-sm">Shipping Policy</a></li>
-                            <li><a href="#" className="text-gray-300 hover:text-primary transition-colors text-sm">Return & Exchange</a></li>
+                            <li><a href="/return-policy" className="text-gray-300 hover:text-primary transition-colors text-sm">Return & Exchange</a></li>
                             <li><a href="#" className="text-gray-300 hover:text-primary transition-colors text-sm">Terms & Conditions</a></li>
                             <li><a href="#" className="text-gray-300 hover:text-primary transition-colors text-sm">Privacy Policy</a></li>
                             <li><a href="#" className="text-gray-300 hover:text-primary transition-colors text-sm">FAQ</a></li>

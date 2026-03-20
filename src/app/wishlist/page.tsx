@@ -42,7 +42,7 @@ export default function WishlistPage() {
     };
 
     return (
-        <div className="container mx-auto px-4 py-16 min-h-[70vh]">
+        <div className="container mx-auto px-4 py-16 min-h-[70dvh]">
             <div className="flex items-center gap-4 mb-8">
                 <Button variant="outline" size="icon" asChild>
                     <Link href="/">
@@ -53,7 +53,7 @@ export default function WishlistPage() {
             </div>
 
             {isLoading ? (
-                <div className="flex flex-col items-center justify-center py-20 min-h-[40vh]">
+                <div className="flex flex-col items-center justify-center py-20 min-h-[40dvh]">
                     <Loader2 className="w-10 h-10 animate-spin text-primary mb-4" />
                     <p className="text-gray-500">Loading your favorites...</p>
                 </div>

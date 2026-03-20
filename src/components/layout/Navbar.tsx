@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { useAppContext } from "@/context/AppContext";
 import { useAuth } from "@/context/AuthContext";
 import { useTheme } from "@/context/ThemeContext";
+import { Logo } from "@/components/ui/Logo";
 
 export function Navbar() {
     const router = useRouter();
@@ -17,7 +18,6 @@ export function Navbar() {
         setIsCartOpen, 
         searchQuery, 
         setSearchQuery,
-        activeCategory,
         setActiveCategory,
     } = useAppContext();
     const { user, dbUser, signOut } = useAuth();
@@ -71,16 +71,8 @@ export function Navbar() {
                                 <Menu className="h-6 w-6" />
                             </button>
 
-                            <Link href="/" className="absolute left-1/2 flex flex-col -translate-x-1/2 items-stretch">
-                                <div className="flex items-baseline gap-0.5 justify-center">
-                                    <span className="text-4xl font-bold text-primary" style={{ fontFamily: 'var(--font-grenze-gotisch)', lineHeight: 1 }}>S</span>
-                                    <span className="text-base font-bold uppercase tracking-[0.3em] text-primary -mr-[0.3em]" style={{ fontFamily: 'var(--font-grenze-gotisch)' }}>WARNA</span>
-                                </div>
-                                <div className="flex justify-between w-full text-[8.5px] uppercase text-foreground font-semibold mt-[-2px]">
-                                    {"COLLECTION".split('').map((letter, index) => (
-                                        <span key={index}>{letter}</span>
-                                    ))}
-                                </div>
+                            <Link href="/" className="absolute left-1/2 -translate-x-1/2" onClick={() => setMobileMenuOpen(false)}>
+                                <Logo className="h-12 w-auto" />
                             </Link>
 
                             <div className="flex items-center gap-4">
@@ -109,16 +101,8 @@ export function Navbar() {
                         </div>
 
                         <div className="hidden items-center justify-between gap-8 md:flex">
-                            <Link href="/" className="shrink-0 flex flex-col items-stretch">
-                                <div className="flex items-baseline gap-0.5 justify-center">
-                                    <span className="text-4xl font-bold text-primary" style={{ fontFamily: 'var(--font-grenze-gotisch)', lineHeight: 1 }}>S</span>
-                                    <span className="text-base font-bold uppercase tracking-[0.3em] text-primary -mr-[0.3em]" style={{ fontFamily: 'var(--font-grenze-gotisch)' }}>WARNA</span>
-                                </div>
-                                <div className="flex justify-between w-full text-[8.5px] uppercase text-foreground font-semibold mt-[-2px]">
-                                    {"COLLECTION".split('').map((letter, index) => (
-                                        <span key={index}>{letter}</span>
-                                    ))}
-                                </div>
+                            <Link href="/" className="shrink-0">
+                                <Logo className="h-14 w-auto" />
                             </Link>
 
                             <nav className="hidden md:flex gap-8">
@@ -262,16 +246,8 @@ export function Navbar() {
 
                     <div className="absolute inset-y-0 left-0 flex w-[85%] max-w-[320px] animate-in slide-in-from-left flex-col bg-white shadow-2xl duration-300 dark:bg-[#1e1e1e]">
                         <div className="flex items-center justify-between border-b px-6 py-5">
-                            <Link href="/" className="flex flex-col items-stretch" onClick={() => setMobileMenuOpen(false)}>
-                                <div className="flex items-baseline gap-0.5 justify-center">
-                                    <span className="text-3xl font-bold text-primary" style={{ fontFamily: 'var(--font-grenze-gotisch)', lineHeight: 1 }}>S</span>
-                                    <span className="text-sm font-bold uppercase tracking-[0.35em] text-primary -mr-[0.35em]" style={{ fontFamily: 'var(--font-grenze-gotisch)' }}>WARNA</span>
-                                </div>
-                                <div className="flex justify-between w-full text-[7px] uppercase text-foreground font-bold mt-[-1px] px-[1px]">
-                                    {"COLLECTION".split('').map((letter, index) => (
-                                        <span key={index}>{letter}</span>
-                                    ))}
-                                </div>
+                            <Link href="/" className="" onClick={() => setMobileMenuOpen(false)}>
+                                <Logo className="h-14 w-auto" />
                             </Link>
                             <button onClick={() => setMobileMenuOpen(false)} className="rounded-full p-2 transition-colors hover:bg-gray-100">
                                 <X className="h-5 w-5 text-gray-500" />

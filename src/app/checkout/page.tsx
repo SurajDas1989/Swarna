@@ -10,6 +10,7 @@ import Image from "next/image";
 import Link from "next/link";
 import Script from "next/script";
 import { formatInr } from "@/lib/utils";
+import { AdaptiveContainer, InputButtonGroup } from "@/components/layout/LayoutPrimitives";
 
 interface RazorpaySuccessResponse {
     razorpay_order_id: string;
@@ -158,9 +159,19 @@ export default function CheckoutPage() {
     const afterCouponTotal = Math.max(0, cartTotal - Math.round(couponDiscountAmount));
     const afterShippingTotal = afterCouponTotal + deliveryCharge;
 
+    const isEligibleForPrepaidDiscount = 
+        formData.paymentMethod !== 'cod' && 
+        !formData.useStoreCredit;
+        // If we ever add wallet/gift card, they would go here:
+        // && appliedWalletBalance === 0 && appliedGiftCardAmount === 0
+
+    const prepaidDiscountAmountVal = isEligibleForPrepaidDiscount 
+        ? Math.round(cartTotal * 0.05) 
+        : 0;
+
     const finalCalculatedTotal = formData.useStoreCredit
         ? Math.max(0, afterShippingTotal - availableCredit)
-        : afterShippingTotal;
+        : afterShippingTotal - prepaidDiscountAmountVal;
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -302,7 +313,7 @@ export default function CheckoutPage() {
 
     if (loading && !isSubmitting) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-background">
+            <div className="min-h-[100dvh] flex items-center justify-center bg-gray-50 dark:bg-background">
                 <Loader2 className="w-8 h-8 animate-spin text-primary" />
             </div>
         );
@@ -311,9 +322,9 @@ export default function CheckoutPage() {
     if (cart.length === 0 && !isSubmitting) return null;
 
     return (
-        <div className="bg-gray-50 dark:bg-background min-h-screen py-10">
+        <div className="bg-gray-50 dark:bg-background min-h-[100dvh] py-10">
             <Script src="https://checkout.razorpay.com/v1/checkout.js" />
-            <div className="container mx-auto px-4 max-w-6xl">
+            <AdaptiveContainer>
                 <div className="flex items-center gap-4 mb-8">
                     <Button variant="outline" size="icon" asChild className="rounded-full">
                         <Link href="/">
@@ -430,9 +441,17 @@ export default function CheckoutPage() {
                                     </h2>
                                     <div className="space-y-3">
                                         <label className={`block border rounded-lg p-4 cursor-pointer transition-colors ${formData.paymentMethod === "credit-card" ? "border-primary bg-primary/5" : "border-gray-200 dark:border-white/15 hover:bg-gray-50 dark:hover:bg-white/5"}`}>
-                                            <div className="flex items-center gap-3">
-                                                <input type="radio" name="paymentMethod" value="credit-card" checked={formData.paymentMethod === "credit-card"} onChange={handleInputChange} className="w-4 h-4 text-primary focus:ring-primary" />
-                                                <span className="font-medium">Credit / Debit Card / UPI</span>
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-3">
+                                                    <input type="radio" name="paymentMethod" value="credit-card" checked={formData.paymentMethod === "credit-card"} onChange={handleInputChange} className="w-4 h-4 text-primary focus:ring-primary" />
+                                                    <div>
+                                                        <span className="font-medium">Credit / Debit Card / UPI</span>
+                                                        <p className="text-[10px] text-primary font-bold uppercase tracking-wider mt-0.5">Save an additional 5% by paying online</p>
+                                                    </div>
+                                                </div>
+                                                <div className="bg-primary text-primary-foreground text-[10px] font-black px-2 py-1 rounded-md shadow-sm animate-pulse">
+                                                    5% OFF
+                                                </div>
                                             </div>
                                         </label>
                                         <label className={`block border rounded-lg p-4 cursor-pointer transition-colors ${formData.paymentMethod === "cod" ? "border-primary bg-primary/5" : "border-gray-200 dark:border-white/15 hover:bg-gray-50 dark:hover:bg-white/5"}`}>
@@ -506,23 +525,23 @@ export default function CheckoutPage() {
                                         </button>
                                     </div>
                                 ) : (
-                                    <div className="flex gap-2">
+                                    <InputButtonGroup>
                                         <input
                                             type="text"
                                             placeholder="Enter code"
                                             value={couponCode}
                                             onChange={(e) => { setCouponCode(e.target.value.toUpperCase()); setCouponError(""); }}
-                                            className="flex-1 px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none dark:bg-white/5 dark:border-white/15 dark:text-foreground font-mono tracking-wide"
+                                            className="flex-1 px-3 py-2 text-sm border rounded-l-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none dark:bg-white/5 dark:border-white/15 dark:text-foreground font-mono tracking-wide"
                                         />
                                         <button
                                             type="button"
                                             onClick={() => handleApplyCoupon()}
                                             disabled={couponLoading || !couponCode.trim()}
-                                            className="px-4 py-2 text-sm font-semibold bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-1.5"
+                                            className="px-4 py-2 text-sm font-semibold bg-primary text-white rounded-r-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-1.5 shrink-0"
                                         >
                                             {couponLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Apply"}
                                         </button>
-                                    </div>
+                                    </InputButtonGroup>
                                 )}
                                 {couponError && (
                                     <p className="text-xs text-red-500 mt-2">{couponError}</p>
@@ -563,19 +582,19 @@ export default function CheckoutPage() {
                                             <span className="font-medium text-foreground">{formatInr(cartTotal)}</span>
                                         </div>
 
-                                        <div className="flex justify-between text-gray-600 dark:text-gray-400">
-                                            <span>Total discount</span>
-                                            <span className="font-medium text-[#10b981]">
-                                                {cartDiscount + couponDiscountAmount > 0 ? `-${formatInr(cartDiscount + couponDiscountAmount)}` : `${formatInr(0)}`}
-                                            </span>
-                                        </div>
-
                                         {couponApplied && couponDiscountAmount > 0 && (
                                             <div className="flex justify-between text-gray-600 dark:text-gray-400">
                                                 <span>Coupon ({appliedCouponCode})</span>
                                                 <span className="font-medium text-[#10b981]">- {formatInr(couponDiscountAmount)}</span>
                                             </div>
                                         )}
+
+                                        <div className="flex justify-between text-gray-600 dark:text-gray-400">
+                                            <span>Total discount</span>
+                                            <span className="font-medium text-[#10b981]">
+                                                {cartDiscount + couponDiscountAmount > 0 ? `-${formatInr(cartDiscount + couponDiscountAmount)}` : `${formatInr(0)}`}
+                                            </span>
+                                        </div>
 
                                         <div className="flex justify-between text-gray-600 dark:text-gray-400 pb-3 border-b border-dashed border-stone-200 dark:border-white/10">
                                             <span>Shipping Charges</span>
@@ -585,6 +604,19 @@ export default function CheckoutPage() {
                                                 <span className="font-medium text-foreground">{formatInr(deliveryCharge)}</span>
                                             )}
                                         </div>
+
+                                        {isEligibleForPrepaidDiscount && prepaidDiscountAmountVal > 0 && (
+                                            <div className="flex justify-between text-gray-600 dark:text-gray-400">
+                                                <span 
+                                                    className="flex items-center gap-1.5 cursor-help"
+                                                    title="Get an additional 5% off when you pay online via UPI, Card, Netbanking, or Wallets like Paytm, PhonePe, and Amazon Pay. Not applicable on COD or orders with store credit / gift card applied."
+                                                >
+                                                    Prepaid Discount
+                                                    <div className="w-3.5 h-3.5 border-2 border-primary/30 rounded-full flex items-center justify-center text-[8px] font-black">i</div>
+                                                </span>
+                                                <span className="font-medium text-[#10b981]">- {formatInr(prepaidDiscountAmountVal)}</span>
+                                            </div>
+                                        )}
 
                                         {formData.useStoreCredit && (
                                             <div className="flex justify-between text-gray-600 dark:text-gray-400">
@@ -596,7 +628,7 @@ export default function CheckoutPage() {
                                         <div className="flex justify-between text-gray-600 dark:text-gray-400 pt-1">
                                             <span>Total savings</span>
                                             <span className="font-bold text-[#10b981]">
-                                                {cartDiscount > 0 || couponDiscountAmount > 0 ? `${formatInr(cartDiscount + couponDiscountAmount)}` : `${formatInr(0)}`}
+                                                {formatInr(cartDiscount + couponDiscountAmount + prepaidDiscountAmountVal)}
                                             </span>
                                         </div>
                                     </div>
@@ -611,7 +643,7 @@ export default function CheckoutPage() {
                     </div>
 
                 </div>
-            </div>
+            </AdaptiveContainer>
         </div>
     );
 }

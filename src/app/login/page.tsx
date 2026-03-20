@@ -54,7 +54,7 @@ function LoginForm() {
     };
 
     return (
-        <div className="min-h-[70vh] flex items-center justify-center px-4 py-16">
+        <div className="min-h-[70dvh] flex items-center justify-center px-4 py-16">
             <div className="w-full max-w-md">
                 {/* Premium Card */}
                 <div className="bg-white dark:bg-card rounded-2xl shadow-2xl border border-gray-100 dark:border-white/10 overflow-hidden">

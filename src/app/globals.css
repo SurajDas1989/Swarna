@@ -125,8 +125,68 @@
     @apply border-border outline-ring/50;
   }
 
+  html,
   body {
     @apply bg-background text-foreground;
+    overflow-x: hidden;
+    min-height: 100dvh;
+  }
+
+  /* Global Flex/Grid Enforcement */
+  .flex > *,
+  .grid > * {
+    min-width: 0;
+  }
+}
+
+/* Layout Primitives & Enforcement */
+@layer components {
+  .modal-container {
+    max-height: 100dvh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .input-button-group {
+    display: flex;
+    gap: 0.5rem;
+    width: 100%;
+  }
+
+  .input-button-group input {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .input-button-group button {
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+
+  @media (max-width: 380px) {
+    .input-button-group {
+      flex-direction: column;
+    }
+
+    .input-button-group button {
+      width: 100%;
+    }
+  }
+
+  .safe-area {
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .safe-area-pb {
+    padding-bottom: env(safe-area-inset-bottom, 1rem);
+  }
+
+  /* Critical UI Visibility Rule */
+  [role="button"],
+  button,
+  .cta-element {
+    flex-shrink: 0;
   }
 }
 

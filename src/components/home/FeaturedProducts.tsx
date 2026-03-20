@@ -11,6 +11,7 @@ import { ArrowUpDown, Check, ChevronDown, Plus, Search, SlidersHorizontal } from
 import { getBlurDataUrl } from "@/lib/utils/imageBlur";
 import { ScrollReveal } from "@/components/ui/ScrollReveal";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { AdaptiveContainer, Row, InputButtonGroup } from "@/components/layout/LayoutPrimitives";
 
 export const FILTERS = [
     { id: "all", label: "All Products" },
@@ -165,10 +166,10 @@ export function FeaturedProducts() {
 
     return (
         <section id="products" className="bg-white py-16 pb-24 transition-colors duration-300 dark:bg-background lg:py-24 lg:pb-24">
-            <div className="container mx-auto max-w-7xl px-4">
+            <AdaptiveContainer>
                 <ScrollReveal>
                     <div className="mb-8 flex flex-col justify-between gap-6 md:flex-row md:items-end lg:mb-12">
-                        <div className="text-center md:text-left">
+                        <div className="text-center md:text-left min-w-0">
                             <span className="mb-2 block text-sm font-medium uppercase tracking-wider text-primary">Our Collection</span>
                             <h2 className="font-serif text-3xl text-gray-900 dark:text-foreground md:text-4xl">Timeless Elegance</h2>
                         </div>
@@ -176,24 +177,26 @@ export function FeaturedProducts() {
                 </ScrollReveal>
 
                 <div className="sticky top-24 z-40 mb-5 bg-white/95 px-1 py-2 backdrop-blur dark:bg-background/95 md:hidden">
-                    <div className="relative">
-                        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-                        <input
-                            id="mobile-products-search"
-                            ref={mobileSearchInputRef}
-                            type="text"
-                            value={searchQuery}
-                            onChange={(e) => {
-                                setSearchQuery(e.target.value);
-                                setShowAllProducts(false);
-                                if (e.target.value.trim().length > 0) {
-                                    router.push("/#products");
-                                }
-                            }}
-                            placeholder="Search jewellery..."
-                            className="w-full rounded-full border border-gray-200 bg-white py-2.5 pl-10 pr-4 text-sm text-gray-900 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary dark:border-white/15 dark:bg-white/5 dark:text-foreground"
-                        />
-                    </div>
+                    <InputButtonGroup>
+                        <div className="relative flex-1 min-w-0">
+                            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                            <input
+                                id="mobile-products-search"
+                                ref={mobileSearchInputRef}
+                                type="text"
+                                value={searchQuery}
+                                onChange={(e) => {
+                                    setSearchQuery(e.target.value);
+                                    setShowAllProducts(false);
+                                    if (e.target.value.trim().length > 0) {
+                                        router.push("/#products");
+                                    }
+                                }}
+                                placeholder="Search jewellery..."
+                                className="w-full rounded-full border border-gray-200 bg-white py-2.5 pl-10 pr-4 text-sm text-gray-900 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary dark:border-white/15 dark:bg-white/5 dark:text-foreground"
+                            />
+                        </div>
+                    </InputButtonGroup>
 
                     <div className="relative mt-3 border-b border-gray-200 px-1 pb-2 dark:border-white/10">
                         <div className="flex items-center justify-between">
@@ -465,7 +468,7 @@ export function FeaturedProducts() {
                         </Button>
                     </div>
                 )}
-            </div>
+            </AdaptiveContainer>
         </section>
     );
 }
