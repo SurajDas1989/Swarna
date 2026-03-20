@@ -32,7 +32,7 @@ export function Footer() {
                     <div>
                         <h3 className="text-primary font-bold text-lg mb-4">Customer Service</h3>
                         <ul className="space-y-2">
-                            <li><a href="#" className="text-gray-300 hover:text-primary transition-colors text-sm">Shipping Policy</a></li>
+                            <li><a href="/shipping-policy" className="text-gray-300 hover:text-primary transition-colors text-sm">Shipping Policy</a></li>
                             <li><a href="#" className="text-gray-300 hover:text-primary transition-colors text-sm">Return & Exchange</a></li>
                             <li><a href="#" className="text-gray-300 hover:text-primary transition-colors text-sm">Terms & Conditions</a></li>
                             <li><a href="#" className="text-gray-300 hover:text-primary transition-colors text-sm">Privacy Policy</a></li>
