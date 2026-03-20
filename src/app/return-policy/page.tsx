@@ -169,7 +169,12 @@ export default function ReturnPolicyPage() {
             </section>
           </div>
 
-          <div className="mt-12 text-center">
+          <div className="mt-12 flex flex-col sm:flex-row items-center justify-center gap-4">
+            <Link href="/shipping-policy">
+              <Button variant="outline" size="lg" className="rounded-full px-8 border-primary/20 hover:bg-primary/5 transition-all font-serif italic text-lg">
+                View Shipping Policy
+              </Button>
+            </Link>
             <Link href="/#products">
               <Button size="lg" className="rounded-full px-8 shadow-lg hover:shadow-primary/20 transition-all font-serif italic text-lg">
                 Continue Shopping
