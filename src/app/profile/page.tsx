@@ -259,7 +259,7 @@ export default function ProfilePage() {
                                 <ArrowLeft className="w-5 h-5" />
                             </Link>
                         </Button>
-                        <h1 className="text-2xl md:text-3xl font-bold" style={{ fontFamily: "Georgia, serif" }}>My Account</h1>
+                        <h1 className="text-2xl md:text-3xl font-bold">My Account</h1>
                     </div>
                     <div className="flex items-center gap-5">
                         <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary to-amber-500 flex items-center justify-center text-2xl font-bold shadow-lg shadow-primary/20 border-2 border-white/20">
@@ -697,7 +697,7 @@ export default function ProfilePage() {
                                 <div className="bg-gradient-to-br from-[#1a1a1a] to-[#2c2c2c] rounded-2xl p-8 text-white shadow-xl relative overflow-hidden">
                                      <div className="absolute top-0 right-0 w-64 h-64 bg-primary/20 rounded-full blur-[80px] -mr-20 -mt-20"></div>
                                      <h3 className="text-white/80 font-medium mb-2 relative z-10">Available Store Credit</h3>
-                                     <div className="text-4xl md:text-5xl font-bold text-primary relative z-10" style={{ fontFamily: "Georgia, serif" }}>
+                                     <div className="text-4xl md:text-5xl font-bold text-primary relative z-10">
                                          {formatPrice(profile?.storeCredit?.toString() || "0")}
                                      </div>
                                      <p className="text-white/60 text-sm mt-4 relative z-10 max-w-sm">

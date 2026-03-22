@@ -364,7 +364,7 @@ export function FeaturedProducts() {
                                             <Link href={`/product/${product.id}`} className="block">
                                             <Image
                                                 src={product.image}
-                                                alt={product.name}
+                                                alt={`${product.name} | Swarna Jewellery`}
                                                 fill
                                                 placeholder="blur"
                                                 blurDataURL={getBlurDataUrl()}

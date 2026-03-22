@@ -122,7 +122,6 @@ const heading = {
     color: "#ffffff",
     fontSize: "24px",
     fontWeight: "bold",
-    fontFamily: 'Georgia, serif',
     letterSpacing: "4px",
     textTransform: "uppercase" as const,
 };

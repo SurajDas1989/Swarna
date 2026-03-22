@@ -178,7 +178,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                         <div className="relative aspect-square bg-white dark:bg-card rounded-2xl overflow-hidden border border-gray-100 dark:border-white/10 shadow-sm group">
                             <Image
                                 src={product.image}
-                                alt={product.name}
+                                alt={`${product.name} - Premium Artificial Jewellery | Swarna`}
                                 fill
                                 placeholder="blur"
                                 blurDataURL={getBlurDataUrl()}
@@ -205,7 +205,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                                 >
                                     <Image
                                         src={product.image}
-                                        alt={`${product.name} view ${idx + 1}`}
+                                        alt={`${product.name} detailed view ${idx + 1} - Artificial Jewellery`}
                                         fill
                                         placeholder="blur"
                                         blurDataURL={getBlurDataUrl()}
@@ -377,7 +377,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                                         <div className="relative aspect-square overflow-hidden">
                                             <Image
                                                 src={rp.image}
-                                                alt={rp.name}
+                                                alt={`${rp.name} - Premium Artificial Jewellery`}
                                                 fill
                                                 placeholder="blur"
                                                 blurDataURL={getBlurDataUrl()}

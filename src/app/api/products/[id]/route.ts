@@ -1,4 +1,4 @@
-﻿import { NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 
 const DEFAULT_PRODUCTS = [
@@ -39,7 +39,18 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 
         const product = await prisma.product.findUnique({
             where: { id },
-            include: { category: true }
+            select: {
+                id: true,
+                name: true,
+                price: true,
+                images: true,
+                description: true,
+                category: {
+                    select: {
+                        slug: true
+                    }
+                }
+            }
         });
 
         if (!product) {
@@ -57,7 +68,11 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
             rating: 4.5,
         };
 
-        return NextResponse.json(formatted);
+        return NextResponse.json(formatted, {
+            headers: {
+                'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',
+            },
+        });
     } catch (error) {
         console.error('Failed to fetch product:', error);
 
