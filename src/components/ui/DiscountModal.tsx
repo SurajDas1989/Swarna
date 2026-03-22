@@ -133,7 +133,7 @@ export function DiscountModal({ isOpen, onClose }: DiscountModalProps) {
            <div className="absolute inset-0 bg-[linear-gradient(45deg,#d4af37_0%,#f0e4c3_100%)] dark:bg-[linear-gradient(45deg,#2a2411_0%,#4a4022_100%)] opacity-80" />
            <div className="absolute inset-0 bg-black/20" /> {/* Dimmer for text readability */}
            <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-6 text-white drop-shadow-md">
-               <div role="heading" aria-level={2} className="text-3xl md:text-4xl font-bold mb-2" style={{ fontFamily: 'Georgia, serif' }}>
+               <div role="heading" aria-level={2} className="text-3xl md:text-4xl font-bold mb-2">
                  Get 10% OFF
                </div>
                {!isSuccess && (

@@ -7,7 +7,7 @@ export function About() {
                 <div className="max-w-4xl mx-auto">
                     <ScrollReveal direction="up" delay={0.1}>
                         <div className="text-center mb-10 md:mb-16">
-                            <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-6" style={{ fontFamily: 'Georgia, serif' }}>
+                            <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-6">
                                 Our Story
                             </h2>
                             <div className="w-24 h-1 bg-primary mx-auto rounded-full" />
@@ -48,7 +48,7 @@ export function About() {
 
                         <ScrollReveal direction="up" delay={0.7}>
                             <div className="text-center pt-8">
-                                <p className="text-2xl md:text-3xl font-semibold text-primary" style={{ fontFamily: 'Georgia, serif' }}>
+                                <p className="text-2xl md:text-3xl font-semibold text-primary">
                                     Because every girl and every hardworking woman deserves to shine. ✨
                                 </p>
                             </div>

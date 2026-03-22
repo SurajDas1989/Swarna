@@ -48,7 +48,7 @@ export default function ForgotPasswordPage() {
 
                     {/* Header */}
                     <div className="text-center pt-10 pb-2 px-8">
-                        <h1 className="text-3xl font-bold text-gray-900 dark:text-foreground" style={{ fontFamily: 'Georgia, serif' }}>Reset Password</h1>
+                        <h1 className="text-3xl font-bold text-gray-900 dark:text-foreground">Reset Password</h1>
                         <p className="text-gray-500 mt-2 text-sm">Enter your email address to receive a secure password reset link.</p>
                     </div>
 
