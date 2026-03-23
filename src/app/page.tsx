@@ -1,4 +1,5 @@
 import { HeroCarousel } from "@/components/home/HeroCarousel";
+import { CategoryStrip } from "@/components/home/CategoryStrip";
 import { CategoryGrid } from "@/components/home/CategoryGrid";
 import { FeaturedProducts } from "@/components/home/FeaturedProducts";
 import { RecentlyViewed } from "@/components/home/RecentlyViewed";
@@ -21,6 +22,7 @@ export default function Home() {
     <div className="flex flex-col min-h-screen">
       <h1 className="sr-only">Swarna - Premium Artificial Jewellery & Accessories</h1>
       <HeroCarousel />
+      <CategoryStrip />
       <CategoryGrid />
       <FeaturedProducts />
       <RecentlyViewed />
