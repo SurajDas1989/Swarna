@@ -112,7 +112,11 @@ export function CartModal() {
                                 </div>
                                 <div>
                                     <h2 className="text-xl font-black text-foreground tracking-tight">Your Cart ({cart.length} {cart.length === 1 ? 'item' : 'items'})</h2>
-                                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest leading-none mt-1">Free Shipping on all orders</p>
+                                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest leading-none mt-1">
+                                        {cartTotal > 0 && cartTotal < 799 
+                                            ? `Add ${formatInr(799 - cartTotal)} for free shipping` 
+                                            : "Free Shipping applied"}
+                                    </p>
                                 </div>
                             </div>
                             <button
@@ -332,7 +336,11 @@ export function CartModal() {
                                                         </div>
                                                         <div className="flex justify-between items-center">
                                                             <span>Shipping Charges</span>
-                                                            <span className="text-primary font-black uppercase tracking-tighter">FREE</span>
+                                                            {deliveryCharge === 0 ? (
+                                                                <span className="text-primary font-black uppercase tracking-tighter">FREE</span>
+                                                            ) : (
+                                                                <span className="text-foreground">{formatInr(deliveryCharge)}</span>
+                                                            )}
                                                         </div>
                                                         <div className="pt-2 border-t border-dashed border-gray-200 dark:border-white/10 flex justify-between items-center text-primary text-sm">
                                                             <span>Total savings</span>

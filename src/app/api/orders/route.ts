@@ -44,7 +44,7 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Cart is empty' }, { status: 400 });
         }
 
-        if (!shipping?.firstName || !shipping?.lastName || !shipping?.email || !shipping?.phone || !shipping?.address || !shipping?.city || !shipping?.state || !shipping?.pincode) {
+        if (!shipping?.firstName || !shipping?.lastName || !shipping?.phone || !shipping?.address || !shipping?.city || !shipping?.state || !shipping?.pincode) {
             return NextResponse.json({ error: 'Missing shipping details' }, { status: 400 });
         }
 

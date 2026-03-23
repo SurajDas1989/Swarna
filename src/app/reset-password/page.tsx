@@ -74,7 +74,7 @@ export default function ResetPasswordPage() {
 
                     {/* Header */}
                     <div className="text-center pt-10 pb-2 px-8">
-                        <h1 className="text-3xl font-bold text-gray-900 dark:text-foreground" style={{ fontFamily: 'Georgia, serif' }}>Set New Password</h1>
+                        <h1 className="text-3xl font-bold text-gray-900 dark:text-foreground">Set New Password</h1>
                         <p className="text-gray-500 mt-2 text-sm">Please enter a strong, secure password for your account.</p>
                     </div>
 

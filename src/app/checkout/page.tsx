@@ -70,14 +70,18 @@ export default function CheckoutPage() {
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const [formData, setFormData] = useState({
-        firstName: "",
-        lastName: "",
+        fullName: "",
         email: "",
         phone: "",
-        address: "",
+        addressLine1: "",
+        addressLine2: "",
         city: "",
         state: "",
         zipCode: "",
+        country: "India",
+        landmark: "",
+        addressType: "Home",
+        deliveryInstructions: "",
         paymentMethod: "credit-card",
         useStoreCredit: false
     });
@@ -105,10 +109,9 @@ export default function CheckoutPage() {
                 if (data && !data.error) {
                     setFormData(prev => ({
                         ...prev,
-                        firstName: prev.firstName || data.firstName || "",
-                        lastName: prev.lastName || data.lastName || "",
+                        fullName: prev.fullName || `${data.firstName || ""} ${data.lastName || ""}`.trim() || "",
                         phone: prev.phone || data.phone || "",
-                        address: prev.address || (data.address ? data.address.split("\n")[0] : "")
+                        addressLine1: prev.addressLine1 || (data.address ? data.address.split("\n")[0] : "")
                     }));
                     if (data.storeCredit && Number(data.storeCredit) > 0) {
                         setAvailableCredit(Number(data.storeCredit));
@@ -180,6 +183,18 @@ export default function CheckoutPage() {
         try {
             let dbOrderId: string | null = null;
 
+            const names = formData.fullName.trim().split(' ');
+            const firstName = names[0];
+            const lastName = names.slice(1).join(' ') || ' ';
+
+            const addressParts = [
+                formData.addressLine1,
+                formData.addressLine2,
+                formData.landmark ? `Landmark: ${formData.landmark}` : '',
+                `Type: ${formData.addressType}`,
+                formData.deliveryInstructions ? `Instructions: ${formData.deliveryInstructions}` : ''
+            ].filter(Boolean).join(', ');
+
             const res = await fetch("/api/orders", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -191,14 +206,15 @@ export default function CheckoutPage() {
                     })),
                     total: afterShippingTotal,
                     shipping: {
-                        firstName: formData.firstName,
-                        lastName: formData.lastName,
+                        firstName: firstName,
+                        lastName: lastName,
                         email: formData.email,
                         phone: formData.phone,
-                        address: formData.address,
+                        address: addressParts,
                         city: formData.city,
                         state: formData.state,
-                        pincode: formData.zipCode
+                        pincode: formData.zipCode,
+                        country: formData.country
                     },
                     paymentMethod: formData.paymentMethod,
                     useStoreCredit: formData.useStoreCredit,
@@ -261,7 +277,7 @@ export default function CheckoutPage() {
                     }
                 },
                 prefill: {
-                    name: `${formData.firstName} ${formData.lastName}`,
+                    name: formData.fullName,
                     email: formData.email,
                     contact: formData.phone,
                 },
@@ -284,6 +300,8 @@ export default function CheckoutPage() {
     };
 
     const finalizeOrder = (orderId: string, paymentMethod: string, paymentId?: string) => {
+        const names = formData.fullName.trim().split(' ');
+        
         const orderDetails: OrderDetails = {
             orderId,
             paymentId,
@@ -297,10 +315,10 @@ export default function CheckoutPage() {
             shipping: deliveryCharge,
             finalTotal: finalCalculatedTotal,
             billingInfo: {
-                firstName: formData.firstName,
-                lastName: formData.lastName,
+                firstName: names[0],
+                lastName: names.slice(1).join(' ') || ' ',
                 email: formData.email,
-                address: formData.address,
+                address: formData.addressLine1,
                 city: formData.city,
                 state: formData.state,
                 zipCode: formData.zipCode
@@ -387,32 +405,35 @@ export default function CheckoutPage() {
                                     Shipping Details
                                 </h2>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="md:col-span-2 text-primary font-bold text-sm tracking-widest uppercase mb-1 border-b pb-2 border-gray-100 dark:border-white/10">1. Customer Contact</div>
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">First Name</label>
-                                        <input required type="text" name="firstName" value={formData.firstName} onChange={handleInputChange} className="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-primary focus:border-transparent outline-none dark:bg-white/5 dark:border-white/15 dark:text-foreground" />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Last Name</label>
-                                        <input required type="text" name="lastName" value={formData.lastName} onChange={handleInputChange} className="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-primary focus:border-transparent outline-none dark:bg-white/5 dark:border-white/15 dark:text-foreground" />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email Address</label>
-                                        <input required type="email" name="email" value={formData.email} onChange={handleInputChange} className="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-primary focus:border-transparent outline-none dark:bg-white/5 dark:border-white/15 dark:text-foreground" />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Phone Number</label>
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Mobile Number *</label>
                                         <input required type="tel" name="phone" value={formData.phone} onChange={handleInputChange} className="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-primary focus:border-transparent outline-none dark:bg-white/5 dark:border-white/15 dark:text-foreground" />
                                     </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Full Name *</label>
+                                        <input required type="text" name="fullName" value={formData.fullName} onChange={handleInputChange} className="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-primary focus:border-transparent outline-none dark:bg-white/5 dark:border-white/15 dark:text-foreground" />
+                                    </div>
                                     <div className="md:col-span-2">
-                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Street Address</label>
-                                        <input required type="text" name="address" value={formData.address} onChange={handleInputChange} className="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-primary focus:border-transparent outline-none dark:bg-white/5 dark:border-white/15 dark:text-foreground" />
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email Address <span className="text-gray-400 font-normal">(Recommended - For order tracking)</span></label>
+                                        <input type="email" name="email" value={formData.email} onChange={handleInputChange} className="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-primary focus:border-transparent outline-none dark:bg-white/5 dark:border-white/15 dark:text-foreground" />
+                                    </div>
+                                    
+                                    <div className="md:col-span-2 text-primary font-bold text-sm tracking-widest uppercase mt-4 mb-1 border-b pb-2 border-gray-100 dark:border-white/10">2. Delivery Address</div>
+                                    <div className="md:col-span-2">
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Address Line 1 * <span className="text-gray-400 font-normal">(House number, building name, street)</span></label>
+                                        <input required type="text" name="addressLine1" value={formData.addressLine1} onChange={handleInputChange} className="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-primary focus:border-transparent outline-none dark:bg-white/5 dark:border-white/15 dark:text-foreground" />
+                                    </div>
+                                    <div className="md:col-span-2">
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Address Line 2 <span className="text-gray-400 font-normal">(Apartment, floor)</span></label>
+                                        <input type="text" name="addressLine2" value={formData.addressLine2} onChange={handleInputChange} className="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-primary focus:border-transparent outline-none dark:bg-white/5 dark:border-white/15 dark:text-foreground" />
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">City</label>
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">City *</label>
                                         <input required type="text" name="city" value={formData.city} onChange={handleInputChange} className="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-primary focus:border-transparent outline-none dark:bg-white/5 dark:border-white/15 dark:text-foreground" />
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">State / Province</label>
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">State *</label>
                                         <select
                                             required
                                             name="state"
@@ -427,8 +448,39 @@ export default function CheckoutPage() {
                                         </select>
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ZIP / Postal Code</label>
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">PIN Code *</label>
                                         <input required type="text" name="zipCode" value={formData.zipCode} onChange={handleInputChange} className="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-primary focus:border-transparent outline-none dark:bg-white/5 dark:border-white/15 dark:text-foreground" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Country *</label>
+                                        <input required readOnly type="text" name="country" value={formData.country} className="w-full px-4 py-2 border rounded-md bg-gray-100 dark:bg-white/5 text-gray-500 cursor-not-allowed outline-none dark:border-white/15" />
+                                    </div>
+                                    
+                                    <div className="md:col-span-2 text-primary font-bold text-sm tracking-widest uppercase mt-4 mb-1 border-b pb-2 border-gray-100 dark:border-white/10">3. Order Validation</div>
+                                    <div className="md:col-span-2">
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Landmark <span className="text-gray-400 font-normal">(Recommended to help courier find location faster)</span></label>
+                                        <input type="text" name="landmark" value={formData.landmark} onChange={handleInputChange} className="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-primary focus:border-transparent outline-none dark:bg-white/5 dark:border-white/15 dark:text-foreground" />
+                                    </div>
+                                    <div className="md:col-span-2">
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Address Type</label>
+                                        <div className="flex items-center gap-6">
+                                            <label className="flex items-center gap-2 cursor-pointer">
+                                                <input type="radio" name="addressType" value="Home" checked={formData.addressType === "Home"} onChange={handleInputChange} className="w-4 h-4 text-primary focus:ring-primary" />
+                                                <span>Home</span>
+                                            </label>
+                                            <label className="flex items-center gap-2 cursor-pointer">
+                                                <input type="radio" name="addressType" value="Work" checked={formData.addressType === "Work"} onChange={handleInputChange} className="w-4 h-4 text-primary focus:ring-primary" />
+                                                <span>Work</span>
+                                            </label>
+                                            <label className="flex items-center gap-2 cursor-pointer">
+                                                <input type="radio" name="addressType" value="Other" checked={formData.addressType === "Other"} onChange={handleInputChange} className="w-4 h-4 text-primary focus:ring-primary" />
+                                                <span>Other</span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div className="md:col-span-2">
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Delivery Instructions <span className="text-gray-400 font-normal">(e.g., Call before delivery)</span></label>
+                                        <textarea rows={2} name="deliveryInstructions" value={formData.deliveryInstructions} onChange={handleInputChange as any} className="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-primary focus:border-transparent outline-none dark:bg-white/5 dark:border-white/15 dark:text-foreground resize-none" />
                                     </div>
                                 </div>
                             </div>

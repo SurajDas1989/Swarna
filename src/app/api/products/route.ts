@@ -126,7 +126,18 @@ export async function GET(request: Request) {
 
         let products = await prisma.product.findMany({
             where,
-            include: { category: true },
+            select: {
+                id: true,
+                name: true,
+                price: true,
+                images: true,
+                description: true,
+                category: {
+                    select: {
+                        slug: true
+                    }
+                }
+            },
             orderBy: { createdAt: 'desc' }
         });
 
@@ -135,7 +146,18 @@ export async function GET(request: Request) {
             await seedIfEmpty();
             products = await prisma.product.findMany({
                 where,
-                include: { category: true },
+                select: {
+                    id: true,
+                    name: true,
+                    price: true,
+                    images: true,
+                    description: true,
+                    category: {
+                        select: {
+                            slug: true
+                        }
+                    }
+                },
                 orderBy: { createdAt: 'desc' }
             });
         }

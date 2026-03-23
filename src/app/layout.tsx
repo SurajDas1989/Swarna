@@ -32,8 +32,8 @@ export const metadata: Metadata = {
     template: "%s | Swarna",
     default: "Artificial Jewellery India",
   },
-  description: "Discover premium artificial jewellery that perfectly blends traditional craftsmanship with modern design.",
-  keywords: ["artificial jewellery", "fake jewellery", "premium jewellery", "necklace", "earrings", "bangles", "Swarna"],
+  description: "Discover premium artificial jewellery at Swarna. Explore our exquisite collection of necklaces, earrings, and bangles blending tradition with modern design.",
+  keywords: ["artificial jewellery", "fake jewellery", "premium jewellery", "necklace", "earrings", "bangles", "Swarna", "traditional jewellery"],
   authors: [{ name: "Swarna" }],
   openGraph: {
     type: "website",
@@ -67,6 +67,15 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const orgSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'Organization',
+    name: 'Swarna',
+    url: 'https://swarna.vercel.app',
+    logo: 'https://swarna.vercel.app/og-image.jpg',
+    description: 'Discover premium artificial jewellery at Swarna. Explore our exquisite collection of necklaces, earrings, and bangles blending tradition with modern design.',
+  };
+
   return (
     <html lang="en" className="scroll-smooth">
       <body
@@ -76,6 +85,10 @@ export default function RootLayout({
           <AuthProvider>
             <AppProvider>
               <ToastProvider>
+                <script
+                  type="application/ld+json"
+                  dangerouslySetInnerHTML={{ __html: JSON.stringify(orgSchema) }}
+                />
                 <Navbar />
                 <CartModal />
                 <StickyDiscountTab />
