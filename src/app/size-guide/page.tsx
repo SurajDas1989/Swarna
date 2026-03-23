@@ -3,6 +3,7 @@
 import React from 'react';
 import { Ruler, Info, MessageCircle, ChevronRight, HelpCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Breadcrumbs } from '@/components/ui/Breadcrumbs';
 
 export default function SizeGuidePage() {
     const whatsappNumber = "+919326901595";
@@ -11,6 +12,15 @@ export default function SizeGuidePage() {
     return (
         <div className="min-h-screen bg-background py-16 px-4 md:px-8">
             <div className="max-w-4xl mx-auto">
+                <Breadcrumbs
+                    items={[
+                        { label: 'Home', href: '/' },
+                        { label: 'Size Guide' },
+                    ]}
+                    currentPath="/size-guide"
+                    className="mb-8"
+                />
+
                 {/* Header */}
                 <div className="text-center mb-16">
                     <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-4">Size Guide</h1>

@@ -2,9 +2,10 @@ import { Metadata } from 'next';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
+import { Breadcrumbs } from '@/components/ui/Breadcrumbs';
 
 export const metadata: Metadata = {
-  title: 'Return & Exchange Policy | Swarna Collection',
+  title: 'Jewellery Return & Exchange Policy India',
   description: 'Our policy regarding returns, replacements, and exchanges for Swarna Collection jewellery.',
 };
 
@@ -12,6 +13,15 @@ export default function ReturnPolicyPage() {
   return (
     <div className="min-h-screen bg-background pt-24 pb-16 px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto">
+        <Breadcrumbs
+          items={[
+            { label: 'Home', href: '/' },
+            { label: 'Return Policy' },
+          ]}
+          currentPath="/return-policy"
+          className="mb-8"
+        />
+
         {/* Header Section */}
         <div className="text-center mb-12 animate-in fade-in slide-in-from-top duration-700">
           <h1 className="text-3xl md:text-5xl font-serif text-primary mb-4">Return & Exchange Policy</h1>
