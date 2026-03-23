@@ -20,16 +20,16 @@ const slides = [
     mobileObjectPosition: "right", // Focus on the "SALE" text
   },
   {
-    id: 2,
-    image: "/hero-banner.png",
-    mobileImage: "/hero-banner.png",
-    title: "New Arrivals",
-    subtitle: "Discover our latest handcrafted collections",
-    cta: "Explore Now",
+    id: 4,
+    image: "/Hero Coursal 2.jpg",
+    mobileImage: "/Hero Coursal Mobile 2.jpg",
+    title: "",
+    subtitle: "",
+    cta: "Shop Now",
     link: "#products",
     priority: false,
     objectPosition: "center",
-    mobileObjectPosition: "center",
+    mobileObjectPosition: "right",
   },
   {
     id: 3,
@@ -58,6 +58,14 @@ export function HeroCarousel() {
     setDirection(-1);
     setCurrentIndex((prev) => (prev - 1 + slides.length) % slides.length);
   }, []);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      nextSlide();
+    }, 10000); // 10 seconds
+
+    return () => clearInterval(timer);
+  }, [nextSlide, currentIndex]);
 
   const scrollToProducts = () => {
     const el = document.getElementById("products");
