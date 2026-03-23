@@ -3,8 +3,19 @@ import { CategoryStrip } from "@/components/home/CategoryStrip";
 import { CategoryGrid } from "@/components/home/CategoryGrid";
 import { FeaturedProducts } from "@/components/home/FeaturedProducts";
 import { RecentlyViewed } from "@/components/home/RecentlyViewed";
+import { FaqSection } from "@/components/home/FaqSection";
 import { Features } from "@/components/home/Features";
 import { About } from "@/components/home/About";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Artificial Jewellery India | Necklaces & Earrings",
+  description:
+    "Shop artificial jewellery in India with statement necklaces, earrings, bangles, rings, and bridal sets from Swarna.",
+  alternates: {
+    canonical: "/",
+  },
+};
 
 export default function Home() {
   return (
@@ -15,6 +26,7 @@ export default function Home() {
       <CategoryGrid />
       <FeaturedProducts />
       <RecentlyViewed />
+      <FaqSection />
       <About />
       <Features />
     </div>

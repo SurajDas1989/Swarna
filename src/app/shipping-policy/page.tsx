@@ -2,9 +2,11 @@ import { Metadata } from 'next';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
+import { ShippingFaq } from '@/components/policies/ShippingFaq';
+import { Breadcrumbs } from '@/components/ui/Breadcrumbs';
 
 export const metadata: Metadata = {
-  title: 'Shipping Policy | Swarna Collection',
+  title: 'Jewellery Shipping Policy India',
   description: 'Shipping guidelines, delivery timelines, and order processing information for Swarna Collection.',
 };
 
@@ -12,6 +14,15 @@ export default function ShippingPolicyPage() {
   return (
     <div className="min-h-screen bg-background pt-24 pb-16 px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto">
+        <Breadcrumbs
+          items={[
+            { label: 'Home', href: '/' },
+            { label: 'Shipping Policy' },
+          ]}
+          currentPath="/shipping-policy"
+          className="mb-8"
+        />
+
         {/* Header Section */}
         <div className="text-center mb-12 animate-in fade-in slide-in-from-top duration-700">
           <h1 className="text-3xl md:text-5xl font-serif text-primary mb-4 text-balance">Shipping Policy – Swarna Collection</h1>
@@ -182,6 +193,8 @@ export default function ShippingPolicyPage() {
               </div>
             </div>
           </section>
+
+          <ShippingFaq />
 
           <div className="mt-12 text-center">
             <Link href="/#products">

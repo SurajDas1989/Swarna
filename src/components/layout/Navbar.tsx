@@ -350,13 +350,14 @@ export function Navbar() {
                                 </div>
                             </div>
 
-                            {/* Section 4: About */}
+                            {/* Section 4: Help */}
                             <div className="space-y-4">
-                                <h3 className="text-xl font-medium text-foreground px-0">Our Story</h3>
+                                <h3 className="text-xl font-medium text-foreground px-0">Help & Guides</h3>
                                 <div className="flex flex-col gap-3 pl-4 pt-1">
                                     {[
                                         { label: "Our Story", href: "/#our-story" },
                                         { label: "Size Guide", href: "/size-guide" },
+                                        { label: "FAQ", href: "/#faq" },
                                         { label: "Customer Care", href: whatsappHref, external: true }
                                     ].map((item) => (
                                         item.external ? (

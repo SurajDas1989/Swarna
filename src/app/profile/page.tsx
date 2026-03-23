@@ -12,6 +12,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useAppContext, Product } from "@/context/AppContext";
 import { getOrderReference } from "@/lib/order-reference";
+import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 
 interface UserProfile {
     id: string;
@@ -253,6 +254,15 @@ export default function ProfilePage() {
                     <div className="absolute bottom-0 right-10 w-96 h-96 bg-amber-300 rounded-full blur-[150px]" />
                 </div>
                 <div className="container mx-auto px-4 max-w-5xl py-10 md:py-14 relative z-10">
+                    <Breadcrumbs
+                        items={[
+                            { label: "Home", href: "/" },
+                            { label: "My Account" },
+                        ]}
+                        currentPath="/profile"
+                        className="mb-6 text-white/70"
+                    />
+
                     <div className="flex items-center gap-4 mb-6">
                         <Button variant="ghost" size="icon" asChild className="rounded-full text-white/70 hover:text-white hover:bg-white/10">
                             <Link href="/">

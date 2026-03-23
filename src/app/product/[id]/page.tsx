@@ -2,24 +2,36 @@ import { Metadata } from 'next';
 import prisma from '@/lib/prisma';
 import ProductPageClient from './ProductPageClient';
 
+function buildProductTitle(productName: string, categoryName: string) {
+    const candidateTitles = [
+        `${productName} | ${categoryName} Jewellery | Swarna`,
+        `${productName} | Artificial Jewellery | Swarna`,
+        `${productName} | Swarna`,
+    ];
+
+    return candidateTitles.find((title) => title.length <= 60) ?? candidateTitles[candidateTitles.length - 1];
+}
+
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
     const { id } = await params;
     
     // Fetch product details from DB
     const product = await prisma.product.findUnique({ 
         where: { id },
-        select: { name: true, description: true, images: true }
+        select: { name: true, description: true, images: true, category: { select: { name: true } } }
     });
     
     if (product) {
         return {
-            title: product.name,
+            title: {
+                absolute: buildProductTitle(product.name, product.category.name),
+            },
             description: product.description || undefined,
             alternates: {
                 canonical: `/product/${id}`,
             },
             openGraph: {
-                title: `${product.name} | Swarna`,
+                title: buildProductTitle(product.name, product.category.name),
                 description: product.description || undefined,
                 images: product.images.length > 0 ? [{ url: product.images[0] }] : [],
             }

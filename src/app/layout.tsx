@@ -30,7 +30,7 @@ export const metadata: Metadata = {
   },
   title: {
     template: "%s | Swarna",
-    default: "Swarna - Premium Artificial Jewellery",
+    default: "Artificial Jewellery India",
   },
   description: "Discover premium artificial jewellery at Swarna. Explore our exquisite collection of necklaces, earrings, and bangles blending tradition with modern design.",
   keywords: ["artificial jewellery", "fake jewellery", "premium jewellery", "necklace", "earrings", "bangles", "Swarna", "traditional jewellery"],
@@ -39,8 +39,8 @@ export const metadata: Metadata = {
     type: "website",
     locale: "en_IN",
     url: "https://swarna.vercel.app",
-    title: "Swarna - Premium Artificial Jewellery",
-    description: "Discover premium artificial jewellery at Swarna. Explore our exquisite collection of necklaces, earrings, and bangles blending tradition with modern design.",
+    title: "Artificial Jewellery India | Necklaces & Earrings | Swarna",
+    description: "Discover premium artificial jewellery that perfectly blends traditional craftsmanship with modern design.",
     siteName: "Swarna",
     images: [{
       url: "/og-image.jpg", // Assuming an og-image will be added later or fallback to a default
@@ -51,8 +51,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Swarna - Premium Artificial Jewellery",
-    description: "Discover premium artificial jewellery at Swarna. Explore our exquisite collection of necklaces, earrings, and bangles blending tradition with modern design.",
+    title: "Artificial Jewellery India | Necklaces & Earrings | Swarna",
+    description: "Discover premium artificial jewellery that perfectly blends traditional craftsmanship with modern design.",
     creator: "@swarnajewellery",
   },
   verification: {
