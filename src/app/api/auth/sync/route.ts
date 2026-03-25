@@ -1,6 +1,12 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getAuthenticatedUser } from '@/lib/supabase-server';
+import crypto from 'crypto';
+
+function generateDiscountCode() {
+    const randomStr = crypto.randomBytes(2).toString('hex').toUpperCase();
+    return `SWARNA10-${randomStr}`;
+}
 
 function normalizePhone(phone?: string | null) {
     if (!phone) return null;
@@ -61,6 +67,45 @@ export async function POST(request: Request) {
             },
             data: { userId: dbUser.id },
         });
+
+        // --- NEW WELCOME DISCOUNT LOGIC ---
+        // Check if a code already exists for this email
+        const existingCode = await prisma.discountCode.findFirst({
+            where: { email: email.toLowerCase() },
+        });
+
+        if (!existingCode) {
+            // Generate a unique code
+            let newCode = '';
+            let isUnique = false;
+            let attempts = 0;
+
+            while (!isUnique && attempts < 5) {
+                newCode = generateDiscountCode();
+                const conflict = await prisma.discountCode.findUnique({
+                    where: { code: newCode }
+                });
+                if (!conflict) isUnique = true;
+                attempts++;
+            }
+
+            if (isUnique) {
+                const expiresAt = new Date();
+                expiresAt.setDate(expiresAt.getDate() + 30); // 30-day expiry
+
+                await prisma.discountCode.create({
+                    data: {
+                        email: email.toLowerCase(),
+                        phone: normalizedPhone,
+                        code: newCode,
+                        discountPercent: 10,
+                        maxDiscountAmount: 500,
+                        expiresAt,
+                    }
+                });
+            }
+        }
+        // --- END WELCOME DISCOUNT LOGIC ---
 
         return NextResponse.json(dbUser);
     } catch (error: unknown) {

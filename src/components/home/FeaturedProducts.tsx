@@ -336,6 +336,7 @@ export function FeaturedProducts() {
                     <div className="grid grid-cols-2 gap-3 transition-all duration-500 lg:grid-cols-4 lg:gap-6 xl:gap-8">
                         {displayedProducts.map((product, idx) => {
                             const isAdded = addedProductId === product.id;
+                            const isOutOfStock = (product.stock ?? 0) <= 0;
 
                             return (
                                 <ScrollReveal key={`prod-${product.id}`} delay={0.05 * (idx % 4)} direction="up" className="h-full">
@@ -375,9 +376,11 @@ export function FeaturedProducts() {
 
                                             <div className="absolute inset-x-0 bottom-0 hidden translate-y-4 p-4 opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100 lg:block">
                                                 <Button
-                                                    disabled={isAdded}
+                                                    disabled={isAdded || isOutOfStock}
                                                     className={`w-full shadow-lg transition-all duration-300 ${isAdded
                                                         ? "bg-emerald-600 text-white hover:bg-emerald-600"
+                                                        : isOutOfStock
+                                                            ? "bg-gray-200 text-gray-500 hover:bg-gray-200 dark:bg-white/10 dark:text-gray-500"
                                                         : "bg-white text-gray-900 hover:bg-primary hover:text-white"
                                                         }`}
                                                     onClick={(e) => {
@@ -389,6 +392,8 @@ export function FeaturedProducts() {
                                                         <span className="inline-flex items-center gap-2">
                                                             <Check className="h-4 w-4" /> Added
                                                         </span>
+                                                    ) : isOutOfStock ? (
+                                                        "Out of Stock"
                                                     ) : (
                                                         "Quick Add"
                                                     )}
@@ -420,8 +425,11 @@ export function FeaturedProducts() {
                                                         e.preventDefault();
                                                         handleAddToCart(product);
                                                     }}
+                                                    disabled={isAdded || isOutOfStock}
                                                     className={`flex h-8 w-8 items-center justify-center rounded-full transition-all duration-300 lg:hidden ${isAdded
                                                         ? "bg-emerald-600 text-white"
+                                                        : isOutOfStock
+                                                            ? "bg-gray-200 text-gray-400 dark:bg-white/10 dark:text-gray-500"
                                                         : "bg-gray-100 text-gray-900 hover:bg-primary hover:text-white dark:bg-white/5 dark:text-foreground dark:hover:bg-primary"
                                                         }`}
                                                     aria-label={isAdded ? "Added" : "Add to Cart"}

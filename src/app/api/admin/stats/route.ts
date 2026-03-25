@@ -16,7 +16,7 @@ export async function GET() {
                 _sum: { total: true },
                 where: { status: { not: 'CANCELLED' } },
             }),
-            prisma.order.count({ where: { status: 'PENDING' } }),
+            prisma.order.count({ where: { status: { in: ['PENDING', 'CONFIRMED'] } } }),
         ]);
 
         return NextResponse.json({

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { getOrderReference } from "@/lib/order-reference";
 import {
-    ShoppingBag, Users, TrendingUp, Clock,
+    ShoppingBag, TrendingUp, Clock,
     ArrowUpRight, Package, RefreshCw
 } from "lucide-react";
 
@@ -30,6 +30,7 @@ interface Order {
 
 const STATUS_COLORS: Record<string, string> = {
     PENDING: "bg-yellow-500/20 text-yellow-400",
+    CONFIRMED: "bg-amber-500/20 text-amber-300",
     PROCESSING: "bg-blue-500/20 text-blue-400",
     SHIPPED: "bg-purple-500/20 text-purple-400",
     DELIVERED: "bg-emerald-500/20 text-emerald-400",
@@ -81,13 +82,6 @@ export default function AdminDashboard() {
             icon: TrendingUp,
             color: "text-emerald-400",
             bg: "bg-emerald-500/10",
-        },
-        {
-            label: "Customers",
-            value: stats.totalCustomers,
-            icon: Users,
-            color: "text-purple-400",
-            bg: "bg-purple-500/10",
         },
         {
             label: "Pending Orders",

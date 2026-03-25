@@ -21,10 +21,16 @@ function getDemoProductById(id: string) {
         name: p.name,
         category: p.category,
         price: p.price,
+        compareAtPrice: Math.round(p.price * 1.6),
+        costPerItem: null,
+        chargeTax: true,
         originalPrice: Math.round(p.price * 1.6),
         image: p.image,
+        images: [p.image],
         description: p.description,
         rating: 4.5,
+        stock: 50,
+        isActive: true,
     };
 }
 
@@ -43,8 +49,14 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
                 id: true,
                 name: true,
                 price: true,
+                compareAtPrice: true,
+                costPerItem: true,
+                chargeTax: true,
                 images: true,
                 description: true,
+                stock: true,
+                outOfStockSince: true,
+                isActive: true,
                 category: {
                     select: {
                         slug: true
@@ -62,10 +74,17 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
             name: product.name,
             category: product.category.slug,
             price: Number(product.price),
-            originalPrice: Math.round(Number(product.price) * 1.6),
+            compareAtPrice: product.compareAtPrice != null ? Number(product.compareAtPrice) : null,
+            costPerItem: product.costPerItem != null ? Number(product.costPerItem) : null,
+            chargeTax: product.chargeTax,
+            originalPrice: product.compareAtPrice != null ? Number(product.compareAtPrice) : Number(product.price),
             image: product.images[0] || '/products/golden-pearl-necklace.png',
+            images: product.images,
             description: product.description,
             rating: 4.5,
+            stock: product.stock,
+            outOfStockSince: product.outOfStockSince?.toISOString() ?? null,
+            isActive: product.isActive,
         };
 
         return NextResponse.json(formatted, {

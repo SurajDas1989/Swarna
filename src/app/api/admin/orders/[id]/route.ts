@@ -19,6 +19,10 @@ async function requireAdmin() {
     return null;
 }
 
+function getOutOfStockSinceUpdate(nextStock: number) {
+    return nextStock > 0 ? null : new Date();
+}
+
 export async function PATCH(
     request: Request,
     { params }: { params: Promise<{ id: string }> }
@@ -32,15 +36,64 @@ export async function PATCH(
         const { id } = await params;
         const { status } = await request.json();
 
-        const validStatuses = ['PENDING', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED'];
+        const validStatuses = ['PENDING', 'CONFIRMED', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED', 'PAID'];
         if (!validStatuses.includes(status)) {
             return NextResponse.json({ error: 'Invalid status' }, { status: 400 });
         }
 
-        const order = await prisma.order.update({
+        const existingOrder = await prisma.order.findUnique({
             where: { id },
-            data: { status },
-            include: { user: true }
+            include: {
+                user: true,
+                items: {
+                    select: {
+                        productId: true,
+                        quantity: true,
+                    },
+                },
+            },
+        });
+
+        if (!existingOrder) {
+            return NextResponse.json({ error: 'Order not found' }, { status: 404 });
+        }
+
+        const shouldRestock =
+            existingOrder.status !== 'CANCELLED' &&
+            status === 'CANCELLED' &&
+            existingOrder.stockAdjusted;
+
+        const order = await prisma.$transaction(async (tx) => {
+            if (shouldRestock) {
+                for (const item of existingOrder.items) {
+                    const product = await tx.product.findUnique({
+                        where: { id: item.productId },
+                        select: { stock: true },
+                    });
+
+                    if (!product) {
+                        continue;
+                    }
+
+                    const nextStock = product.stock + item.quantity;
+                    await tx.product.update({
+                        where: { id: item.productId },
+                        data: {
+                            stock: nextStock,
+                            outOfStockSince: getOutOfStockSinceUpdate(nextStock),
+                        },
+                    });
+                }
+            }
+
+            return tx.order.update({
+                where: { id },
+                data: {
+                    status,
+                    stockAdjusted: shouldRestock ? false : existingOrder.stockAdjusted,
+                },
+                include: { user: true }
+            });
         });
 
         const recipientEmail = order.user?.email || order.guestEmail;

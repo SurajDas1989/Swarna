@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import type { Prisma } from '@/generated/prisma';
 
-export const revalidate = 60; // Cache for 60 seconds
+export const revalidate = 0;
 
 const DEFAULT_CATEGORIES = [
     { name: 'Necklaces', slug: 'necklaces' },
@@ -22,6 +22,8 @@ const DEFAULT_PRODUCTS = [
     { name: 'Bridal Jewellery Set', category: 'sets', price: 3499, description: 'Complete bridal jewellery set for special occasions.', image: '/products/bridal-jewellery-set.png' },
 ];
 
+const isProductionRuntime = process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'production';
+
 function getFallbackProducts(searchParams: URLSearchParams) {
     const category = searchParams.get('category');
     const search = (searchParams.get('search') || '').toLowerCase();
@@ -33,6 +35,10 @@ function getFallbackProducts(searchParams: URLSearchParams) {
         name: p.name,
         category: p.category,
         price: p.price,
+        stock: 50,
+        compareAtPrice: Math.round(p.price * 1.6),
+        costPerItem: null,
+        chargeTax: true,
         originalPrice: Math.round(p.price * 1.6),
         image: p.image,
         description: p.description,
@@ -71,6 +77,7 @@ async function seedIfEmpty() {
             where: { slug },
             update: {
                 price: product.price,
+                compareAtPrice: Math.round(product.price * 1.6),
                 description: product.description,
                 images: [product.image],
                 categoryId: category.id,
@@ -81,6 +88,7 @@ async function seedIfEmpty() {
                 name: product.name,
                 slug,
                 price: product.price,
+                compareAtPrice: Math.round(product.price * 1.6),
                 description: product.description,
                 images: [product.image],
                 categoryId: category.id,
@@ -97,8 +105,15 @@ export async function GET(request: Request) {
         const category = searchParams.get('category');
         const search = searchParams.get('search');
         const ids = searchParams.get('ids');
+        const includeInactive = searchParams.get('includeInactive') === 'true';
+        const allowDemoFallback = !isProductionRuntime && !includeInactive;
 
         const where: Prisma.ProductWhereInput = {};
+
+        // Filter by active status (unless admin requests all)
+        if (!includeInactive) {
+            where.isActive = true;
+        }
 
         // 0. IDs Filter (for wishlist/cart)
         if (ids) {
@@ -130,11 +145,21 @@ export async function GET(request: Request) {
                 id: true,
                 name: true,
                 price: true,
+                compareAtPrice: true,
+                costPerItem: true,
+                chargeTax: true,
+                stock: true,
+                outOfStockSince: true,
                 images: true,
                 description: true,
+                isActive: true,
+                isFeatured: true,
+                categoryId: true,
                 category: {
                     select: {
-                        slug: true
+                        slug: true,
+                        name: true,
+                        id: true
                     }
                 }
             },
@@ -143,18 +168,30 @@ export async function GET(request: Request) {
 
         const isUnfilteredRequest = !category && !search && !ids;
         if (products.length === 0 && isUnfilteredRequest) {
-            await seedIfEmpty();
+            if (allowDemoFallback) {
+                await seedIfEmpty();
+            }
             products = await prisma.product.findMany({
                 where,
                 select: {
                     id: true,
                     name: true,
                     price: true,
+                    compareAtPrice: true,
+                    costPerItem: true,
+                    chargeTax: true,
+                    stock: true,
+                    outOfStockSince: true,
                     images: true,
                     description: true,
+                    isActive: true,
+                    isFeatured: true,
+                    categoryId: true,
                     category: {
                         select: {
-                            slug: true
+                            slug: true,
+                            name: true,
+                            id: true
                         }
                     }
                 },
@@ -166,27 +203,52 @@ export async function GET(request: Request) {
         const formatted = products.map((p) => ({
             id: p.id,
             name: p.name,
-            category: p.category.slug,
+            category: p.category,
+            categoryId: p.categoryId,
+            category_slug: p.category.slug,
             price: Number(p.price),
-            originalPrice: Math.round(Number(p.price) * 1.6),
+            compareAtPrice: p.compareAtPrice != null ? Number(p.compareAtPrice) : null,
+            costPerItem: p.costPerItem != null ? Number(p.costPerItem) : null,
+            chargeTax: p.chargeTax,
+            stock: p.stock,
+            outOfStockSince: p.outOfStockSince?.toISOString() ?? null,
+            images: p.images,
+            originalPrice: p.compareAtPrice != null ? Number(p.compareAtPrice) : Number(p.price),
             image: p.images[0] || '/products/golden-pearl-necklace.png',
             description: p.description,
+            isActive: p.isActive,
+            isFeatured: p.isFeatured,
             rating: 4.5,
         }));
 
         return NextResponse.json(formatted, {
             headers: {
-                'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',
+                'Cache-Control': 'no-store',
             },
         });
     } catch (error) {
         console.error('Failed to fetch products:', error);
         const { searchParams } = new URL(request.url);
-        return NextResponse.json(getFallbackProducts(searchParams), {
-            headers: {
-                'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',
-            },
-        });
+        const includeInactive = searchParams.get('includeInactive') === 'true';
+        const allowDemoFallback = !isProductionRuntime && !includeInactive;
+
+        if (allowDemoFallback) {
+            return NextResponse.json(getFallbackProducts(searchParams), {
+                headers: {
+                    'Cache-Control': 'no-store',
+                },
+            });
+        }
+
+        return NextResponse.json(
+            { error: 'Failed to load products from database' },
+            {
+                status: 500,
+                headers: {
+                    'Cache-Control': 'no-store',
+                },
+            }
+        );
     }
 }
 

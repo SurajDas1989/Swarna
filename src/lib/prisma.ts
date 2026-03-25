@@ -5,6 +5,10 @@ import { PrismaClient } from '../generated/prisma';
 const globalForPrisma = global as unknown as { prisma: InstanceType<typeof PrismaClient> };
 
 function createPrismaClient() {
+    if (!process.env.DATABASE_URL) {
+        throw new Error('DATABASE_URL is missing. Configure it in your deployment environment.');
+    }
+
     const pool = new Pool({
         connectionString: process.env.DATABASE_URL,
         ssl: { rejectUnauthorized: false }

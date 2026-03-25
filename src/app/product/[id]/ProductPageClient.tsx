@@ -140,6 +140,9 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
 
     const discount = Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100);
     const isLiked = isInWishlist(product.id);
+    const isOutOfStock = (product.stock ?? 0) <= 0;
+    const galleryImages = product.images && product.images.length > 0 ? product.images : [product.image];
+    const activeImage = galleryImages[Math.min(activeThumb, galleryImages.length - 1)] || product.image;
 
     // Generate fake SKU from product
     const sku = `SW-${product.category.slice(0, 3).toUpperCase()}${product.id.toString().padStart(4, '0')}`;
@@ -147,6 +150,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     const soldCount = 40 + (product.id.length * 13) % 160;
 
     const handleBuyNow = () => {
+        if (isOutOfStock) return;
         addToCart(product.id);
         router.push('/checkout');
     };
@@ -177,7 +181,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                         {/* Main Image */}
                         <div className="relative aspect-square bg-white dark:bg-card rounded-2xl overflow-hidden border border-gray-100 dark:border-white/10 shadow-sm group">
                             <Image
-                                src={product.image}
+                                src={activeImage}
                                 alt={`${product.name} - Premium Artificial Jewellery | Swarna`}
                                 fill
                                 placeholder="blur"
@@ -194,7 +198,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
 
                     {/* Thumbnail Strip */}
                         <div className="flex gap-3 overflow-x-auto pb-1 hide-scrollbar">
-                            {[0, 1, 2, 3].map((idx) => (
+                            {galleryImages.map((imageSrc, idx) => (
                                 <button
                                     key={idx}
                                     onClick={() => setActiveThumb(idx)}
@@ -204,7 +208,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                                         }`}
                                 >
                                     <Image
-                                        src={product.image}
+                                        src={imageSrc}
                                         alt={`${product.name} detailed view ${idx + 1} - Artificial Jewellery`}
                                         fill
                                         placeholder="blur"
@@ -275,13 +279,24 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                             {product.description}
                         </p>
 
+                        <div className="mb-6">
+                            <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${isOutOfStock
+                                ? "bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400"
+                                : "bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400"
+                                }`}>
+                                {isOutOfStock ? "Out of Stock" : `In Stock: ${product.stock}`}
+                            </span>
+                        </div>
+
                         {/* Divider */}
                         <div className="h-px bg-gray-100 dark:bg-white/10 mb-6" />
 
                         {/* Action Buttons — Side by Side */}
                         <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/95 dark:bg-card/95 backdrop-blur-md border-t border-gray-100 dark:border-white/10 shadow-[0_-4px_20px_rgba(0,0,0,0.08)] z-50 flex gap-3 lg:static lg:max-w-md lg:p-0 lg:bg-transparent lg:border-none lg:shadow-none lg:z-auto lg:mb-4" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 80px)' }}>
                             <Button
+                                disabled={isOutOfStock}
                                 onClick={() => {
+                                    if (isOutOfStock) return;
                                     addToCart(product.id);
                                     showToast(`${product.name} added to cart`, 'cart');
                                     setIsCartOpen(true);
@@ -293,11 +308,12 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                                 <span className="truncate">Add to Cart</span>
                             </Button>
                             <Button
+                                disabled={isOutOfStock}
                                 onClick={handleBuyNow}
                                 className="flex-1 bg-foreground dark:bg-primary hover:bg-primary dark:hover:bg-primary-dark text-white dark:text-background font-semibold py-6 sm:py-7 text-sm sm:text-base transition-all duration-300 shadow-lg hover:shadow-xl cta-element"
                             >
                                 <Zap className="w-5 h-5 mr-2" />
-                                <span className="truncate">Buy Now</span>
+                                <span className="truncate">{isOutOfStock ? "Out of Stock" : "Buy Now"}</span>
                             </Button>
                         </div>
 

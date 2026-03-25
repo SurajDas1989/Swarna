@@ -1,17 +1,23 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState, useEffect, useRef } from "react";
 import { useAuth } from './AuthContext';
 
 export interface Product {
     id: string;
     name: string;
-    category: string;
+    category: string | { slug?: string; name?: string; id?: string };
     price: number;
+    compareAtPrice?: number | null;
+    costPerItem?: number | null;
+    chargeTax?: boolean;
     originalPrice: number;
     rating: number;
     image: string;
+    images?: string[];
     description: string;
+    stock?: number;
+    isActive?: boolean;
 }
 
 export interface CartItem extends Product {
@@ -99,11 +105,88 @@ interface AppContextType {
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
+function getCategoryLabel(category: Product["category"]) {
+    if (typeof category === "string") return category;
+    return category?.slug || category?.name || "";
+}
+
+function normalizeProduct(product: Product): Product {
+    return {
+        ...product,
+        category: getCategoryLabel(product.category),
+        stock: typeof product.stock === "number" ? product.stock : 0,
+    };
+}
+
+function normalizeCartItems(items: CartItem[]) {
+    return items.map((item) => ({
+        ...item,
+        category: getCategoryLabel(item.category),
+        stock: typeof item.stock === "number" ? item.stock : 0,
+    }));
+}
+
+function mergeCartItems(items: CartItem[]) {
+    const merged = new Map<string, CartItem>();
+
+    for (const item of items) {
+        const normalized = {
+            ...item,
+            category: getCategoryLabel(item.category),
+            stock: typeof item.stock === "number" ? item.stock : 0,
+        };
+        const existing = merged.get(normalized.id);
+
+        if (!existing) {
+            merged.set(normalized.id, normalized);
+            continue;
+        }
+
+        merged.set(normalized.id, {
+            ...existing,
+            ...normalized,
+            quantity: existing.quantity + normalized.quantity,
+            stock: Math.max(existing.stock ?? 0, normalized.stock ?? 0),
+        });
+    }
+
+    return Array.from(merged.values());
+}
+
+function reconcileCartWithProducts(cartItems: CartItem[], productList: Product[]) {
+    if (productList.length === 0) return cartItems;
+
+    const productMap = new Map(productList.map((product) => [product.id, product]));
+
+    return cartItems.flatMap((item) => {
+        const latestProduct = productMap.get(item.id);
+        if (!latestProduct) {
+            return [item];
+        }
+
+        const stock = Math.max(0, latestProduct.stock ?? 0);
+        if (stock <= 0 || latestProduct.isActive === false) {
+            return [];
+        }
+
+        return [{
+            ...item,
+            ...latestProduct,
+            quantity: Math.min(item.quantity, stock),
+            stock,
+            category: getCategoryLabel(latestProduct.category),
+        }];
+    });
+}
+
 export function AppProvider({ children }: { children: React.ReactNode }) {
     // Load from localStorage if available, otherwise empty array
     const [wishlist, setWishlist] = useState<string[]>([]);
     const [cart, setCart] = useState<CartItem[]>([]);
     const [isCartOpen, setIsCartOpen] = useState(false);
+    const [hasHydratedCart, setHasHydratedCart] = useState(false);
+    const [hasLoadedServerCart, setHasLoadedServerCart] = useState(false);
+    const lastSyncedCartRef = useRef<string>("");
 
     // Auth context for syncing
     const { user } = useAuth();
@@ -145,11 +228,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         const savedCart = localStorage.getItem('jewelluxe_cart');
         if (savedCart) {
             try {
-                setCart(JSON.parse(savedCart));
+                setCart(mergeCartItems(normalizeCartItems(JSON.parse(savedCart))));
             } catch (e) {
                 console.error("Failed to parse cart from local storage");
             }
         }
+        setHasHydratedCart(true);
 
         const savedCoupon = localStorage.getItem('jewelluxe_coupon');
         if (savedCoupon) {
@@ -203,24 +287,31 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
     // Fetch database cart when user logs in
     useEffect(() => {
-        if (!user) return; // Wait until they are logged in
+        if (!user) {
+            setHasLoadedServerCart(false);
+            return;
+        }
+        if (!hasHydratedCart) return;
 
         const fetchDatabaseCart = async () => {
             try {
                 const res = await fetch('/api/cart');
                 if (res.ok) {
                     const dbCart = await res.json();
-                    if (Array.isArray(dbCart) && dbCart.length > 0) {
-                        setCart(dbCart);
-                    }
+                    setCart(prev => mergeCartItems([
+                        ...normalizeCartItems(Array.isArray(dbCart) ? dbCart : []),
+                        ...prev,
+                    ]));
                 }
             } catch (error) {
                 console.error("Failed to sync cart with database", error);
+            } finally {
+                setHasLoadedServerCart(true);
             }
         };
 
         fetchDatabaseCart();
-    }, [user]);
+    }, [user, hasHydratedCart]);
 
     // Save to localStorage whenever wishlist changes
     useEffect(() => {
@@ -277,15 +368,36 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     useEffect(() => {
         localStorage.setItem('jewelluxe_cart', JSON.stringify(cart));
 
-        if (user) {
-            // Only sync to DB if the cart wasn't just fetched
+        if (user && hasLoadedServerCart) {
+            const serializedCart = JSON.stringify(cart.map(({ id, quantity }) => ({ id, quantity })));
+            if (lastSyncedCartRef.current === serializedCart) {
+                return;
+            }
+            lastSyncedCartRef.current = serializedCart;
             fetch('/api/cart', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ cartItems: cart })
             }).catch(console.error);
         }
-    }, [cart, user]);
+    }, [cart, user, hasLoadedServerCart]);
+
+    useEffect(() => {
+        if (products.length === 0) return;
+
+        setCart((prev) => {
+            const next = reconcileCartWithProducts(mergeCartItems(prev), products);
+            const changed = next.length !== prev.length || next.some((item, index) => {
+                const previous = prev[index];
+                return !previous ||
+                    previous.id !== item.id ||
+                    previous.quantity !== item.quantity ||
+                    previous.stock !== item.stock;
+            });
+
+            return changed ? next : prev;
+        });
+    }, [products]);
 
     // Save coupon to localStorage
     useEffect(() => {
@@ -307,13 +419,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
                 if (searchQuery) params.append('search', searchQuery);
                 
 
-                const res = await fetch(`/api/products?${params.toString()}`);
+                const res = await fetch(`/api/products?${params.toString()}`, { cache: 'no-store' });
                 if (!res.ok) {
                     throw new Error(`Products API returned ${res.status}`);
                 }
 
                 const data = await res.json();
-                setProducts(Array.isArray(data) ? data : []);
+                setProducts(Array.isArray(data) ? data.map(normalizeProduct) : []);
             } catch (err) {
                 console.error("Failed to fetch products", err);
                 setProducts([]);
@@ -374,19 +486,32 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     // Cart Methods
     const addToCart = (productId: string) => {
         setCart(prev => {
-            const existingItem = prev.find(item => item.id === productId);
+            const mergedPrev = mergeCartItems(prev);
+            const existingItem = mergedPrev.find(item => item.id === productId);
+            const product = products.find(p => p.id === productId);
+            const availableStock = Math.max(0, product?.stock ?? existingItem?.stock ?? 0);
+
+            if (!product && !existingItem) {
+                return mergedPrev;
+            }
+
+            if (availableStock <= 0) {
+                return mergedPrev;
+            }
+
             if (existingItem) {
-                return prev.map(item =>
-                    item.id === productId ? { ...item, quantity: item.quantity + 1 } : item
+                return mergedPrev.map(item =>
+                    item.id === productId
+                        ? { ...item, quantity: Math.min(item.quantity + 1, availableStock), stock: availableStock }
+                        : item
                 );
             }
 
-            const product = products.find(p => p.id === productId);
             if (product) {
-                return [...prev, { ...product, quantity: 1 }];
+                return [...mergedPrev, { ...product, stock: availableStock, quantity: 1 }];
             }
 
-            return prev;
+            return mergedPrev;
         });
         setIsCartOpen(true); // Auto open cart when adding
     };
@@ -401,7 +526,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
                 return prev.filter(item => item.id !== productId);
             }
             return prev.map(item =>
-                item.id === productId ? { ...item, quantity } : item
+                item.id === productId
+                    ? { ...item, quantity: Math.min(quantity, Math.max(1, item.stock ?? quantity)) }
+                    : item
             );
         });
     };

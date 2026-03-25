@@ -131,10 +131,29 @@ export default function CheckoutPage() {
         }
     };
 
-    // local UI state for coupon input
     const [couponCode, setCouponCode] = useState("");
     const [couponError, setCouponError] = useState("");
     const [couponLoading, setCouponLoading] = useState(false);
+    const [availableDiscount, setAvailableDiscount] = useState<{ code: string, percent: number } | null>(null);
+
+    useEffect(() => {
+        if (user) {
+            fetch('/api/discount/available')
+                .then(res => res.json())
+                .then(data => {
+                    if (data.available && data.code) {
+                        setAvailableDiscount({ code: data.code, percent: data.discountPercent });
+                    }
+                })
+                .catch(console.error);
+        }
+    }, [user]);
+
+    const applyAvailableDiscount = () => {
+        if (availableDiscount) {
+            handleApplyCoupon(availableDiscount.code);
+        }
+    };
 
     const handleApplyCoupon = async (codeOverride?: string) => {
         const code = (codeOverride || couponCode).trim().toUpperCase();
@@ -555,6 +574,31 @@ export default function CheckoutPage() {
                                     <Tag className="w-4 h-4 text-primary" />
                                     <span className="text-sm font-semibold">Have a coupon?</span>
                                 </div>
+
+                                {!couponApplied && availableDiscount && (
+                                    <div className="bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800/50 rounded-lg p-3 mb-3 flex items-center justify-between">
+                                        <div>
+                                            <p className="text-sm font-medium text-amber-800 dark:text-amber-400">
+                                                Welcome Gift: {availableDiscount.percent}% Off!
+                                            </p>
+                                            <p className="text-xs text-amber-700/80 dark:text-amber-500/80 mt-0.5 font-mono">
+                                                Code: {availableDiscount.code}
+                                            </p>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={applyAvailableDiscount}
+                                            disabled={couponLoading}
+                                            className="px-3 py-1.5 text-xs font-semibold bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-400 rounded-md hover:bg-amber-200 dark:hover:bg-amber-900/50 transition-colors disabled:opacity-50"
+                                        >
+                                            {couponLoading && availableDiscount?.code === (couponCode || availableDiscount.code) ? (
+                                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                            ) : (
+                                                "Apply Code"
+                                            )}
+                                        </button>
+                                    </div>
+                                )}
                                 
                                 {couponApplied ? (
                                     <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-3 flex items-center justify-between">
