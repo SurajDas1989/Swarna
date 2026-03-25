@@ -2,6 +2,25 @@ import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getAuthenticatedUser } from '@/lib/supabase-server';
 
+function mergeCartItems<T extends { productId: string; quantity: number }>(items: T[]) {
+    const merged = new Map<string, T>();
+
+    for (const item of items) {
+        const existing = merged.get(item.productId);
+        if (!existing) {
+            merged.set(item.productId, { ...item });
+            continue;
+        }
+
+        merged.set(item.productId, {
+            ...existing,
+            quantity: existing.quantity + item.quantity,
+        });
+    }
+
+    return Array.from(merged.values());
+}
+
 export async function GET() {
     try {
         const authUser = await getAuthenticatedUser();
@@ -29,7 +48,13 @@ export async function GET() {
         }
 
         // Format for the frontend context
-        const formattedCart = user.cart.items.map(item => ({
+        const mergedItems = mergeCartItems(user.cart.items.map(item => ({
+            productId: item.productId,
+            quantity: item.quantity,
+            product: item.product,
+        })));
+
+        const formattedCart = mergedItems.map(item => ({
             ...item.product,
             quantity: item.quantity
         }));
@@ -54,6 +79,15 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Invalid cart data' }, { status: 400 });
         }
 
+        const mergedIncomingCart = mergeCartItems(
+            cartItems
+                .filter((item) => item && typeof item.id === 'string' && Number(item.quantity) > 0)
+                .map((item) => ({
+                    productId: item.id,
+                    quantity: Math.max(1, Math.floor(Number(item.quantity))),
+                }))
+        );
+
         const user = await prisma.user.findUnique({
             where: { email: authUser.email },
             include: { cart: true }
@@ -70,15 +104,15 @@ export async function POST(request: Request) {
             });
 
             // If the cart is now empty, just return
-            if (cartItems.length === 0) {
+            if (mergedIncomingCart.length === 0) {
                 return NextResponse.json({ success: true });
             }
 
             // Insert new items
             await prisma.cartItem.createMany({
-                data: cartItems.map(item => ({
+                data: mergedIncomingCart.map(item => ({
                     cartId: user.cart!.id,
-                    productId: item.id,
+                    productId: item.productId,
                     quantity: item.quantity
                 }))
             });
@@ -91,13 +125,13 @@ export async function POST(request: Request) {
 
         } else {
             // Create a brand new cart if they don't have one
-            if (cartItems.length > 0) {
+            if (mergedIncomingCart.length > 0) {
                 await prisma.cart.create({
                     data: {
                         userId: user.id,
                         items: {
-                            create: cartItems.map(item => ({
-                                productId: item.id,
+                            create: mergedIncomingCart.map(item => ({
+                                productId: item.productId,
                                 quantity: item.quantity
                             }))
                         }

@@ -24,10 +24,18 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Invalid payment signature' }, { status: 400 });
         }
 
+        const existingOrder = await prisma.order.findUnique({
+            where: { id: orderId },
+            select: { total: true },
+        });
+
         const updatedOrder = await prisma.order.update({
             where: { id: orderId },
             data: {
                 status: 'PAID',
+                paymentMethod: 'ONLINE',
+                paymentStatus: 'PAID',
+                paidAmount: existingOrder?.total ?? 0,
                 razorpayOrderId: razorpay_order_id,
                 paymentId: razorpay_payment_id,
             },

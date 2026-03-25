@@ -45,7 +45,7 @@ interface OrderItem {
 interface Order {
     id: string;
     orderNumber?: string | null;
-    status: "PENDING" | "PROCESSING" | "SHIPPED" | "DELIVERED" | "CANCELLED";
+    status: "PENDING" | "CONFIRMED" | "PROCESSING" | "SHIPPED" | "DELIVERED" | "CANCELLED" | "PAID";
     total: string;
     createdAt: string;
     items: OrderItem[];
@@ -53,10 +53,12 @@ interface Order {
 
 const STATUS_CONFIG = {
     PENDING: { label: "Pending", icon: Clock, color: "bg-amber-100 text-amber-700 border-amber-200" },
+    CONFIRMED: { label: "Confirmed", icon: CheckCircle2, color: "bg-yellow-100 text-yellow-700 border-yellow-200" },
     PROCESSING: { label: "Processing", icon: Loader2, color: "bg-blue-100 text-blue-700 border-blue-200" },
     SHIPPED: { label: "Shipped", icon: Truck, color: "bg-purple-100 text-purple-700 border-purple-200" },
     DELIVERED: { label: "Delivered", icon: CheckCircle2, color: "bg-green-100 text-green-700 border-green-200" },
     CANCELLED: { label: "Cancelled", icon: XCircle, color: "bg-red-100 text-red-700 border-red-200" },
+    PAID: { label: "Paid", icon: CheckCircle2, color: "bg-green-100 text-green-700 border-green-200" },
 };
 
 export default function ProfilePage() {
@@ -210,7 +212,7 @@ export default function ProfilePage() {
             } else {
                 setProfileError("Failed to save profile. Please try again.");
             }
-        } catch (err) {
+        } catch {
             setProfileError("Network error. Please try again.");
         } finally {
             setSaving(false);

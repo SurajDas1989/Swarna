@@ -56,13 +56,18 @@ model Product {
   slug         String      @unique
   description  String?
   price        Decimal     @db.Decimal(10, 2)
+  compareAtPrice Decimal?  @db.Decimal(10, 2)
+  costPerItem  Decimal?    @db.Decimal(10, 2)
+  chargeTax    Boolean     @default(true)
   stock        Int         @default(0)
+  outOfStockSince DateTime?
   images       String[]
   categoryId   String
   category     Category    @relation(fields: [categoryId], references: [id])
   orderItems   OrderItem[]
   cartItems    CartItem[]
   wishlistedBy User[]      @relation("UserWishlist")
+  isActive     Boolean     @default(true)
   isFeatured   Boolean     @default(false)
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt
@@ -83,12 +88,19 @@ model Order {
   guestLastName  String?
   guestAddress   String?
 
-  status          OrderStatus @default(PENDING)
-  total           Decimal     @db.Decimal(10, 2)
-  mrpTotal          Decimal?    @db.Decimal(10, 2)
-  discountOnMRP      Decimal?    @db.Decimal(10, 2)
-  couponDiscount    Decimal?    @db.Decimal(10, 2)
-  shippingAmount     Decimal?    @default(0) @db.Decimal(10, 2)
+  status           OrderStatus   @default(PENDING)
+  paymentMethod    PaymentMethod @default(ONLINE)
+  paymentStatus    PaymentStatus @default(PENDING)
+  paidAmount       Decimal       @default(0) @db.Decimal(10, 2)
+  notes            String?
+  isManual         Boolean       @default(false)
+  stockAdjusted    Boolean       @default(false)
+  allowOutOfStock  Boolean       @default(false)
+  total            Decimal       @db.Decimal(10, 2)
+  mrpTotal         Decimal?      @db.Decimal(10, 2)
+  discountOnMRP    Decimal?      @db.Decimal(10, 2)
+  couponDiscount   Decimal?      @db.Decimal(10, 2)
+  shippingAmount   Decimal?      @default(0) @db.Decimal(10, 2)
   storeCreditUsed Decimal     @default(0) @db.Decimal(10, 2)
   razorpayAmount  Decimal     @default(0) @db.Decimal(10, 2)
   refundedAmount  Decimal     @default(0) @db.Decimal(10, 2)
@@ -107,10 +119,26 @@ model Order {
 
 enum OrderStatus {
   PENDING
+  CONFIRMED
   PROCESSING
   SHIPPED
   DELIVERED
   CANCELLED
+  PAID
+}
+
+enum PaymentMethod {
+  ONLINE
+  CASH
+  BANK_TRANSFER
+  UPI
+  COD
+  CUSTOM
+}
+
+enum PaymentStatus {
+  PENDING
+  PARTIAL
   PAID
 }
 

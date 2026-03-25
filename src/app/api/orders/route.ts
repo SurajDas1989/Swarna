@@ -3,6 +3,7 @@ import prisma from '@/lib/prisma';
 import { getAuthenticatedUser } from '@/lib/supabase-server';
 import { sendOrderReceiptEmail } from '@/lib/email';
 import { reserveStoreCredit, mutateStoreCredit } from '@/lib/services/storeCredit';
+import { generateUniqueOrderNumber, normalizePhone } from '@/lib/orders';
 
 interface CheckoutItem {
     id: string;
@@ -10,26 +11,16 @@ interface CheckoutItem {
     price: number;
 }
 
-function createOrderNumber() {
-    const datePart = new Date().toISOString().slice(2, 10).replace(/-/g, '');
-    const shortHash = Math.random().toString(36).substring(2, 6).toUpperCase();
-    return `SW-${datePart}-${shortHash}`;
-}
-
-function normalizePhone(phone?: string | null) {
-    if (!phone) return null;
-    const digits = phone.replace(/\D/g, '');
-    if (!digits) return null;
-    return digits.length > 10 ? digits.slice(-10) : digits;
-}
-
-async function generateUniqueOrderNumber() {
-    for (let i = 0; i < 5; i++) {
-        const candidate = createOrderNumber();
-        const existing = await prisma.order.findUnique({ where: { orderNumber: candidate } });
-        if (!existing) return candidate;
+function getOutOfStockSinceUpdate(nextStock: number, previousStock: number) {
+    if (nextStock > 0) {
+        return null;
     }
-    return `${createOrderNumber()}-${Math.random().toString(36).substring(2, 4).toUpperCase()}`;
+
+    if (previousStock <= 0) {
+        return undefined;
+    }
+
+    return new Date();
 }
 
 // POST - Create a new order (supports guest and logged-in checkout)
@@ -91,6 +82,28 @@ export async function POST(request: Request) {
         let appliedCouponCode: string | null = null;
 
         const orderResult = await prisma.$transaction(async (tx) => {
+            const uniqueProductIds = [...new Set((items as CheckoutItem[]).map((item) => item.id))];
+            const products = await tx.product.findMany({
+                where: { id: { in: uniqueProductIds } },
+                select: { id: true, stock: true, name: true, isActive: true },
+            });
+            const productMap = new Map(products.map((product) => [product.id, product]));
+
+            if (products.length !== uniqueProductIds.length) {
+                throw new Error('One or more products could not be found.');
+            }
+
+            for (const item of items as CheckoutItem[]) {
+                const product = productMap.get(item.id);
+                if (!product || !product.isActive) {
+                    throw new Error('One or more products are no longer available.');
+                }
+
+                if (item.quantity > product.stock) {
+                    throw new Error(`${product.name} is out of stock.`);
+                }
+            }
+
             let finalOrderStatus = 'PENDING';
             let checkoutTotal = parseFloat(total);
 
@@ -202,13 +215,18 @@ export async function POST(request: Request) {
                     guestLastName: dbUserId ? null : shipping.lastName,
                     guestAddress: dbUserId ? null : formattedAddress,
                     orderNumber,
+                    paymentMethod: paymentMethod === 'cod' ? 'COD' : 'ONLINE',
+                    paymentStatus: finalOrderStatus === 'PAID' ? 'PAID' : 'PENDING',
+                    paidAmount: Number(finalCreditUsed) || 0,
+                    isManual: false,
+                    stockAdjusted: true,
                     total, // Keep original total (pre-discount)
                     mrpTotal: Number(mrpTotal) || 0,
                     discountOnMRP: Number(discountOnMRP) || 0,
                     couponDiscount: Number(couponDiscountAmount) || 0,
                     shippingAmount: Number(shippingAmount) || 0,
                     storeCreditUsed: Number(finalCreditUsed) || 0,
-                    status: finalOrderStatus as any,
+                    status: finalOrderStatus as 'PENDING' | 'PAID',
                     items: {
                         create: (items as CheckoutItem[]).map((item) => ({
                             productId: item.id,
@@ -219,6 +237,22 @@ export async function POST(request: Request) {
                 },
                 include: { items: { include: { product: true } } },
             });
+
+            for (const item of items as CheckoutItem[]) {
+                const product = productMap.get(item.id);
+                if (!product) continue;
+
+                const nextStock = product.stock - item.quantity;
+                const outOfStockSince = getOutOfStockSinceUpdate(nextStock, product.stock);
+
+                await tx.product.update({
+                    where: { id: item.id },
+                    data: {
+                        stock: nextStock,
+                        ...(outOfStockSince !== undefined ? { outOfStockSince } : {}),
+                    },
+                });
+            }
 
             // Link coupon to order
             if (appliedCouponCode) {
@@ -236,7 +270,11 @@ export async function POST(request: Request) {
         if (paymentMethod === 'cod') {
             await prisma.order.update({
                 where: { id: order.id },
-                data: { paymentId: 'cod' },
+                data: {
+                    paymentId: 'cod',
+                    paymentMethod: 'COD',
+                    paymentStatus: 'PENDING',
+                },
             });
 
             const emailItems = order.items.map((i) => ({
