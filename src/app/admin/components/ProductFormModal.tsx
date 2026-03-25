@@ -652,6 +652,7 @@ export default function ProductFormModal({
                             variant="outline"
                             onClick={onClose}
                             disabled={submitting}
+                            className="text-gray-700 dark:text-gray-300 border-gray-300"
                         >
                             Cancel
                         </Button>
