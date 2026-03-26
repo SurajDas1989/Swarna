@@ -339,8 +339,6 @@ export default function ProductFormModal({
         }
     };
 
-    if (!isOpen) return null;
-
     const numericPrice = Number(formData.price || 0);
     const numericCostPerItem = Number(formData.costPerItem || 0);
     const profit = numericPrice - numericCostPerItem;
@@ -362,6 +360,9 @@ export default function ProductFormModal({
             setFormData(prev => ({ ...prev, sku: skuPreview }));
         }
     };
+
+    if (!isOpen) return null;
+
 
     return (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
