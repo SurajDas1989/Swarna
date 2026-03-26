@@ -59,6 +59,7 @@ export function FeaturedProducts() {
         addToCart,
         activeCategory,
         setActiveCategory,
+        activePriceRange,
         searchQuery,
         setSearchQuery,
     } = useAppContext();
@@ -100,12 +101,30 @@ export function FeaturedProducts() {
 
 
     const filteredProducts = useMemo(() => {
+        let baseProducts = products;
+
         if (activeCategory === "liked") {
-            return products.filter((p) => isInWishlist(p.id));
+            baseProducts = products.filter((p) => isInWishlist(p.id));
         }
 
-        return products;
-    }, [activeCategory, isInWishlist, products]);
+        if (activePriceRange !== "all") {
+            baseProducts = baseProducts.filter(p => {
+                const price = p.price || 0;
+                switch (activePriceRange) {
+                    case "under199": return price < 199;
+                    case "under499": return price < 499;
+                    case "under500": return price < 500;
+                    case "under699": return price < 699;
+                    case "under999": return price < 999;
+                    case "500to1500": return price >= 500 && price <= 1500;
+                    case "over1500": return price > 1500;
+                    default: return true;
+                }
+            });
+        }
+
+        return baseProducts;
+    }, [activeCategory, activePriceRange, isInWishlist, products]);
 
     const sortedProducts = useMemo(() => {
         // Create a shallow copy to avoid mutating the original array
