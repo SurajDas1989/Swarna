@@ -90,6 +90,7 @@ export async function POST(request: Request) {
             stock,
             isActive = true,
             isFeatured = false,
+            sku,
         } = body;
 
         const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
@@ -109,6 +110,7 @@ export async function POST(request: Request) {
                 outOfStockSince: Number(stock) > 0 ? null : new Date(),
                 isActive: Boolean(isActive),
                 isFeatured: Boolean(isFeatured),
+                sku: sku || null,
             }
         });
 
@@ -127,7 +129,7 @@ export async function PUT(request: Request) {
         }
 
         const body = await request.json();
-        const { id, name, categoryId, price, compareAtPrice, costPerItem, chargeTax, description, images, stock, isActive, isFeatured } = body;
+        const { id, name, categoryId, price, compareAtPrice, costPerItem, chargeTax, description, images, stock, isActive, isFeatured, sku } = body;
 
         if (!id) return NextResponse.json({ error: 'ID required' }, { status: 400 });
 
@@ -159,6 +161,7 @@ export async function PUT(request: Request) {
         }
         if (isActive !== undefined) updateData.isActive = isActive;
         if (isFeatured !== undefined) updateData.isFeatured = isFeatured;
+        if (sku !== undefined) updateData.sku = sku || null;
 
         const product = await prisma.product.update({
             where: { id },

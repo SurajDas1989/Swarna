@@ -48,6 +48,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
             select: {
                 id: true,
                 name: true,
+                sku: true,
                 price: true,
                 compareAtPrice: true,
                 costPerItem: true,
@@ -72,6 +73,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
         const formatted = {
             id: product.id,
             name: product.name,
+            sku: product.sku || null,
             category: product.category.slug,
             price: Number(product.price),
             compareAtPrice: product.compareAtPrice != null ? Number(product.compareAtPrice) : null,

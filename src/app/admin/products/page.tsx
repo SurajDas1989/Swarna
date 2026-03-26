@@ -25,6 +25,7 @@ interface Product {
     isActive: boolean;
     isFeatured: boolean;
     categoryId: string;
+    sku?: string | null;
 }
 
 export default function AdminProductsPage() {
@@ -225,7 +226,11 @@ export default function AdminProductsPage() {
                                                 </div>
                                                 <div>
                                                     <p className="font-semibold text-foreground text-sm line-clamp-1">{product.name}</p>
-                                                    <p className="text-xs text-gray-500 font-mono mt-0.5">ID: {product.id.slice(0, 8)}...</p>
+                                                    {product.sku ? (
+                                                        <p className="text-xs text-amber-600 dark:text-amber-400 font-mono mt-0.5">{product.sku}</p>
+                                                    ) : (
+                                                        <p className="text-xs text-gray-500 font-mono mt-0.5">ID: {product.id.slice(0, 8)}...</p>
+                                                    )}
                                                 </div>
                                             </td>
                                             <td className="p-4">

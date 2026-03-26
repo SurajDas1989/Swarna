@@ -144,8 +144,8 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     const galleryImages = product.images && product.images.length > 0 ? product.images : [product.image];
     const activeImage = galleryImages[Math.min(activeThumb, galleryImages.length - 1)] || product.image;
 
-    // Generate fake SKU from product
-    const sku = `SW-${product.category.slice(0, 3).toUpperCase()}${product.id.toString().padStart(4, '0')}`;
+    // Use real SKU from database, fallback to generated format for legacy products
+    const sku = (product as any).sku || `SW-${product.category.slice(0, 3).toUpperCase()}${product.id.toString().padStart(4, '0')}`;
     // Fake sold count (using string length as a deterministic seed)
     const soldCount = 40 + (product.id.length * 13) % 160;
 
