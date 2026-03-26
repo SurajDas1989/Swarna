@@ -81,7 +81,7 @@ export default function ReturnPolicyPage() {
               <span>📹</span> 2. Mandatory Unboxing Video
             </h2>
             <div className="space-y-4">
-              <p className="font-medium text-foreground">To raise a valid claim, a clear, continuous unboxing video is mandatory. The video must show:</p>
+              <p className="font-medium text-foreground">To raise a valid claim, sharing a PROPER UNBOXING VIDEO is mandatory. Make sure to open the packet after showing the shipping label in the video, and unbox it in front of the camera with no pauses in between. An opening video is a MUST for any claim. The video must show:</p>
               <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3 px-2">
                 <li className="flex items-center gap-2 text-sm bg-background/50 p-2 rounded-lg border border-primary/5">📦 Sealed package</li>
                 <li className="flex items-center gap-2 text-sm bg-background/50 p-2 rounded-lg border border-primary/5">✂️ Opening process</li>

@@ -23,6 +23,10 @@ const nextConfig: NextConfig = {
             },
           ]
         : []),
+      {
+        protocol: "https",
+        hostname: "vrfebojxpyfrertujgye.supabase.co",
+      },
       // Keep support for the placeholder mock image domains
       {
         protocol: "https",

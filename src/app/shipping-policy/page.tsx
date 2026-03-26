@@ -149,7 +149,7 @@ export default function ShippingPolicyPage() {
                 <div className="text-4xl">📹</div>
                 <div>
                   <p className="font-bold text-lg uppercase mb-1">Unboxing Video Mandatory</p>
-                  <p className="text-sm">Record an unboxing video immediately if the package appears tampered, opened, or damaged.</p>
+                  <p className="text-sm">Share a PROPER UNBOXING VIDEO. Make sure to open the packet after showing the shipping label in the video, and unbox it in front of the camera with no pauses in between. An opening video is a MUST for any claim.</p>
                 </div>
               </div>
               <p className="text-sm font-medium text-foreground">Contact us within <strong>24 hours</strong> of delivery with proof:</p>
