@@ -228,4 +228,51 @@ export async function DELETE(request: Request) {
         return NextResponse.json({ error: 'Failed' }, { status: 500 });
     }
 }
+export async function GET(request: Request) {
+    try {
+        const admin = await requireAdmin();
+        if (!admin) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+        }
 
+        const { searchParams } = new URL(request.url);
+        const prefix = searchParams.get('prefix');
+
+        if (!prefix) {
+            return NextResponse.json({ error: 'Prefix required' }, { status: 400 });
+        }
+
+        // Find products with SKUs starting with the prefix
+        const products = await prisma.product.findMany({
+            where: {
+                sku: {
+                    startsWith: prefix,
+                },
+            },
+            select: {
+                sku: true,
+            },
+        });
+
+        let nextSequence = 1;
+        if (products.length > 0) {
+            const sequences = products
+                .map(p => {
+                    const parts = p.sku?.split('-');
+                    if (!parts || parts.length < 2) return 0;
+                    const seqStr = parts[parts.length - 1];
+                    return parseInt(seqStr) || 0;
+                })
+                .filter(seq => seq > 0);
+
+            if (sequences.length > 0) {
+                nextSequence = Math.max(...sequences) + 1;
+            }
+        }
+
+        return NextResponse.json({ nextSequence });
+    } catch (error) {
+        console.error('Failed to fetch SKU sequence:', error);
+        return NextResponse.json({ error: 'Failed' }, { status: 500 });
+    }
+}

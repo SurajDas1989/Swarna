@@ -161,6 +161,7 @@ export default function ProductFormModal({
     const [skuColor, setSkuColor] = useState("");
     const [skuCustomColor, setSkuCustomColor] = useState("");
     const [skuSeq, setSkuSeq] = useState(1);
+    const [isFetchingSeq, setIsFetchingSeq] = useState(false);
 
     const [imageInput, setImageInput] = useState("");
 
@@ -182,6 +183,15 @@ export default function ProductFormModal({
                     isFeatured: product.isFeatured,
                     sku: product.sku || "",
                 });
+                
+                // If it has a SKU, try to extract its sequence to avoid overwriting it
+                if (product.sku) {
+                    const parts = product.sku.split('-');
+                    if (parts.length >= 2) {
+                        const seq = parseInt(parts[parts.length - 1]);
+                        if (!isNaN(seq)) setSkuSeq(seq);
+                    }
+                }
             } else {
                 setFormData({
                     name: "",
@@ -202,10 +212,45 @@ export default function ProductFormModal({
                 setSkuColor("");
                 setSkuCustomColor("");
                 setSkuSeq(1);
+                setIsFetchingSeq(false);
             }
             setImageInput("");
         }
     }, [isOpen, product]);
+
+    // Auto-fetch next sequence
+    useEffect(() => {
+        if (!isOpen || !skuType || !skuColor || !formData.price) return;
+
+        const fetchNextSeq = async () => {
+            try {
+                const typeValue = skuType === '__custom__' ? skuCustomType : skuType;
+                const colorValue = skuColor === '__custom__' ? skuCustomColor : skuColor;
+                if (!typeValue || !colorValue) return;
+
+                const typePrefix = getTypePrefix(typeValue);
+                const colorCode = getColorCode(colorValue);
+                const priceTier = getPriceTierCode(Number(formData.price));
+                
+                // Prefix for search: JL-TYPE-COLOR-PRICE-
+                const prefix = `JL-${typePrefix}-${colorCode}-${priceTier}-`;
+
+                setIsFetchingSeq(true);
+                const res = await fetch(`/api/admin/products?prefix=${prefix}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    setSkuSeq(data.nextSequence || 1);
+                }
+            } catch (err) {
+                console.error("Failed to fetch next sequence:", err);
+            } finally {
+                setIsFetchingSeq(false);
+            }
+        };
+
+        const timer = setTimeout(fetchNextSeq, 500); // Debounce to avoid too many calls
+        return () => clearTimeout(timer);
+    }, [skuType, skuCustomType, skuColor, skuCustomColor, formData.price, isOpen]);
 
     const fetchCategories = async () => {
         try {
@@ -593,14 +638,16 @@ export default function ProductFormModal({
 
                             {/* Sequence */}
                             <div>
-                                <label className="block text-xs font-semibold text-muted-foreground mb-1">Sequence #</label>
+                                <label className="block text-xs font-semibold text-muted-foreground mb-1">
+                                    Sequence # {isFetchingSeq && <Loader2 className="inline w-3 h-3 animate-spin text-amber-500" />}
+                                </label>
                                 <input
                                     type="number"
                                     min={1}
                                     max={99}
                                     value={skuSeq}
                                     onChange={(e) => setSkuSeq(Math.max(1, Math.min(99, parseInt(e.target.value) || 1)))}
-                                    className="w-full px-3 py-2 border border-gray-300 dark:border-white/20 rounded-lg bg-white dark:bg-white/5 text-foreground focus:outline-none focus:ring-2 focus:ring-amber-500 text-sm"
+                                    className={`w-full px-3 py-2 border border-gray-300 dark:border-white/20 rounded-lg bg-white dark:bg-white/5 text-foreground focus:outline-none focus:ring-2 focus:ring-amber-500 text-sm ${isFetchingSeq ? 'opacity-50' : ''}`}
                                 />
                             </div>
                         </div>
