@@ -8,17 +8,37 @@ import { useRouter } from 'next/navigation';
 interface AuthContextType {
     user: User | null;
     session: Session | null;
-    dbUser: any | null;
+    dbUser: DbUserShape | null;
     loading: boolean;
     signOut: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+type DbUserShape = {
+    id?: string;
+    email?: string | null;
+    role?: string | null;
+    [key: string]: unknown;
+};
+
+function getSessionDbUserHint(currentUser: User | null) {
+    if (!currentUser?.email) return null;
+
+    const tokenRole = String(currentUser.app_metadata?.role || currentUser.user_metadata?.role || "").toUpperCase();
+    if (tokenRole !== "ADMIN") return null;
+
+    return {
+        id: currentUser.id,
+        email: currentUser.email,
+        role: "ADMIN",
+    };
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [user, setUser] = useState<User | null>(null);
     const [session, setSession] = useState<Session | null>(null);
-    const [dbUser, setDbUser] = useState<any | null>(null);
+    const [dbUser, setDbUser] = useState<DbUserShape | null>(null);
     const [loading, setLoading] = useState(true);
     const supabase = createClient();
     const router = useRouter();
@@ -61,13 +81,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
                 setSession(session);
                 setUser(session?.user || null);
-                
-                // Keep initial render unblocked even if sync API is slow/failing.
-                if (session?.user) {
-                    syncUserToDb(session.user);
-                } else {
-                    setLoading(false);
-                }
+                setDbUser(getSessionDbUserHint(session?.user || null));
+                setLoading(false);
             } catch (error) {
                 console.error('Unexpected auth session error', error);
                 setSession(null);
@@ -84,10 +99,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             if (_event === 'SIGNED_OUT') {
                 setDbUser(null);
                 setLoading(false);
-            } else if ((_event === 'SIGNED_IN' || _event === 'TOKEN_REFRESHED') && session?.user) {
+            } else if (_event === 'SIGNED_IN' && session?.user) {
                 await syncUserToDb(session.user);
                 setLoading(false);
             } else {
+                setDbUser(getSessionDbUserHint(session?.user || null));
                 setLoading(false);
             }
         });

@@ -1,14 +1,10 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import { Navbar } from "@/components/layout/Navbar";
-import { Footer } from "@/components/layout/Footer";
-import { CartModal } from "@/components/layout/CartModal";
-import { BackToTop } from "@/components/BackToTop";
-import { MobileBottomNav } from "@/components/layout/MobileBottomNav";
 import { AppProvider } from "@/context/AppContext";
 import { AuthProvider } from "@/context/AuthContext";
 import { ThemeProvider } from "@/context/ThemeContext";
 import { ToastProvider } from "@/components/ui/Toast";
+import { AppShell } from "@/components/layout/AppShell";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -20,9 +16,6 @@ const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
 });
-
-
-
 export const metadata: Metadata = {
   metadataBase: new URL('https://swarna.vercel.app'),
   alternates: {
@@ -69,8 +62,6 @@ export const metadata: Metadata = {
   },
 };
 
-import { StickyDiscountTab } from "@/components/ui/StickyDiscountTab";
-
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -98,13 +89,7 @@ export default function RootLayout({
                   type="application/ld+json"
                   dangerouslySetInnerHTML={{ __html: JSON.stringify(orgSchema) }}
                 />
-                <Navbar />
-                <CartModal />
-                <StickyDiscountTab />
-                <main className="flex-grow pb-24 md:pb-0">{children}</main>
-                <BackToTop />
-                <MobileBottomNav />
-                <Footer />
+                <AppShell>{children}</AppShell>
               </ToastProvider>
             </AppProvider>
           </AuthProvider>

@@ -10,6 +10,7 @@ import { useToast } from "@/components/ui/Toast";
 import { Heart, ShoppingCart, Star, Truck, ShieldCheck, RotateCcw, Flame, ChevronRight, Zap } from "lucide-react";
 import { getBlurDataUrl } from "@/lib/utils/imageBlur";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { getProductCategoryLabel } from "@/lib/productCategory";
 
 const RECENTLY_VIEWED_KEY = "jewelluxe_recently_viewed";
 
@@ -140,8 +141,8 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     const discount = Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100);
     const isLiked = isInWishlist(product.id);
 
-    // Generate fake SKU from product
-    const sku = `SW-${product.category.slice(0, 3).toUpperCase()}${product.id.toString().padStart(4, '0')}`;
+    const categoryLabel = getProductCategoryLabel(product.category);
+    const sku = `SW-${categoryLabel.slice(0, 3).toUpperCase()}${product.id.toString().padStart(4, '0')}`;
     // Fake sold count (using string length as a deterministic seed)
     const soldCount = 40 + (product.id.length * 13) % 160;
 
@@ -160,7 +161,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                         <ChevronRight className="w-3.5 h-3.5" />
                         <Link href="/#products" className="hover:text-primary transition-colors">Shop</Link>
                         <ChevronRight className="w-3.5 h-3.5" />
-                        <span className="text-primary font-medium capitalize">{product.category}</span>
+                        <span className="text-primary font-medium capitalize">{categoryLabel}</span>
                         <ChevronRight className="w-3.5 h-3.5" />
                         <span className="text-foreground font-medium truncate max-w-[200px]">{product.name}</span>
                     </div>
@@ -331,12 +332,12 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                             </div>
                             <div className="flex gap-2">
                                 <span className="text-gray-500 dark:text-gray-400 w-24">Category:</span>
-                                <Link href="/#products" className="text-primary font-medium capitalize hover:underline">{product.category}</Link>
+                                <Link href="/#products" className="text-primary font-medium capitalize hover:underline">{categoryLabel}</Link>
                             </div>
                             <div className="flex gap-2">
                                 <span className="text-gray-500 dark:text-gray-400 w-24">Tags:</span>
                                 <div className="flex flex-wrap gap-1.5">
-                                    {['Jewellery', product.category, 'Premium', 'Gift'].map(tag => (
+                                    {['Jewellery', categoryLabel, 'Premium', 'Gift'].map(tag => (
                                         <span key={tag} className="px-2 py-0.5 bg-gray-100 dark:bg-white/10 text-gray-600 dark:text-gray-300 rounded text-xs capitalize">{tag}</span>
                                     ))}
                                 </div>

@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -56,8 +56,6 @@ function ProductCardSkeleton() {
 
 export function FeaturedProducts() {
     const {
-        products,
-        isProductsLoading,
         toggleWishlist,
         isInWishlist,
         addToCart,
@@ -69,6 +67,9 @@ export function FeaturedProducts() {
         setSearchQuery,
     } = useAppContext();
 
+    const [products, setProducts] = useState<Product[]>([]);
+    const [isProductsLoading, setIsProductsLoading] = useState(true);
+
     const { showToast } = useToast();
     const router = useRouter();
     const [sortBy, setSortBy] = useState("default");
@@ -77,9 +78,30 @@ export function FeaturedProducts() {
     const [mobileSortOpen, setMobileSortOpen] = useState(false);
     const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
 
+    useEffect(() => {
+        const fetchProducts = async () => {
+            try {
+                const res = await fetch("/api/products", { cache: "no-store" });
+                if (!res.ok) {
+                    setProducts([]);
+                    return;
+                }
+                const data = await res.json();
+                setProducts(Array.isArray(data) ? data : []);
+            } catch (error) {
+                console.error("Failed to fetch products", error);
+                setProducts([]);
+            } finally {
+                setIsProductsLoading(false);
+            }
+        };
+
+        fetchProducts();
+    }, []);
+
     const filteredProducts =
         activeCategory === "liked"
-            ? products.filter((p) => isInWishlist(p.id))
+            ? products.filter((p: Product) => isInWishlist(p.id))
             : products;
 
     const sortedProducts = [...filteredProducts];
