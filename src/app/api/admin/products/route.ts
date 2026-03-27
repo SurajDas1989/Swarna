@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { createServiceRoleSupabaseClient, requireAdmin } from '@/lib/supabase-server';
+import { revalidateTag } from 'next/cache';
 
 const PRODUCT_BUCKET = 'products';
 
@@ -114,6 +115,9 @@ export async function POST(request: Request) {
             }
         });
 
+        // Invalidate products list cache so homepage ISR gets fresh data
+        revalidateTag('products:list', 'cache');
+
         return NextResponse.json(product);
     } catch (error) {
         console.error('Failed to create product:', error);
@@ -168,6 +172,10 @@ export async function PUT(request: Request) {
             data: updateData
         });
 
+        // Invalidate both the product page cache and the products list
+        revalidateTag('products:list', 'cache');
+        revalidateTag(`product:${id}`, 'cache');
+
         if (images !== undefined) {
             const removedImages = existingProduct.images.filter((imageUrl) => !images.includes(imageUrl));
             await deleteStorageImages(removedImages, id);
@@ -220,6 +228,9 @@ export async function DELETE(request: Request) {
             where: { id }
         });
 
+        // Invalidate caches after deletion
+        revalidateTag('products:list', 'cache');
+        revalidateTag(`product:${id}`, 'cache');
         await deleteStorageImages(existingProduct.images, id);
 
         return NextResponse.json({ success: true });
