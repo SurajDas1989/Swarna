@@ -1,9 +1,26 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { createServiceRoleSupabaseClient, requireAdmin } from '@/lib/supabase-server';
-import { revalidateTag } from 'next/cache';
+import { revalidatePath, revalidateTag } from 'next/cache';
+import type { Prisma } from '@/generated/prisma';
+import { getCategoryTag, getProductTag, getProductsListTag, getProductsRelatedTag } from '@/lib/storefront-products';
 
 const PRODUCT_BUCKET = 'products';
+
+function revalidateStorefrontProductTags(productId?: string, categorySlugs: string[] = []) {
+    revalidateTag(getProductsListTag(), 'cache');
+    revalidateTag(getProductsRelatedTag(), 'cache');
+    revalidatePath('/');
+
+    if (productId) {
+        revalidateTag(getProductTag(productId), 'cache');
+        revalidatePath(`/product/${productId}`);
+    }
+
+    for (const slug of [...new Set(categorySlugs.filter(Boolean))]) {
+        revalidateTag(getCategoryTag(slug), 'cache');
+    }
+}
 
 function getOutOfStockSinceUpdate(nextStock: number, previousStock?: number) {
     if (nextStock > 0) {
@@ -112,11 +129,18 @@ export async function POST(request: Request) {
                 isActive: Boolean(isActive),
                 isFeatured: Boolean(isFeatured),
                 sku: sku || null,
-            }
+            },
+            select: {
+                id: true,
+                category: {
+                    select: {
+                        slug: true,
+                    },
+                },
+            },
         });
 
-        // Invalidate products list cache so homepage ISR gets fresh data
-        revalidateTag('products:list', 'cache');
+        revalidateStorefrontProductTags(product.id, [product.category.slug]);
 
         return NextResponse.json(product);
     } catch (error) {
@@ -139,15 +163,30 @@ export async function PUT(request: Request) {
 
         const existingProduct = await prisma.product.findUnique({
             where: { id },
-            select: { images: true, stock: true },
+            select: {
+                images: true,
+                stock: true,
+                category: {
+                    select: {
+                        slug: true,
+                    },
+                },
+            },
         });
         if (!existingProduct) {
             return NextResponse.json({ error: 'Product not found' }, { status: 404 });
         }
 
-        const updateData: any = {};
-        if (name !== undefined) updateData.name = name;
-        if (categoryId !== undefined) updateData.categoryId = categoryId;
+        const updateData: Prisma.ProductUpdateInput = {};
+        if (name !== undefined) {
+            updateData.name = name;
+            updateData.slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
+        }
+        if (categoryId !== undefined) {
+            updateData.category = {
+                connect: { id: categoryId },
+            };
+        }
         if (price !== undefined) updateData.price = Number(price);
         if (compareAtPrice !== undefined) updateData.compareAtPrice = compareAtPrice ? Number(compareAtPrice) : null;
         if (costPerItem !== undefined) updateData.costPerItem = costPerItem ? Number(costPerItem) : null;
@@ -169,12 +208,18 @@ export async function PUT(request: Request) {
 
         const product = await prisma.product.update({
             where: { id },
-            data: updateData
+            data: updateData,
+            select: {
+                id: true,
+                category: {
+                    select: {
+                        slug: true,
+                    },
+                },
+            },
         });
 
-        // Invalidate both the product page cache and the products list
-        revalidateTag('products:list', 'cache');
-        revalidateTag(`product:${id}`, 'cache');
+        revalidateStorefrontProductTags(id, [existingProduct.category.slug, product.category.slug]);
 
         if (images !== undefined) {
             const removedImages = existingProduct.images.filter((imageUrl) => !images.includes(imageUrl));
@@ -204,6 +249,11 @@ export async function DELETE(request: Request) {
             where: { id },
             select: {
                 images: true,
+                category: {
+                    select: {
+                        slug: true,
+                    },
+                },
                 _count: {
                     select: {
                         orderItems: true,
@@ -228,9 +278,7 @@ export async function DELETE(request: Request) {
             where: { id }
         });
 
-        // Invalidate caches after deletion
-        revalidateTag('products:list', 'cache');
-        revalidateTag(`product:${id}`, 'cache');
+        revalidateStorefrontProductTags(id, [existingProduct.category.slug]);
         await deleteStorageImages(existingProduct.images, id);
 
         return NextResponse.json({ success: true });

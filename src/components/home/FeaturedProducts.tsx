@@ -451,20 +451,25 @@ export function FeaturedProducts({ initialProducts = [] }: { initialProducts?: P
                                         </div>
 
                                         <div className="flex flex-1 flex-col p-3 lg:p-5">
-                                            <Link href={`/product/${product.id}`} className="mb-1 block">
-                                                <h3 className="line-clamp-2 text-sm font-medium text-gray-900 transition-colors hover:text-primary dark:text-foreground lg:line-clamp-1 lg:text-base">
+                                            <Link href={`/product/${product.id}`} className="mb-1 block min-h-[2.75rem] lg:min-h-[1.75rem]">
+                                                <h3 className="line-clamp-2 text-sm font-medium leading-5 text-gray-900 transition-colors hover:text-primary dark:text-foreground lg:line-clamp-1 lg:text-base">
                                                     {product.name}
                                                 </h3>
                                             </Link>
 
                                             <div className="mt-auto flex items-center justify-between pt-2 lg:pt-4">
-                                                <div className="flex flex-col">
+                                                <div className="flex min-h-[2.75rem] flex-col justify-end">
                                                     <span className="text-base font-semibold text-gray-900 dark:text-foreground lg:text-lg">
                                                         {new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(product.price)}
                                                     </span>
                                                     {product.originalPrice > product.price && (
                                                         <span className="text-xs text-gray-400 line-through lg:text-sm">
                                                             {new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(product.originalPrice)}
+                                                        </span>
+                                                    )}
+                                                    {product.originalPrice <= product.price && (
+                                                        <span className="text-xs opacity-0 lg:text-sm" aria-hidden="true">
+                                                            placeholder
                                                         </span>
                                                     )}
                                                 </div>

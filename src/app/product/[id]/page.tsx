@@ -1,6 +1,6 @@
 import { Metadata } from 'next';
-import prisma from '@/lib/prisma';
 import ProductPageClient from './ProductPageClient';
+import { getCachedProductById } from '@/lib/storefront-products';
 
 function buildProductTitle(productName: string, categoryName: string) {
     const candidateTitles = [
@@ -14,24 +14,20 @@ function buildProductTitle(productName: string, categoryName: string) {
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
     const { id } = await params;
-    
-    // Fetch product details from DB
-    const product = await prisma.product.findUnique({ 
-        where: { id },
-        select: { name: true, description: true, images: true, category: { select: { name: true } } }
-    });
+
+    const product = await getCachedProductById(id);
     
     if (product) {
         return {
             title: {
-                absolute: buildProductTitle(product.name, product.category.name),
+                absolute: buildProductTitle(product.name, product.category),
             },
             description: product.description || undefined,
             alternates: {
                 canonical: `/product/${id}`,
             },
             openGraph: {
-                title: buildProductTitle(product.name, product.category.name),
+                title: buildProductTitle(product.name, product.category),
                 description: product.description || undefined,
                 images: product.images.length > 0 ? [{ url: product.images[0] }] : [],
             }
@@ -45,22 +41,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 
 export default async function ProductPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;
-    const product = await prisma.product.findUnique({
-        where: { id },
-        select: {
-            id: true,
-            name: true,
-            description: true,
-            price: true,
-            images: true,
-            stock: true,
-            category: {
-                select: {
-                    name: true
-                }
-            }
-        }
-    });
+    const product = await getCachedProductById(id);
 
     const jsonLd = product ? [
         {
@@ -95,7 +76,7 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
                 {
                     '@type': 'ListItem',
                     position: 3,
-                    name: product.category.name,
+                    name: product.category,
                     item: 'https://swarna.vercel.app/#products'
                 },
                 {

@@ -9,6 +9,7 @@ import { Features } from "@/components/home/Features";
 import { About } from "@/components/home/About";
 import type { Metadata } from "next";
 import type { Product } from "@/context/AppContext";
+import { getCachedStorefrontProducts } from "@/lib/storefront-products";
 
 export const metadata: Metadata = {
   title: "Artificial Jewellery India | Necklaces & Earrings",
@@ -21,17 +22,7 @@ export const metadata: Metadata = {
 
 async function fetchInitialProducts(): Promise<Product[]> {
   try {
-    const baseUrl = process.env.VERCEL_URL
-      ? `https://${process.env.VERCEL_URL}`
-      : process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
-
-    const res = await fetch(`${baseUrl}/api/products`, {
-      next: { revalidate: 3600, tags: ["products:list"] },
-    });
-
-    if (!res.ok) return [];
-    const data = await res.json();
-    return Array.isArray(data) ? data : [];
+    return await getCachedStorefrontProducts();
   } catch {
     return [];
   }

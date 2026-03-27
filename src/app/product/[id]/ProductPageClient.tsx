@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import { useAppContext, Product } from "@/context/AppContext";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/Toast";
-import { ChevronDown, ChevronRight, Flame, Gem, Gift, Heart, PackageCheck, RotateCcw, ShieldCheck, ShoppingCart, Sparkles, Star, Truck, Zap } from "lucide-react";
+import { ChevronDown, ChevronRight, Flame, Gift, Heart, PackageCheck, RotateCcw, ShieldCheck, ShoppingCart, Sparkles, Star, Truck, Zap } from "lucide-react";
 import { getBlurDataUrl } from "@/lib/utils/imageBlur";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { AdaptiveContainer, Row } from "@/components/layout/LayoutPrimitives";
@@ -54,19 +54,6 @@ function getCategoryMood(categoryLabel: string): string {
     }
 
     return "A premium artificial jewellery pick designed to elevate everyday dressing";
-}
-
-function getHighlightCards(product: Product, categoryLabel: string): string[] {
-    const sentences = getDescriptionSentences(product.description);
-
-    return [
-        `${toTitleCase(categoryLabel)} styling with a polished finish and easy occasion appeal`,
-        getCategoryMood(categoryLabel),
-        sentences[0] || "Lightweight enough for gifting and repeat wear across occasions",
-        product.price >= 799
-            ? "Includes free delivery eligibility and quality checks before dispatch"
-            : "Finished for occasion wear while staying comfortable for repeat styling",
-    ].slice(0, 4);
 }
 
 function getKeyFeatures(product: Product, categoryLabel: string): string[] {
@@ -200,19 +187,10 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                 <div className="container mx-auto px-4 py-6 lg:py-10">
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-12">
                         {/* Left: Images Skeleton */}
-                        <div className="space-y-4">
-                            <Skeleton className="w-full aspect-square rounded-2xl" />
-                            <div className="flex gap-3 overflow-hidden lg:hidden">
-                                <Skeleton className="w-20 h-20 rounded-xl" />
-                                <Skeleton className="w-20 h-20 rounded-xl" />
-                                <Skeleton className="w-20 h-20 rounded-xl" />
-                                <Skeleton className="w-20 h-20 rounded-xl" />
-                            </div>
-                            <div className="hidden lg:grid lg:grid-cols-2 gap-4">
-                                <Skeleton className="col-span-2 aspect-[2.1/1.2] rounded-2xl" />
-                                <Skeleton className="aspect-[4/5] rounded-2xl" />
-                                <Skeleton className="aspect-[4/5] rounded-2xl" />
-                            </div>
+                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                            <Skeleton className="aspect-[4/5] rounded-2xl sm:col-span-2 sm:aspect-[2.1/1.2]" />
+                            <Skeleton className="aspect-[4/5] rounded-2xl" />
+                            <Skeleton className="aspect-[4/5] rounded-2xl" />
                         </div>
 
                         {/* Right: Info Skeleton */}
@@ -267,13 +245,10 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     const discount = Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100);
     const isLiked = isInWishlist(product.id);
     const isOutOfStock = (product.stock ?? 0) <= 0;
-    const galleryImages = product.images && product.images.length > 0 ? product.images : [product.image];
-    const mobileGalleryImages = galleryImages.slice(0, 3);
-    const desktopGalleryImages = galleryImages.slice(0, 4);
+    const galleryImages = (product.images && product.images.length > 0 ? product.images : [product.image]).slice(0, 3);
     const activeImage = galleryImages[Math.min(activeThumb, galleryImages.length - 1)] || product.image;
 
     const categoryLabel = getCategoryLabel(product.category);
-    const highlightCards = getHighlightCards(product, categoryLabel);
     const keyFeatures = getKeyFeatures(product, categoryLabel);
     const infoSections = getInfoSections(product);
     const soldCount = 40 + (product.id.length * 13) % 160;
@@ -306,57 +281,60 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                 <Row gap={6} className="lg:gap-12">
 
                     {/* LEFT — Image Gallery */}
-                    <div className="w-full lg:w-1/2 space-y-4">
-                        <div className="relative aspect-square bg-white dark:bg-card rounded-2xl overflow-hidden border border-gray-100 dark:border-white/10 shadow-sm group">
-                            <Image
-                                src={activeImage}
-                                alt={`${product.name} - Premium Artificial Jewellery | Swarna`}
-                                fill
-                                placeholder="blur"
-                                blurDataURL={getBlurDataUrl()}
-                                className="object-cover transition-transform duration-700 group-hover:scale-105"
-                                sizes="(max-width: 1024px) 100vw, 50vw"
-                                priority
-                            />
-                            <span className="absolute top-5 left-5 bg-red-500 text-white px-4 py-1.5 rounded-full text-sm font-bold shadow-lg">
-                                {discount}% OFF
-                            </span>
-                        </div>
-
-                        <div className="flex gap-3 overflow-x-auto pb-1 hide-scrollbar lg:hidden">
-                            {mobileGalleryImages.map((imageSrc, idx) => (
-                                <button
-                                    key={`${imageSrc}-${idx}`}
-                                    onClick={() => setActiveThumb(idx)}
-                                    className={`relative shrink-0 w-20 h-20 rounded-xl overflow-hidden border-2 transition-all duration-200 ${activeThumb === idx
-                                        ? "border-primary shadow-md ring-2 ring-primary/20"
-                                        : "border-gray-200 dark:border-white/10 hover:border-primary/50 opacity-70 hover:opacity-100"
-                                        }`}
-                                >
+                    <div className="w-full lg:w-1/2">
+                        <div className="flex items-start gap-3 sm:hidden">
+                            <div className="relative min-w-0 flex-[0_0_74%] overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm dark:border-white/10 dark:bg-card">
+                                <div className="relative aspect-[4/4.6]">
                                     <Image
-                                        src={imageSrc}
-                                        alt={`${product.name} detailed view ${idx + 1} - Artificial Jewellery`}
+                                        src={activeImage}
+                                        alt={`${product.name} main gallery view`}
                                         fill
                                         placeholder="blur"
                                         blurDataURL={getBlurDataUrl()}
                                         className="object-cover"
-                                        sizes="80px"
+                                        sizes="74vw"
+                                        priority
                                     />
-                                </button>
-                            ))}
+                                    <span className="absolute left-3 top-3 bg-red-500 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg">
+                                        {discount}% OFF
+                                    </span>
+                                </div>
+                            </div>
+                            <div className="hide-scrollbar flex max-h-[23rem] flex-[0_0_26%] flex-col gap-3 overflow-y-auto pr-1">
+                                {galleryImages.map((imageSrc, idx) => (
+                                    <button
+                                        key={`${imageSrc}-${idx}`}
+                                        type="button"
+                                        onClick={() => setActiveThumb(idx)}
+                                        className={`relative overflow-hidden rounded-xl border-2 bg-white shadow-sm transition-all dark:bg-card ${
+                                            activeThumb === idx
+                                                ? "border-primary ring-2 ring-primary/20"
+                                                : "border-gray-200 dark:border-white/10"
+                                        }`}
+                                    >
+                                        <div className="relative aspect-square">
+                                            <Image
+                                                src={imageSrc}
+                                                alt={`${product.name} thumbnail ${idx + 1}`}
+                                                fill
+                                                placeholder="blur"
+                                                blurDataURL={getBlurDataUrl()}
+                                                className="object-cover"
+                                                sizes="26vw"
+                                            />
+                                        </div>
+                                    </button>
+                                ))}
+                            </div>
                         </div>
 
-                        <div className="hidden lg:grid lg:grid-cols-2 gap-4">
-                            {desktopGalleryImages.map((imageSrc, idx) => (
-                                <button
-                                    key={`${imageSrc}-desktop-${idx}`}
-                                    onClick={() => setActiveThumb(idx)}
-                                    className={`group relative overflow-hidden rounded-2xl border bg-white dark:bg-card shadow-sm transition-all duration-300 ${activeThumb === idx
-                                        ? "border-primary ring-2 ring-primary/20"
-                                        : "border-gray-100 dark:border-white/10 hover:border-primary/40"
-                                        } ${idx === 0 && desktopGalleryImages.length > 2 ? "lg:col-span-2" : ""}`}
+                        <div className="hidden grid-cols-1 gap-4 sm:grid sm:grid-cols-2">
+                            {galleryImages.map((imageSrc, idx) => (
+                                <div
+                                    key={`${imageSrc}-${idx}`}
+                                    className={`group relative overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm dark:border-white/10 dark:bg-card ${idx === 0 ? "sm:col-span-2" : ""}`}
                                 >
-                                    <div className={idx === 0 && desktopGalleryImages.length > 2 ? "aspect-[2.1/1.2]" : "aspect-[4/5]"}>
+                                    <div className={idx === 0 ? "aspect-[4/5] sm:aspect-[2.1/1.2]" : "aspect-[4/5]"}>
                                         <Image
                                             src={imageSrc}
                                             alt={`${product.name} gallery view ${idx + 1}`}
@@ -364,10 +342,16 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                                             placeholder="blur"
                                             blurDataURL={getBlurDataUrl()}
                                             className="object-cover transition-transform duration-500 group-hover:scale-105"
-                                            sizes="(max-width: 1024px) 100vw, 25vw"
+                                            sizes={idx === 0 ? "(max-width: 640px) 100vw, 50vw" : "(max-width: 1024px) 50vw, 25vw"}
+                                            priority={idx === 0}
                                         />
                                     </div>
-                                </button>
+                                    {idx === 0 && (
+                                        <span className="absolute top-5 left-5 bg-red-500 text-white px-4 py-1.5 rounded-full text-sm font-bold shadow-lg">
+                                            {discount}% OFF
+                                        </span>
+                                    )}
+                                </div>
                             ))}
                         </div>
                     </div>
@@ -430,36 +414,21 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                             {product.description}
                         </p>
 
-                        <div className="mb-6 rounded-[1.75rem] border border-primary/10 bg-white dark:bg-card shadow-[0_20px_60px_rgba(15,23,42,0.06)] overflow-hidden">
-                            <div className="flex items-start justify-between gap-4 border-b border-gray-100 dark:border-white/10 px-5 py-5 sm:px-6">
-                                <div>
-                                    <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.3em] text-primary/80">
-                                        Why You&apos;ll Love It
-                                    </p>
-                                    <h2 className="max-w-xl text-2xl font-semibold leading-tight text-foreground">
-                                        {getCategoryMood(categoryLabel)}
-                                    </h2>
-                                </div>
-                                <span className={`inline-flex shrink-0 items-center rounded-full px-3 py-1.5 text-xs font-semibold ${isOutOfStock
-                                    ? "bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400"
-                                    : "bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-300"
-                                    }`}>
-                                    {isOutOfStock ? "Out of Stock" : `In Stock: ${product.stock ?? 0}`}
-                                </span>
+                        <div className="mb-6 flex items-start justify-between gap-4 rounded-2xl border border-gray-100 bg-white px-5 py-4 shadow-sm dark:border-white/10 dark:bg-card">
+                            <div>
+                                <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.3em] text-primary/80">
+                                    Piece Overview
+                                </p>
+                                <h2 className="max-w-xl text-xl font-semibold leading-tight text-foreground">
+                                    {getCategoryMood(categoryLabel)}
+                                </h2>
                             </div>
-                            <div className="grid gap-3 p-4 sm:grid-cols-2 sm:p-5">
-                                {highlightCards.map((card) => (
-                                    <div
-                                        key={card}
-                                        className="rounded-2xl border border-gray-100 bg-[#f8f4ec] px-4 py-2.5 text-sm leading-6 text-gray-700 shadow-sm dark:border-white/10 dark:bg-white/5 dark:text-gray-200"
-                                    >
-                                        <div className="flex items-start gap-2.5">
-                                            <Gem className="mt-1 h-3.5 w-3.5 shrink-0 text-primary" />
-                                            <p>{card}</p>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
+                            <span className={`inline-flex shrink-0 items-center rounded-full px-3 py-1.5 text-xs font-semibold ${isOutOfStock
+                                ? "bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400"
+                                : "bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-300"
+                                }`}>
+                                {isOutOfStock ? "Out of Stock" : `In Stock: ${product.stock ?? 0}`}
+                            </span>
                         </div>
 
                         {/* Divider */}
