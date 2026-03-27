@@ -7,12 +7,132 @@ import { useRouter } from "next/navigation";
 import { useAppContext, Product } from "@/context/AppContext";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/Toast";
-import { Heart, ShoppingCart, Star, Truck, ShieldCheck, RotateCcw, Flame, ChevronRight, Zap } from "lucide-react";
+import { ChevronDown, ChevronRight, Flame, Gem, Gift, Heart, PackageCheck, RotateCcw, ShieldCheck, ShoppingCart, Sparkles, Star, Truck, Zap } from "lucide-react";
 import { getBlurDataUrl } from "@/lib/utils/imageBlur";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { AdaptiveContainer, Row, Stack } from "@/components/layout/LayoutPrimitives";
+import { AdaptiveContainer, Row } from "@/components/layout/LayoutPrimitives";
 
 const RECENTLY_VIEWED_KEY = "jewelluxe_recently_viewed";
+
+function getCategoryLabel(category: Product["category"]): string {
+    if (typeof category === "string") return category;
+    return category?.slug || category?.name || "";
+}
+
+function getDescriptionSentences(description: string): string[] {
+    return description
+        .split(/[.!?]+/)
+        .map((sentence) => sentence.trim())
+        .filter(Boolean);
+}
+
+function toTitleCase(value: string): string {
+    return value
+        .split(/[-_\s]+/)
+        .filter(Boolean)
+        .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+        .join(" ");
+}
+
+function getCategoryMood(categoryLabel: string): string {
+    const category = categoryLabel.toLowerCase();
+
+    if (category.includes("bracelet") || category.includes("bangle")) {
+        return "A refined wrist accent that layers beautifully with everyday styling";
+    }
+    if (category.includes("necklace") || category.includes("chain")) {
+        return "A graceful neckline detail that adds polished shine without feeling heavy";
+    }
+    if (category.includes("earring") || category.includes("jhumka")) {
+        return "A face-framing statement with movement, sparkle, and festive charm";
+    }
+    if (category.includes("ring")) {
+        return "A finishing touch designed to feel elegant, expressive, and easy to style";
+    }
+    if (category.includes("set")) {
+        return "A coordinated jewellery story that makes dressing up feel effortless";
+    }
+
+    return "A premium artificial jewellery pick designed to elevate everyday dressing";
+}
+
+function getHighlightCards(product: Product, categoryLabel: string): string[] {
+    const sentences = getDescriptionSentences(product.description);
+
+    return [
+        `${toTitleCase(categoryLabel)} styling with a polished finish and easy occasion appeal`,
+        getCategoryMood(categoryLabel),
+        sentences[0] || "Lightweight enough for gifting and repeat wear across occasions",
+        product.price >= 799
+            ? "Includes free delivery eligibility and quality checks before dispatch"
+            : "Finished for occasion wear while staying comfortable for repeat styling",
+    ].slice(0, 4);
+}
+
+function getKeyFeatures(product: Product, categoryLabel: string): string[] {
+    const sentences = getDescriptionSentences(product.description);
+
+    return [
+        `Category: ${toTitleCase(categoryLabel)}`,
+        sentences[0]
+            ? `Design: ${sentences[0]}`
+            : `Design: Curated ${categoryLabel} styling with a refined finish`,
+        product.price >= 799
+            ? "Delivery: Eligible for free shipping on this order value"
+            : "Delivery: Carefully packed and quality-checked before dispatch",
+        `Appeal: Rated ${product.rating.toFixed(1)} for everyday-to-occasion styling`,
+    ];
+}
+
+function getInfoSections(product: Product): Array<{
+    id: string;
+    title: string;
+    icon: typeof Gift;
+    lines: string[];
+}> {
+    return [
+        {
+            id: "offers",
+            title: "Offers",
+            icon: Gift,
+            lines: [
+                product.price >= 799 ? "Free shipping is available on this piece." : "Add more styles to reach the free shipping threshold of Rs 799.",
+                "All prices are inclusive of applicable taxes.",
+                "Approved return cases are handled as store credit according to policy.",
+            ],
+        },
+        {
+            id: "care",
+            title: "Care",
+            icon: Sparkles,
+            lines: [
+                "Store in a dry pouch or box after use.",
+                "Avoid perfume, water, and harsh chemicals directly on the jewellery.",
+                "Wipe gently with a soft cloth to maintain finish and shine.",
+            ],
+        },
+        {
+            id: "delivery-returns",
+            title: "Delivery & Returns",
+            icon: PackageCheck,
+            lines: [
+                "Each piece is quality-checked before dispatch.",
+                "Claims are accepted only for damaged or incorrect items.",
+                "Issues must be reported within 24 hours of delivery with a proper unboxing video.",
+            ],
+        },
+        {
+            id: "cancellation",
+            title: "Cancellation",
+            icon: RotateCcw,
+            lines: [
+                "Orders cannot be cancelled once dispatched.",
+                "Before dispatch, cancellation requests are subject to approval.",
+                "Shipping and return handling follow the published store policy.",
+            ],
+        },
+    ];
+}
 
 export default function ProductDetailPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = use(params);
@@ -20,6 +140,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     const { addToCart, toggleWishlist, isInWishlist, setIsCartOpen } = useAppContext();
     const { showToast } = useToast();
     const [activeThumb, setActiveThumb] = useState(0);
+    const [openSection, setOpenSection] = useState("offers");
 
     const [product, setProduct] = useState<Product | null>(null);
     const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
@@ -34,11 +155,11 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                     const data = await res.json();
                     setProduct(data);
 
-                    // Fetch related products (using general products API)
-                    const relatedRes = await fetch(`/api/products?category=${data.category}`);
+                    // Fetch related products using the dedicated endpoint
+                    const relatedRes = await fetch(`/api/products/related?productId=${data.id}&limit=4`);
                     if (relatedRes.ok) {
                         const relatedData = await relatedRes.json();
-                        setRelatedProducts(relatedData.filter((p: Product) => p.id !== data.id).slice(0, 4));
+                        setRelatedProducts(Array.isArray(relatedData) ? relatedData : []);
                     }
                 }
             } catch (err) {
@@ -81,11 +202,16 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                         {/* Left: Images Skeleton */}
                         <div className="space-y-4">
                             <Skeleton className="w-full aspect-square rounded-2xl" />
-                            <div className="flex gap-3 overflow-hidden">
+                            <div className="flex gap-3 overflow-hidden lg:hidden">
                                 <Skeleton className="w-20 h-20 rounded-xl" />
                                 <Skeleton className="w-20 h-20 rounded-xl" />
                                 <Skeleton className="w-20 h-20 rounded-xl" />
                                 <Skeleton className="w-20 h-20 rounded-xl" />
+                            </div>
+                            <div className="hidden lg:grid lg:grid-cols-2 gap-4">
+                                <Skeleton className="col-span-2 aspect-[2.1/1.2] rounded-2xl" />
+                                <Skeleton className="aspect-[4/5] rounded-2xl" />
+                                <Skeleton className="aspect-[4/5] rounded-2xl" />
                             </div>
                         </div>
 
@@ -142,11 +268,14 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     const isLiked = isInWishlist(product.id);
     const isOutOfStock = (product.stock ?? 0) <= 0;
     const galleryImages = product.images && product.images.length > 0 ? product.images : [product.image];
+    const mobileGalleryImages = galleryImages.slice(0, 3);
+    const desktopGalleryImages = galleryImages.slice(0, 4);
     const activeImage = galleryImages[Math.min(activeThumb, galleryImages.length - 1)] || product.image;
 
-    // Generate fake SKU from product
-    const sku = `SW-${product.category.slice(0, 3).toUpperCase()}${product.id.toString().padStart(4, '0')}`;
-    // Fake sold count (using string length as a deterministic seed)
+    const categoryLabel = getCategoryLabel(product.category);
+    const highlightCards = getHighlightCards(product, categoryLabel);
+    const keyFeatures = getKeyFeatures(product, categoryLabel);
+    const infoSections = getInfoSections(product);
     const soldCount = 40 + (product.id.length * 13) % 160;
 
     const handleBuyNow = () => {
@@ -165,7 +294,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                         <ChevronRight className="w-3.5 h-3.5" />
                         <Link href="/#products" className="hover:text-primary transition-colors">Shop</Link>
                         <ChevronRight className="w-3.5 h-3.5" />
-                        <span className="text-primary font-medium capitalize">{product.category}</span>
+                        <span className="text-primary font-medium capitalize">{categoryLabel}</span>
                         <ChevronRight className="w-3.5 h-3.5" />
                         <span className="text-foreground font-medium truncate max-w-[200px]">{product.name}</span>
                     </div>
@@ -178,7 +307,6 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
 
                     {/* LEFT — Image Gallery */}
                     <div className="w-full lg:w-1/2 space-y-4">
-                        {/* Main Image */}
                         <div className="relative aspect-square bg-white dark:bg-card rounded-2xl overflow-hidden border border-gray-100 dark:border-white/10 shadow-sm group">
                             <Image
                                 src={activeImage}
@@ -190,21 +318,19 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                                 sizes="(max-width: 1024px) 100vw, 50vw"
                                 priority
                             />
-                            {/* Discount Badge */}
                             <span className="absolute top-5 left-5 bg-red-500 text-white px-4 py-1.5 rounded-full text-sm font-bold shadow-lg">
                                 {discount}% OFF
                             </span>
                         </div>
 
-                    {/* Thumbnail Strip */}
-                        <div className="flex gap-3 overflow-x-auto pb-1 hide-scrollbar">
-                            {galleryImages.map((imageSrc, idx) => (
+                        <div className="flex gap-3 overflow-x-auto pb-1 hide-scrollbar lg:hidden">
+                            {mobileGalleryImages.map((imageSrc, idx) => (
                                 <button
-                                    key={idx}
+                                    key={`${imageSrc}-${idx}`}
                                     onClick={() => setActiveThumb(idx)}
                                     className={`relative shrink-0 w-20 h-20 rounded-xl overflow-hidden border-2 transition-all duration-200 ${activeThumb === idx
-                                        ? 'border-primary shadow-md ring-2 ring-primary/20'
-                                        : 'border-gray-200 dark:border-white/10 hover:border-primary/50 opacity-70 hover:opacity-100'
+                                        ? "border-primary shadow-md ring-2 ring-primary/20"
+                                        : "border-gray-200 dark:border-white/10 hover:border-primary/50 opacity-70 hover:opacity-100"
                                         }`}
                                 >
                                     <Image
@@ -216,6 +342,31 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                                         className="object-cover"
                                         sizes="80px"
                                     />
+                                </button>
+                            ))}
+                        </div>
+
+                        <div className="hidden lg:grid lg:grid-cols-2 gap-4">
+                            {desktopGalleryImages.map((imageSrc, idx) => (
+                                <button
+                                    key={`${imageSrc}-desktop-${idx}`}
+                                    onClick={() => setActiveThumb(idx)}
+                                    className={`group relative overflow-hidden rounded-2xl border bg-white dark:bg-card shadow-sm transition-all duration-300 ${activeThumb === idx
+                                        ? "border-primary ring-2 ring-primary/20"
+                                        : "border-gray-100 dark:border-white/10 hover:border-primary/40"
+                                        } ${idx === 0 && desktopGalleryImages.length > 2 ? "lg:col-span-2" : ""}`}
+                                >
+                                    <div className={idx === 0 && desktopGalleryImages.length > 2 ? "aspect-[2.1/1.2]" : "aspect-[4/5]"}>
+                                        <Image
+                                            src={imageSrc}
+                                            alt={`${product.name} gallery view ${idx + 1}`}
+                                            fill
+                                            placeholder="blur"
+                                            blurDataURL={getBlurDataUrl()}
+                                            className="object-cover transition-transform duration-500 group-hover:scale-105"
+                                            sizes="(max-width: 1024px) 100vw, 25vw"
+                                        />
+                                    </div>
                                 </button>
                             ))}
                         </div>
@@ -279,13 +430,36 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                             {product.description}
                         </p>
 
-                        <div className="mb-6">
-                            <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${isOutOfStock
-                                ? "bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400"
-                                : "bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400"
-                                }`}>
-                                {isOutOfStock ? "Out of Stock" : `In Stock: ${product.stock}`}
-                            </span>
+                        <div className="mb-6 rounded-[1.75rem] border border-primary/10 bg-white dark:bg-card shadow-[0_20px_60px_rgba(15,23,42,0.06)] overflow-hidden">
+                            <div className="flex items-start justify-between gap-4 border-b border-gray-100 dark:border-white/10 px-5 py-5 sm:px-6">
+                                <div>
+                                    <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.3em] text-primary/80">
+                                        Why You&apos;ll Love It
+                                    </p>
+                                    <h2 className="max-w-xl text-2xl font-semibold leading-tight text-foreground">
+                                        {getCategoryMood(categoryLabel)}
+                                    </h2>
+                                </div>
+                                <span className={`inline-flex shrink-0 items-center rounded-full px-3 py-1.5 text-xs font-semibold ${isOutOfStock
+                                    ? "bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400"
+                                    : "bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-300"
+                                    }`}>
+                                    {isOutOfStock ? "Out of Stock" : `In Stock: ${product.stock ?? 0}`}
+                                </span>
+                            </div>
+                            <div className="grid gap-3 p-4 sm:grid-cols-2 sm:p-5">
+                                {highlightCards.map((card) => (
+                                    <div
+                                        key={card}
+                                        className="rounded-2xl border border-gray-100 bg-[#f8f4ec] px-4 py-2.5 text-sm leading-6 text-gray-700 shadow-sm dark:border-white/10 dark:bg-white/5 dark:text-gray-200"
+                                    >
+                                        <div className="flex items-start gap-2.5">
+                                            <Gem className="mt-1 h-3.5 w-3.5 shrink-0 text-primary" />
+                                            <p>{card}</p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
 
                         {/* Divider */}
@@ -340,32 +514,34 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                             <span className="text-gray-500 dark:text-gray-400">in the last 24 hours</span>
                         </div>
 
-                        {/* Meta Info */}
-                        <div className="space-y-2 text-sm border-t border-gray-100 dark:border-white/10 pt-5 mb-6">
-                            <div className="flex gap-2">
-                                <span className="text-gray-500 dark:text-gray-400 w-24">SKU:</span>
-                                <span className="text-foreground font-medium">{sku}</span>
+                        <div className="mb-6 rounded-2xl border border-gray-100 bg-white px-5 py-5 shadow-sm dark:border-white/10 dark:bg-card">
+                            <div className="mb-4 flex items-center justify-between gap-4">
+                                <h3 className="text-lg font-semibold text-foreground">Explore this piece</h3>
+                                <Sparkles className="h-4 w-4 text-primary/70" />
                             </div>
-                            <div className="flex gap-2">
-                                <span className="text-gray-500 dark:text-gray-400 w-24">Category:</span>
-                                <Link href="/#products" className="text-primary font-medium capitalize hover:underline">{product.category}</Link>
+                            <div className="mb-4 flex items-center gap-2 text-sm">
+                                <span className="text-gray-500 dark:text-gray-400">Category:</span>
+                                <Link href="/#products" className="rounded-full bg-amber-50 px-3 py-1 font-medium capitalize text-primary transition-colors hover:bg-amber-100 dark:bg-primary/10 dark:hover:bg-primary/20">
+                                    {categoryLabel}
+                                </Link>
                             </div>
-                            <div className="flex gap-2">
-                                <span className="text-gray-500 dark:text-gray-400 w-24">Tags:</span>
-                                <div className="flex flex-wrap gap-1.5">
-                                    {['Jewellery', product.category, 'Premium', 'Gift'].map(tag => (
-                                        <span key={tag} className="px-2 py-0.5 bg-gray-100 dark:bg-white/10 text-gray-600 dark:text-gray-300 rounded text-xs capitalize">{tag}</span>
-                                    ))}
-                                </div>
+                            <div className="flex flex-wrap gap-2">
+                                {["Jewellery", categoryLabel, "Premium", product.price >= 799 ? "Free shipping" : "Gift-ready"].map((tag) => (
+                                    <span
+                                        key={tag}
+                                        className="rounded-full bg-gray-100 px-3 py-1 text-xs font-medium capitalize text-gray-600 dark:bg-white/10 dark:text-gray-300"
+                                    >
+                                        {tag}
+                                    </span>
+                                ))}
                             </div>
                         </div>
 
-                        {/* Trust Badges */}
-                        <div className="grid grid-cols-3 gap-3">
+                        <div className="grid grid-cols-3 gap-3 mb-8">
                             {[
-                                { icon: Truck, title: 'Free Shipping', desc: 'Orders above \u20B9799' },
-                                { icon: RotateCcw, title: 'Easy Returns', desc: '7 day policy' },
-                                { icon: ShieldCheck, title: 'Quality', desc: 'Guaranteed' },
+                                { icon: Truck, title: "Free Shipping", desc: "Above Rs 799" },
+                                { icon: RotateCcw, title: "Return Support", desc: "24-hour claims" },
+                                { icon: ShieldCheck, title: "Quality", desc: "Checked before dispatch" },
                             ].map((badge) => (
                                 <div key={badge.title} className="text-center p-3 bg-gray-50 dark:bg-white/5 rounded-xl border border-gray-100 dark:border-white/10">
                                     <badge.icon className="w-5 h-5 mx-auto mb-1.5 text-primary" />
@@ -373,6 +549,59 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                                     <p className="text-[10px] text-gray-500 dark:text-gray-400">{badge.desc}</p>
                                 </div>
                             ))}
+                        </div>
+
+                        <div className="mb-8">
+                            <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.3em] text-primary/80">
+                                Helpful Details
+                            </p>
+                            <h2 className="mb-5 text-3xl font-semibold leading-tight text-foreground">
+                                What makes this piece special
+                            </h2>
+                            <div className="space-y-3">
+                                {infoSections.map((section) => {
+                                    const isOpen = openSection === section.id;
+                                    return (
+                                        <div key={section.id} className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm dark:border-white/10 dark:bg-card">
+                                            <button
+                                                type="button"
+                                                onClick={() => setOpenSection(isOpen ? "" : section.id)}
+                                                className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left"
+                                            >
+                                                <span className="flex items-center gap-3 text-sm font-semibold text-foreground">
+                                                    <section.icon className="h-4 w-4 text-primary" />
+                                                    {section.title}
+                                                </span>
+                                                <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${isOpen ? "rotate-180" : ""}`} />
+                                            </button>
+                                            {isOpen && (
+                                                <div className="border-t border-gray-100 px-5 py-4 text-sm leading-relaxed text-gray-600 dark:border-white/10 dark:text-gray-300">
+                                                    <ul className="space-y-2">
+                                                        {section.lines.map((line) => (
+                                                            <li key={line} className="flex gap-2">
+                                                                <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary/70" />
+                                                                <span>{line}</span>
+                                                            </li>
+                                                        ))}
+                                                    </ul>
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+
+                        <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-card">
+                            <h3 className="mb-4 text-xl font-semibold text-foreground">Key Features</h3>
+                            <ul className="space-y-3 text-sm leading-relaxed text-gray-600 dark:text-gray-300">
+                                {keyFeatures.map((feature) => (
+                                    <li key={feature} className="flex gap-3">
+                                        <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-primary" />
+                                        <span>{feature}</span>
+                                    </li>
+                                ))}
+                            </ul>
                         </div>
                     </div>
                 </Row>

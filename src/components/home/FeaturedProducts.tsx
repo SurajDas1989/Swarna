@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -11,7 +11,7 @@ import { ArrowUpDown, Check, ChevronDown, Plus, Search, SlidersHorizontal } from
 import { getBlurDataUrl } from "@/lib/utils/imageBlur";
 import { ScrollReveal } from "@/components/ui/ScrollReveal";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { AdaptiveContainer, Row, InputButtonGroup } from "@/components/layout/LayoutPrimitives";
+import { AdaptiveContainer, InputButtonGroup } from "@/components/layout/LayoutPrimitives";
 
 export const FILTERS = [
     { id: "all", label: "All Products" },
@@ -50,10 +50,8 @@ function ProductCardSkeleton() {
     );
 }
 
-export function FeaturedProducts() {
+export function FeaturedProducts({ initialProducts = [] }: { initialProducts?: Product[] }) {
     const {
-        products,
-        isProductsLoading,
         toggleWishlist,
         isInWishlist,
         addToCart,
@@ -63,6 +61,38 @@ export function FeaturedProducts() {
         searchQuery,
         setSearchQuery,
     } = useAppContext();
+
+    const [products, setProducts] = useState<Product[]>(initialProducts);
+    const [isProductsLoading, setIsProductsLoading] = useState(false);
+
+    const fetchProducts = useCallback(async (category: string, search: string) => {
+        setIsProductsLoading(true);
+        try {
+            const params = new URLSearchParams();
+            if (category !== 'all' && category !== 'liked') params.append('category', category);
+            if (search) params.append('search', search);
+            const res = await fetch(`/api/products?${params.toString()}`, { cache: 'no-store' });
+            if (!res.ok) throw new Error(`Products API returned ${res.status}`);
+            const data = await res.json();
+            setProducts(Array.isArray(data) ? data : []);
+        } catch (err) {
+            console.error('Failed to fetch products', err);
+        } finally {
+            setIsProductsLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        // Don't re-fetch on initial render when we already have initialProducts
+        if (activeCategory === 'all' && !searchQuery && products.length > 0 && products === initialProducts) {
+            return;
+        }
+        const timeoutId = setTimeout(() => {
+            fetchProducts(activeCategory, searchQuery);
+        }, 300);
+        return () => clearTimeout(timeoutId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [activeCategory, searchQuery, fetchProducts]);
 
     const { showToast } = useToast();
     const router = useRouter();

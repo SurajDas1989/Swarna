@@ -172,7 +172,7 @@ export function CartModal() {
                                                     </button>
                                                 </div>
                                                 <div className="flex items-center gap-2 mt-1">
-                                                    <p className="text-[10px] text-gray-400 uppercase tracking-widest font-medium">{item.category}</p>
+                                                    <p className="text-[10px] text-gray-400 uppercase tracking-widest font-medium">{typeof item.category === 'string' ? item.category : item.category?.slug || item.category?.name || ''}</p>
                                                     <span className="text-[10px] text-green-500 font-bold">(50% OFF)</span>
                                                 </div>
 

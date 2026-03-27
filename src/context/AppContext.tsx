@@ -57,7 +57,7 @@ interface AppContextType {
 
     // Cart functionality
     cart: CartItem[];
-    addToCart: (productId: string) => void;
+    addToCart: (productId: string) => Promise<void>;
     removeFromCart: (productId: string) => void;
     updateCartQuantity: (productId: string, quantity: number) => void;
     clearCart: () => void;
@@ -90,10 +90,6 @@ interface AppContextType {
     // Search state
     searchQuery: string;
     setSearchQuery: (query: string) => void;
-
-    // Products State
-    products: Product[];
-    isProductsLoading: boolean;
 
     // Order state
     recentOrder: OrderDetails | null;
@@ -153,31 +149,6 @@ function mergeCartItems(items: CartItem[]) {
     return Array.from(merged.values());
 }
 
-function reconcileCartWithProducts(cartItems: CartItem[], productList: Product[]) {
-    if (productList.length === 0) return cartItems;
-
-    const productMap = new Map(productList.map((product) => [product.id, product]));
-
-    return cartItems.flatMap((item) => {
-        const latestProduct = productMap.get(item.id);
-        if (!latestProduct) {
-            return [item];
-        }
-
-        const stock = Math.max(0, latestProduct.stock ?? 0);
-        if (stock <= 0 || latestProduct.isActive === false) {
-            return [];
-        }
-
-        return [{
-            ...item,
-            ...latestProduct,
-            quantity: Math.min(item.quantity, stock),
-            stock,
-            category: getCategoryLabel(latestProduct.category),
-        }];
-    });
-}
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
     // Load from localStorage if available, otherwise empty array
@@ -200,10 +171,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
     // Search state
     const [searchQuery, setSearchQuery] = useState("");
-
-    // Products state
-    const [products, setProducts] = useState<Product[]>([]);
-    const [isProductsLoading, setIsProductsLoading] = useState(true);
 
     // Order state
     const [recentOrder, setRecentOrder] = useState<OrderDetails | null>(null);
@@ -329,7 +296,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
                 const params = new URLSearchParams();
                 params.set('ids', wishlist.join(','));
 
-                const res = await fetch(`/api/products?${params.toString()}`, { cache: 'no-store' });
+                const res = await fetch(`/api/products/by-ids?${params.toString()}`, { cache: 'no-store' });
                 if (!res.ok) return;
 
                 const data = await res.json();
@@ -382,23 +349,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         }
     }, [cart, user, hasLoadedServerCart]);
 
-    useEffect(() => {
-        if (products.length === 0) return;
-
-        setCart((prev) => {
-            const next = reconcileCartWithProducts(mergeCartItems(prev), products);
-            const changed = next.length !== prev.length || next.some((item, index) => {
-                const previous = prev[index];
-                return !previous ||
-                    previous.id !== item.id ||
-                    previous.quantity !== item.quantity ||
-                    previous.stock !== item.stock;
-            });
-
-            return changed ? next : prev;
-        });
-    }, [products]);
-
     // Save coupon to localStorage
     useEffect(() => {
         localStorage.setItem('jewelluxe_coupon', JSON.stringify({
@@ -409,38 +359,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         }));
     }, [couponApplied, appliedCouponCode, couponDiscount, couponMaxDiscount]);
 
-    // Fetch Products dynamically based on filters
-    useEffect(() => {
-        const fetchProducts = async () => {
-            setIsProductsLoading(true);
-            try {
-                const params = new URLSearchParams();
-                if (activeCategory !== 'all') params.append('category', activeCategory);
-                if (searchQuery) params.append('search', searchQuery);
-                
 
-                const res = await fetch(`/api/products?${params.toString()}`, { cache: 'no-store' });
-                if (!res.ok) {
-                    throw new Error(`Products API returned ${res.status}`);
-                }
-
-                const data = await res.json();
-                setProducts(Array.isArray(data) ? data.map(normalizeProduct) : []);
-            } catch (err) {
-                console.error("Failed to fetch products", err);
-                setProducts([]);
-            } finally {
-                setIsProductsLoading(false);
-            }
-        };
-
-        // Debounce search
-        const timeoutId = setTimeout(() => {
-            fetchProducts();
-        }, 300);
-
-        return () => clearTimeout(timeoutId);
-    }, [activeCategory, searchQuery]);
 
     const addToWishlist = async (productId: string) => {
         setWishlist(prev => {
@@ -484,14 +403,18 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     };
 
     // Cart Methods
-    const addToCart = (productId: string) => {
+    const addToCart = async (productId: string) => {
+        setIsCartOpen(true); // Auto open cart when adding
+
+        let shouldFetchProduct = false;
+
         setCart(prev => {
             const mergedPrev = mergeCartItems(prev);
             const existingItem = mergedPrev.find(item => item.id === productId);
-            const product = products.find(p => p.id === productId);
-            const availableStock = Math.max(0, product?.stock ?? existingItem?.stock ?? 0);
+            const availableStock = Math.max(0, existingItem?.stock ?? 0);
 
-            if (!product && !existingItem) {
+            if (!existingItem) {
+                shouldFetchProduct = true;
                 return mergedPrev;
             }
 
@@ -499,21 +422,44 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
                 return mergedPrev;
             }
 
-            if (existingItem) {
-                return mergedPrev.map(item =>
-                    item.id === productId
-                        ? { ...item, quantity: Math.min(item.quantity + 1, availableStock), stock: availableStock }
-                        : item
-                );
-            }
-
-            if (product) {
-                return [...mergedPrev, { ...product, stock: availableStock, quantity: 1 }];
-            }
-
-            return mergedPrev;
+            return mergedPrev.map(item =>
+                item.id === productId
+                    ? { ...item, quantity: Math.min(item.quantity + 1, availableStock), stock: availableStock }
+                    : item
+            );
         });
-        setIsCartOpen(true); // Auto open cart when adding
+
+        if (!shouldFetchProduct) {
+            return;
+        }
+
+        try {
+            const res = await fetch(`/api/products/${productId}`, { cache: 'no-store' });
+            if (!res.ok) return;
+
+            const data = await res.json();
+            const product = normalizeProduct(data as Product);
+            const availableStock = Math.max(0, product.stock ?? 0);
+
+            if (availableStock <= 0) return;
+
+            setCart((prev) => {
+                const mergedPrev = mergeCartItems(prev);
+                const existingItem = mergedPrev.find((item) => item.id === productId);
+
+                if (existingItem) {
+                    return mergedPrev.map((item) =>
+                        item.id === productId
+                            ? { ...item, stock: availableStock, quantity: Math.min(item.quantity + 1, availableStock) }
+                            : item
+                    );
+                }
+
+                return [...mergedPrev, { ...product, stock: availableStock, quantity: 1 }];
+            });
+        } catch (error) {
+            console.error('Failed to fetch product for cart', error);
+        }
     };
 
     const removeFromCart = (productId: string) => {
@@ -648,9 +594,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
                 searchQuery,
                 setSearchQuery,
-
-                products,
-                isProductsLoading,
 
                 recentOrder,
                 placeOrder,

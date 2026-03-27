@@ -13,6 +13,7 @@ import Link from "next/link";
 import { useAppContext, Product } from "@/context/AppContext";
 import { getOrderReference } from "@/lib/order-reference";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
+import { getProductCategoryLabel } from "@/lib/productCategory";
 
 interface UserProfile {
     id: string;
@@ -157,7 +158,6 @@ export default function ProfilePage() {
         fetchOrders();
     }, [user]);
 
-    // Fetch wishlist products by IDs (independent of global search/filter)
     useEffect(() => {
         const fetchWishlistProducts = async () => {
             if (wishlist.length === 0) {
@@ -168,7 +168,7 @@ export default function ProfilePage() {
             try {
                 const params = new URLSearchParams();
                 params.set("ids", wishlist.join(","));
-                const res = await fetch(`/api/products?${params.toString()}`, { cache: "no-store" });
+                const res = await fetch(`/api/products/by-ids?${params.toString()}`);
                 if (!res.ok) {
                     setWishlistProducts([]);
                     return;
@@ -677,7 +677,7 @@ export default function ProfilePage() {
                                                 </button>
                                             </div>
                                             <div className="p-4">
-                                                <div className="text-xs font-semibold text-primary uppercase tracking-wider mb-1.5">{product.category}</div>
+                                                <div className="text-xs font-semibold text-primary uppercase tracking-wider mb-1.5">{getProductCategoryLabel(product.category)}</div>
                                                 <h3 className="text-sm font-medium text-gray-900 dark:text-white line-clamp-1 mb-2">{product.name}</h3>
                                                 <div className="flex items-center justify-between mt-3">
                                                     <span className="text-base font-bold text-gray-900 dark:text-white">{formatPrice(product.price.toString())}</span>
