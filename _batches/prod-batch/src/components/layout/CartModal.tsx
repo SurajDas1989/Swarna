@@ -6,6 +6,7 @@ import { X, Trash2, ShoppingBag } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { getBlurDataUrl } from "@/lib/utils/imageBlur";
 import { motion, AnimatePresence } from "framer-motion";
+import { getProductCategoryLabel } from "@/lib/productCategory";
 
 export function CartModal() {
     const router = useRouter();
@@ -69,7 +70,7 @@ export function CartModal() {
                                         <ShoppingBag className="w-12 h-12 text-gray-400" />
                                     </div>
                                     <p className="text-xl font-semibold text-foreground">Your cart is empty</p>
-                                    <p className="text-sm">Looks like you haven't added anything yet.</p>
+                                    <p className="text-sm">Looks like you haven&apos;t added anything yet.</p>
                                     <button
                                         onClick={() => setIsCartOpen(false)}
                                         className="mt-8 px-6 py-3 bg-primary text-white rounded-full font-semibold hover:bg-primary-dark transition-colors"
@@ -106,7 +107,7 @@ export function CartModal() {
                                                             <Trash2 className="w-4 h-4" />
                                                         </button>
                                                     </div>
-                                                    <p className="text-sm text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-1">{item.category}</p>
+                                                    <p className="text-sm text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-1">{getProductCategoryLabel(item.category)}</p>
                                                 </div>
 
                                                 <div className="flex items-center justify-between mt-4">

@@ -7,6 +7,7 @@ import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowLeft, Loader2 } from "lucide-react";
+import { getProductCategoryLabel } from "@/lib/productCategory";
 
 export default function WishlistPage() {
     const { wishlist, toggleWishlist, addToCart, removeFromWishlist } = useAppContext();
@@ -22,7 +23,7 @@ export default function WishlistPage() {
             }
 
             try {
-                const res = await fetch(`/api/products?ids=${wishlist.join(',')}`);
+                const res = await fetch(`/api/products/by-ids?ids=${wishlist.join(',')}`);
                 if (res.ok) {
                     const data = await res.json();
                     setWishlistProducts(data);
@@ -119,7 +120,7 @@ export default function WishlistPage() {
                                 {/* Product Info */}
                                 <div className="p-6 flex flex-col flex-grow">
                                     <div className="text-xs text-gray-500 uppercase tracking-wider mb-2 font-medium">
-                                        {product.category}
+                                        {getProductCategoryLabel(product.category)}
                                     </div>
                                     <h3 className="text-lg font-semibold text-foreground mb-2 line-clamp-1">
                                         {product.name}

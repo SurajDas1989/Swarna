@@ -144,6 +144,7 @@ export async function GET(request: Request) {
             select: {
                 id: true,
                 name: true,
+                sku: true,
                 price: true,
                 compareAtPrice: true,
                 costPerItem: true,
@@ -176,6 +177,7 @@ export async function GET(request: Request) {
                 select: {
                     id: true,
                     name: true,
+                    sku: true,
                     price: true,
                     compareAtPrice: true,
                     costPerItem: true,
@@ -203,6 +205,7 @@ export async function GET(request: Request) {
         const formatted = products.map((p) => ({
             id: p.id,
             name: p.name,
+            sku: p.sku || null,
             category: p.category,
             categoryId: p.categoryId,
             category_slug: p.category.slug,

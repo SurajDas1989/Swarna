@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { createServiceRoleSupabaseClient, requireAdmin } from '@/lib/supabase-server';
+import { revalidateTag } from 'next/cache';
 
 const PRODUCT_BUCKET = 'products';
 
@@ -90,6 +91,7 @@ export async function POST(request: Request) {
             stock,
             isActive = true,
             isFeatured = false,
+            sku,
         } = body;
 
         const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
@@ -109,8 +111,12 @@ export async function POST(request: Request) {
                 outOfStockSince: Number(stock) > 0 ? null : new Date(),
                 isActive: Boolean(isActive),
                 isFeatured: Boolean(isFeatured),
+                sku: sku || null,
             }
         });
+
+        // Invalidate products list cache so homepage ISR gets fresh data
+        revalidateTag('products:list', 'cache');
 
         return NextResponse.json(product);
     } catch (error) {
@@ -127,7 +133,7 @@ export async function PUT(request: Request) {
         }
 
         const body = await request.json();
-        const { id, name, categoryId, price, compareAtPrice, costPerItem, chargeTax, description, images, stock, isActive, isFeatured } = body;
+        const { id, name, categoryId, price, compareAtPrice, costPerItem, chargeTax, description, images, stock, isActive, isFeatured, sku } = body;
 
         if (!id) return NextResponse.json({ error: 'ID required' }, { status: 400 });
 
@@ -159,11 +165,16 @@ export async function PUT(request: Request) {
         }
         if (isActive !== undefined) updateData.isActive = isActive;
         if (isFeatured !== undefined) updateData.isFeatured = isFeatured;
+        if (sku !== undefined) updateData.sku = sku || null;
 
         const product = await prisma.product.update({
             where: { id },
             data: updateData
         });
+
+        // Invalidate both the product page cache and the products list
+        revalidateTag('products:list', 'cache');
+        revalidateTag(`product:${id}`, 'cache');
 
         if (images !== undefined) {
             const removedImages = existingProduct.images.filter((imageUrl) => !images.includes(imageUrl));
@@ -217,6 +228,9 @@ export async function DELETE(request: Request) {
             where: { id }
         });
 
+        // Invalidate caches after deletion
+        revalidateTag('products:list', 'cache');
+        revalidateTag(`product:${id}`, 'cache');
         await deleteStorageImages(existingProduct.images, id);
 
         return NextResponse.json({ success: true });
@@ -225,4 +239,51 @@ export async function DELETE(request: Request) {
         return NextResponse.json({ error: 'Failed' }, { status: 500 });
     }
 }
+export async function GET(request: Request) {
+    try {
+        const admin = await requireAdmin();
+        if (!admin) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+        }
 
+        const { searchParams } = new URL(request.url);
+        const prefix = searchParams.get('prefix');
+
+        if (!prefix) {
+            return NextResponse.json({ error: 'Prefix required' }, { status: 400 });
+        }
+
+        // Find products with SKUs starting with the prefix
+        const products = await prisma.product.findMany({
+            where: {
+                sku: {
+                    startsWith: prefix,
+                },
+            },
+            select: {
+                sku: true,
+            },
+        });
+
+        let nextSequence = 1;
+        if (products.length > 0) {
+            const sequences = products
+                .map(p => {
+                    const parts = p.sku?.split('-');
+                    if (!parts || parts.length < 2) return 0;
+                    const seqStr = parts[parts.length - 1];
+                    return parseInt(seqStr) || 0;
+                })
+                .filter(seq => seq > 0);
+
+            if (sequences.length > 0) {
+                nextSequence = Math.max(...sequences) + 1;
+            }
+        }
+
+        return NextResponse.json({ nextSequence });
+    } catch (error) {
+        console.error('Failed to fetch SKU sequence:', error);
+        return NextResponse.json({ error: 'Failed' }, { status: 500 });
+    }
+}

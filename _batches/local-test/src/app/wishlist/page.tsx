@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowLeft, Loader2 } from "lucide-react";
+import { getProductCategoryLabel } from "@/lib/productCategory";
 
 export default function WishlistPage() {
     const { wishlist, toggleWishlist, addToCart, removeFromWishlist } = useAppContext();
@@ -61,7 +62,7 @@ export default function WishlistPage() {
                 <div className="text-center py-20 bg-gray-50 rounded-lg border border-dashed border-gray-300">
                     <div className="text-6xl mb-4">💔</div>
                     <h2 className="text-2xl font-semibold mb-2 text-foreground">Your Wishlist is Empty</h2>
-                    <p className="text-gray-500 mb-8">Looks like you haven't liked any items yet.</p>
+                    <p className="text-gray-500 mb-8">Looks like you haven&apos;t liked any items yet.</p>
                     <Button asChild className="bg-primary hover:bg-primary-dark text-white px-8">
                         <Link href="/#products">Explore Collection</Link>
                     </Button>
@@ -109,7 +110,7 @@ export default function WishlistPage() {
                                 {/* Product Info */}
                                 <div className="p-6 flex flex-col flex-grow">
                                     <div className="text-xs text-gray-500 uppercase tracking-wider mb-2 font-medium">
-                                        {product.category}
+                                        {getProductCategoryLabel(product.category)}
                                     </div>
                                     <h3 className="text-lg font-semibold text-foreground mb-2 line-clamp-1">
                                         {product.name}

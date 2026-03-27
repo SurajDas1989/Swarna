@@ -12,6 +12,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useAppContext, Product } from "@/context/AppContext";
 import { getOrderReference } from "@/lib/order-reference";
+import { getProductCategoryLabel } from "@/lib/productCategory";
 
 interface UserProfile {
     id: string;
@@ -200,7 +201,7 @@ export default function ProfilePage() {
             } else {
                 setProfileError("Failed to save profile. Please try again.");
             }
-        } catch (err) {
+        } catch {
             setProfileError("Network error. Please try again.");
         } finally {
             setSaving(false);
@@ -644,7 +645,7 @@ export default function ProfilePage() {
                                                 </button>
                                             </div>
                                             <div className="p-4">
-                                                <div className="text-xs font-semibold text-primary uppercase tracking-wider mb-1.5">{product.category}</div>
+                                                <div className="text-xs font-semibold text-primary uppercase tracking-wider mb-1.5">{getProductCategoryLabel(product.category)}</div>
                                                 <h3 className="text-sm font-medium text-gray-900 dark:text-white line-clamp-1 mb-2">{product.name}</h3>
                                                 <div className="flex items-center justify-between mt-3">
                                                     <span className="text-base font-bold text-gray-900 dark:text-white">{formatPrice(product.price.toString())}</span>

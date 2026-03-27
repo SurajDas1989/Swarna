@@ -3,7 +3,7 @@ import { ScrollReveal } from "@/components/ui/ScrollReveal";
 export function Features() {
     const features = [
         { icon: '🚚', title: 'Free Shipping', desc: 'On orders above \u20B9799' },
-        { icon: '🔄', title: 'Easy Returns', desc: '7 day return policy' },
+  { icon: '🔄', title: 'Return Support', desc: '24-hour damaged/wrong-item claims' },
         { icon: '✅', title: 'Quality Assured', desc: 'Premium artificial jewellery' },
         { icon: '💳', title: 'Secure Payment', desc: '100% secure transactions' },
     ];

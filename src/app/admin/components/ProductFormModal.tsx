@@ -1,9 +1,17 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { X, Upload, Loader2 } from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
+import { X, Upload, Loader2, Wand2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase";
+import {
+    PRODUCT_TYPE_PREFIXES,
+    COLOR_CODES,
+    getTypePrefix,
+    getColorCode,
+    getPriceTierCode,
+    buildSku,
+} from "@/lib/skuGenerator";
 
 interface ProductFormModalProps {
     isOpen: boolean;
@@ -22,6 +30,7 @@ interface ProductFormModalProps {
         images: string[];
         isActive: boolean;
         isFeatured: boolean;
+        sku?: string | null;
     } | null;
 }
 
@@ -143,7 +152,16 @@ export default function ProductFormModal({
         images: [] as string[],
         isActive: true,
         isFeatured: false,
+        sku: "",
     });
+
+    // SKU builder state
+    const [skuType, setSkuType] = useState("");
+    const [skuCustomType, setSkuCustomType] = useState("");
+    const [skuColor, setSkuColor] = useState("");
+    const [skuCustomColor, setSkuCustomColor] = useState("");
+    const [skuSeq, setSkuSeq] = useState(1);
+    const [isFetchingSeq, setIsFetchingSeq] = useState(false);
 
     const [imageInput, setImageInput] = useState("");
 
@@ -163,7 +181,17 @@ export default function ProductFormModal({
                     images: product.images || [],
                     isActive: product.isActive,
                     isFeatured: product.isFeatured,
+                    sku: product.sku || "",
                 });
+                
+                // If it has a SKU, try to extract its sequence to avoid overwriting it
+                if (product.sku) {
+                    const parts = product.sku.split('-');
+                    if (parts.length >= 2) {
+                        const seq = parseInt(parts[parts.length - 1]);
+                        if (!isNaN(seq)) setSkuSeq(seq);
+                    }
+                }
             } else {
                 setFormData({
                     name: "",
@@ -177,11 +205,52 @@ export default function ProductFormModal({
                     images: [],
                     isActive: true,
                     isFeatured: false,
+                    sku: "",
                 });
+                setSkuType("");
+                setSkuCustomType("");
+                setSkuColor("");
+                setSkuCustomColor("");
+                setSkuSeq(1);
+                setIsFetchingSeq(false);
             }
             setImageInput("");
         }
     }, [isOpen, product]);
+
+    // Auto-fetch next sequence
+    useEffect(() => {
+        if (!isOpen || !skuType || !skuColor || !formData.price) return;
+
+        const fetchNextSeq = async () => {
+            try {
+                const typeValue = skuType === '__custom__' ? skuCustomType : skuType;
+                const colorValue = skuColor === '__custom__' ? skuCustomColor : skuColor;
+                if (!typeValue || !colorValue) return;
+
+                const typePrefix = getTypePrefix(typeValue);
+                const colorCode = getColorCode(colorValue);
+                const priceTier = getPriceTierCode(Number(formData.price));
+                
+                // Prefix for search: JL-TYPE-COLOR-PRICE-
+                const prefix = `JL-${typePrefix}-${colorCode}-${priceTier}-`;
+
+                setIsFetchingSeq(true);
+                const res = await fetch(`/api/admin/products?prefix=${prefix}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    setSkuSeq(data.nextSequence || 1);
+                }
+            } catch (err) {
+                console.error("Failed to fetch next sequence:", err);
+            } finally {
+                setIsFetchingSeq(false);
+            }
+        };
+
+        const timer = setTimeout(fetchNextSeq, 500); // Debounce to avoid too many calls
+        return () => clearTimeout(timer);
+    }, [skuType, skuCustomType, skuColor, skuCustomColor, formData.price, isOpen]);
 
     const fetchCategories = async () => {
         try {
@@ -296,6 +365,7 @@ export default function ProductFormModal({
                     compareAtPrice: formData.compareAtPrice ? parseFloat(formData.compareAtPrice) : null,
                     costPerItem: formData.costPerItem ? parseFloat(formData.costPerItem) : null,
                     stock: parseInt(formData.stock) || 0,
+                    sku: formData.sku || null,
                 }),
             });
 
@@ -314,12 +384,30 @@ export default function ProductFormModal({
         }
     };
 
-    if (!isOpen) return null;
-
     const numericPrice = Number(formData.price || 0);
     const numericCostPerItem = Number(formData.costPerItem || 0);
     const profit = numericPrice - numericCostPerItem;
     const margin = numericPrice > 0 ? (profit / numericPrice) * 100 : 0;
+
+    // SKU preview
+    const skuPreview = useMemo(() => {
+        const typeValue = skuType === '__custom__' ? skuCustomType : skuType;
+        const colorValue = skuColor === '__custom__' ? skuCustomColor : skuColor;
+        if (!typeValue || !colorValue) return '';
+        const typeCode = getTypePrefix(typeValue);
+        const colorCode = getColorCode(colorValue);
+        const priceCode = numericPrice > 0 ? getPriceTierCode(numericPrice) : '—';
+        return buildSku(typeCode, colorCode, priceCode, skuSeq);
+    }, [skuType, skuCustomType, skuColor, skuCustomColor, numericPrice, skuSeq]);
+
+    const handleGenerateSku = () => {
+        if (skuPreview) {
+            setFormData(prev => ({ ...prev, sku: skuPreview }));
+        }
+    };
+
+    if (!isOpen) return null;
+
 
     return (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -472,6 +560,126 @@ export default function ProductFormModal({
                                 {numericPrice > 0 ? `${margin.toFixed(1)}%` : "--"}
                             </p>
                         </div>
+                    </div>
+
+                    {/* SKU Builder */}
+                    <div className="rounded-xl border-2 border-dashed border-amber-300/50 dark:border-amber-700/50 bg-amber-50/30 dark:bg-amber-900/10 p-5">
+                        <div className="flex items-center gap-2 mb-4">
+                            <Wand2 className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+                            <h3 className="font-bold text-foreground text-sm">SKU Builder</h3>
+                            <span className="text-xs text-muted-foreground ml-auto">Format: JL-TYPE-COLOR-PRICE-SEQ</span>
+                        </div>
+
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+                            {/* Product Type */}
+                            <div>
+                                <label className="block text-xs font-semibold text-muted-foreground mb-1">Type</label>
+                                <select
+                                    value={skuType}
+                                    onChange={(e) => setSkuType(e.target.value)}
+                                    className="w-full px-3 py-2 border border-gray-300 dark:border-white/20 rounded-lg bg-white dark:bg-white/5 text-foreground focus:outline-none focus:ring-2 focus:ring-amber-500 text-sm"
+                                >
+                                    <option value="">Select...</option>
+                                    {Object.keys(PRODUCT_TYPE_PREFIXES)
+                                        .filter((v, i, a) => a.indexOf(v) === i)
+                                        .map((name) => (
+                                            <option key={name} value={name}>
+                                                {name} ({PRODUCT_TYPE_PREFIXES[name]})
+                                            </option>
+                                        ))}
+                                    <option value="__custom__">✏️ Custom</option>
+                                </select>
+                                {skuType === '__custom__' && (
+                                    <input
+                                        type="text"
+                                        value={skuCustomType}
+                                        onChange={(e) => setSkuCustomType(e.target.value)}
+                                        className="w-full mt-1 px-3 py-1.5 border border-gray-300 dark:border-white/20 rounded-lg bg-white dark:bg-white/5 text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+                                        placeholder="e.g. Tiara"
+                                    />
+                                )}
+                            </div>
+
+                            {/* Color */}
+                            <div>
+                                <label className="block text-xs font-semibold text-muted-foreground mb-1">Color</label>
+                                <select
+                                    value={skuColor}
+                                    onChange={(e) => setSkuColor(e.target.value)}
+                                    className="w-full px-3 py-2 border border-gray-300 dark:border-white/20 rounded-lg bg-white dark:bg-white/5 text-foreground focus:outline-none focus:ring-2 focus:ring-amber-500 text-sm"
+                                >
+                                    <option value="">Select...</option>
+                                    {Object.entries(COLOR_CODES).map(([name, code]) => (
+                                        <option key={name} value={name}>
+                                            {name} ({code})
+                                        </option>
+                                    ))}
+                                    <option value="__custom__">✏️ Custom</option>
+                                </select>
+                                {skuColor === '__custom__' && (
+                                    <input
+                                        type="text"
+                                        value={skuCustomColor}
+                                        onChange={(e) => setSkuCustomColor(e.target.value)}
+                                        className="w-full mt-1 px-3 py-1.5 border border-gray-300 dark:border-white/20 rounded-lg bg-white dark:bg-white/5 text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+                                        placeholder="e.g. Teal"
+                                    />
+                                )}
+                            </div>
+
+                            {/* Price Tier (auto) */}
+                            <div>
+                                <label className="block text-xs font-semibold text-muted-foreground mb-1">Price Tier</label>
+                                <div className="px-3 py-2 border border-gray-200 dark:border-white/10 rounded-lg bg-gray-100 dark:bg-white/5 text-foreground text-sm font-mono">
+                                    {numericPrice > 0 ? getPriceTierCode(numericPrice) : '—'}
+                                </div>
+                                <p className="text-[10px] text-muted-foreground mt-0.5">Auto from price</p>
+                            </div>
+
+                            {/* Sequence */}
+                            <div>
+                                <label className="block text-xs font-semibold text-muted-foreground mb-1">
+                                    Sequence # {isFetchingSeq && <Loader2 className="inline w-3 h-3 animate-spin text-amber-500" />}
+                                </label>
+                                <input
+                                    type="number"
+                                    min={1}
+                                    max={99}
+                                    value={skuSeq}
+                                    onChange={(e) => setSkuSeq(Math.max(1, Math.min(99, parseInt(e.target.value) || 1)))}
+                                    className={`w-full px-3 py-2 border border-gray-300 dark:border-white/20 rounded-lg bg-white dark:bg-white/5 text-foreground focus:outline-none focus:ring-2 focus:ring-amber-500 text-sm ${isFetchingSeq ? 'opacity-50' : ''}`}
+                                />
+                            </div>
+                        </div>
+
+                        {/* Preview & Generate */}
+                        <div className="flex items-center gap-3">
+                            <div className="flex-1">
+                                <label className="block text-xs font-semibold text-muted-foreground mb-1">Generated SKU</label>
+                                <input
+                                    type="text"
+                                    value={formData.sku}
+                                    onChange={(e) => setFormData({ ...formData, sku: e.target.value.toUpperCase() })}
+                                    className="w-full px-3 py-2 border border-gray-300 dark:border-white/20 rounded-lg bg-white dark:bg-white/5 text-foreground focus:outline-none focus:ring-2 focus:ring-amber-500 font-mono text-sm tracking-wider"
+                                    placeholder="JL-NK-GLD-499-01"
+                                />
+                            </div>
+                            <Button
+                                type="button"
+                                onClick={handleGenerateSku}
+                                disabled={!skuPreview}
+                                variant="outline"
+                                className="mt-5 gap-1.5 border-amber-400 text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20"
+                            >
+                                <Wand2 className="w-4 h-4" />
+                                Generate
+                            </Button>
+                        </div>
+                        {skuPreview && formData.sku !== skuPreview && (
+                            <p className="text-xs text-amber-600 dark:text-amber-400 mt-2">
+                                Preview: <span className="font-mono font-bold tracking-wider">{skuPreview}</span> — Click Generate to apply
+                            </p>
+                        )}
                     </div>
 
                     {/* Stock & Status */}
