@@ -1,16 +1,24 @@
 "use client";
 
-import { use, useState, useEffect } from "react";
+import { use, useState, useEffect, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAppContext, Product } from "@/context/AppContext";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/Toast";
-import { ChevronDown, ChevronRight, Flame, Gift, Heart, PackageCheck, RotateCcw, ShieldCheck, ShoppingCart, Sparkles, Star, Truck, Zap } from "lucide-react";
+import { CheckCircle, ChevronDown, ChevronRight, Copy, Flame, Gift, Heart, PackageCheck, RotateCcw, ShieldCheck, ShoppingCart, Sparkles, Star, Truck, Zap } from "lucide-react";
 import { getBlurDataUrl } from "@/lib/utils/imageBlur";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { AdaptiveContainer, Row } from "@/components/layout/LayoutPrimitives";
+
+interface Coupon {
+    id: string;
+    code: string;
+    discountPercent: number;
+    maxDiscountAmount: number | null;
+    expiresAt: string | null;
+}
 
 const RECENTLY_VIEWED_KEY = "jewelluxe_recently_viewed";
 
@@ -131,15 +139,29 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
 
     const [product, setProduct] = useState<Product | null>(null);
     const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
+    const [publicCoupons, setPublicCoupons] = useState<Coupon[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [copiedCode, setCopiedCode] = useState<string | null>(null);
+
+    const handleCopyCode = useCallback((code: string) => {
+        navigator.clipboard.writeText(code).then(() => {
+            setCopiedCode(code);
+            showToast(`Coupon code ${code} copied!`, "success");
+            setTimeout(() => setCopiedCode(null), 3000);
+        });
+    }, [showToast]);
 
     // Fetch product details
     useEffect(() => {
         const fetchProduct = async () => {
             try {
-                const res = await fetch(`/api/products/${id}`);
-                if (res.ok) {
-                    const data = await res.json();
+                const [productRes, couponsRes] = await Promise.all([
+                    fetch(`/api/products/${id}`),
+                    fetch(`/api/discount/public`)
+                ]);
+
+                if (productRes.ok) {
+                    const data = await productRes.json();
                     setProduct(data);
 
                     // Fetch related products using the dedicated endpoint
@@ -149,8 +171,13 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                         setRelatedProducts(Array.isArray(relatedData) ? relatedData : []);
                     }
                 }
+
+                if (couponsRes.ok) {
+                    const couponData = await couponsRes.json();
+                    setPublicCoupons(Array.isArray(couponData) ? couponData : []);
+                }
             } catch (err) {
-                console.error("Failed to fetch product", err);
+                console.error("Failed to fetch page data", err);
             } finally {
                 setIsLoading(false);
             }
@@ -545,14 +572,88 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                                             </button>
                                             {isOpen && (
                                                 <div className="border-t border-gray-100 px-5 py-4 text-sm leading-relaxed text-gray-600 dark:border-white/10 dark:text-gray-300">
-                                                    <ul className="space-y-2">
-                                                        {section.lines.map((line) => (
-                                                            <li key={line} className="flex gap-2">
-                                                                <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary/70" />
-                                                                <span>{line}</span>
-                                                            </li>
-                                                        ))}
-                                                    </ul>
+                                                    {section.id === "offers" ? (
+                                                        <div className="space-y-4">
+                                                            {publicCoupons.length > 0 ? (
+                                                                publicCoupons.map((coupon) => (
+                                                                    <div
+                                                                        key={coupon.id}
+                                                                        className="group relative overflow-hidden rounded-2xl border border-primary/20 bg-[#121212] p-4 shadow-xl transition-all hover:border-primary/40"
+                                                                    >
+                                                                        {/* Decorative radial gradient background */}
+                                                                        <div className="absolute -right-4 -top-12 h-24 w-24 rounded-full bg-primary/10 blur-2xl transition-all group-hover:bg-primary/20" />
+                                                                        
+                                                                        <div className="flex items-center justify-between gap-4">
+                                                                            <div className="flex flex-col gap-0.5">
+                                                                                <div className="flex items-center gap-2">
+                                                                                    <span className="text-xl font-black tracking-tight text-primary">
+                                                                                        {coupon.discountPercent}% OFF
+                                                                                    </span>
+                                                                                    <div className="h-4 w-px bg-primary/20" />
+                                                                                    <span className="text-[10px] font-bold uppercase tracking-widest text-primary/70">
+                                                                                        Limited Offer
+                                                                                    </span>
+                                                                                </div>
+                                                                                <p className="text-[12px] font-medium text-gray-400">
+                                                                                    {coupon.maxDiscountAmount 
+                                                                                        ? `Save up to ₹${coupon.maxDiscountAmount}` 
+                                                                                        : "Valid on all orders above ₹799"}
+                                                                                </p>
+                                                                            </div>
+
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={() => handleCopyCode(coupon.code)}
+                                                                                className={`flex items-center gap-2 rounded-xl border px-3.5 py-2.5 text-xs font-bold uppercase tracking-widest transition-all active:scale-95 ${
+                                                                                    copiedCode === coupon.code
+                                                                                        ? "border-emerald-500/50 bg-emerald-500/10 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.2)]"
+                                                                                        : "border-primary/30 bg-primary/10 text-primary hover:bg-primary hover:text-black shadow-lg"
+                                                                                }`}
+                                                                            >
+                                                                                {copiedCode === coupon.code ? (
+                                                                                    <>
+                                                                                        <CheckCircle className="h-3.5 w-3.5" />
+                                                                                        COPIED
+                                                                                    </>
+                                                                                ) : (
+                                                                                    <>
+                                                                                        <Copy className="h-3.5 w-3.5" />
+                                                                                        {coupon.code}
+                                                                                    </>
+                                                                                )}
+                                                                            </button>
+                                                                        </div>
+                                                                    </div>
+                                                                ))
+                                                            ) : (
+                                                                <div className="flex flex-col items-center justify-center py-6 text-center">
+                                                                    <Sparkles className="h-8 w-8 text-gray-400 mb-3" />
+                                                                    <p className="text-gray-400 font-medium">No active offers right now</p>
+                                                                    <p className="text-[11px] text-gray-500 mt-1 max-w-[200px]">Check back later for exclusive Swarna discounts</p>
+                                                                </div>
+                                                            )}
+                                                            
+                                                            <div className="pt-2">
+                                                                <ul className="space-y-2">
+                                                                    {section.lines.filter(l => !l.includes("Free shipping")).map((line) => (
+                                                                        <li key={line} className="flex gap-2">
+                                                                            <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary/70" />
+                                                                            <span className="text-xs text-gray-400">{line}</span>
+                                                                        </li>
+                                                                    ))}
+                                                                </ul>
+                                                            </div>
+                                                        </div>
+                                                    ) : (
+                                                        <ul className="space-y-2">
+                                                            {section.lines.map((line) => (
+                                                                <li key={line} className="flex gap-2">
+                                                                    <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary/70" />
+                                                                    <span>{line}</span>
+                                                                </li>
+                                                            ))}
+                                                        </ul>
+                                                    )}
                                                 </div>
                                             )}
                                         </div>
