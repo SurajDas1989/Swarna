@@ -633,16 +633,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                                                                 </div>
                                                             )}
                                                             
-                                                            <div className="pt-2">
-                                                                <ul className="space-y-2">
-                                                                    {section.lines.filter(l => !l.includes("Free shipping")).map((line) => (
-                                                                        <li key={line} className="flex gap-2">
-                                                                            <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary/70" />
-                                                                            <span className="text-xs text-gray-400">{line}</span>
-                                                                        </li>
-                                                                    ))}
-                                                                </ul>
-                                                            </div>
+                                                            {/* Static policy lines removed at user request */}
                                                         </div>
                                                     ) : (
                                                         <ul className="space-y-2">
