@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Search, ShoppingCart, Menu, X, User, Heart } from "lucide-react";
+import { Search, ShoppingCart, Menu, X, User, Heart, Sun, Moon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAppContext } from "@/context/AppContext";
 import { useAuth } from "@/context/AuthContext";
@@ -21,7 +21,7 @@ export function Navbar() {
         setActiveCategory,
     } = useAppContext();
     const { user, dbUser, signOut } = useAuth();
-    const { theme, toggleTheme } = useTheme();
+    const { resolvedTheme, toggleTheme } = useTheme();
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
     useEffect(() => {
@@ -49,11 +49,11 @@ export function Navbar() {
 
     return (
         <>
-            <header className="sticky top-0 z-50 w-full bg-white shadow-sm dark:bg-[#1e1e1e]">
-                <div className="overflow-hidden border-b border-foreground/20 bg-foreground py-2 text-sm text-white dark:border-white/10 dark:bg-[#111]">
+            <header className="sticky top-0 z-50 w-full border-b border-border/70 bg-background/95 shadow-sm backdrop-blur">
+                <div className="overflow-hidden border-b border-primary/15 bg-[#171717] py-2 text-sm text-stone-100 dark:border-white/10 dark:bg-[#101010]">
                     <div className="container relative mx-auto flex items-center justify-between px-4">
                         <div className="flex w-full items-center overflow-hidden whitespace-nowrap">
-                            <div className="inline-block animate-[marquee_20s_linear_infinite] font-medium tracking-wide">
+                            <div className="inline-block animate-[marquee_20s_linear_infinite] font-medium tracking-wide text-stone-100/95">
                                 {"\u2728 Free Shipping on Orders Above \u20B9799 \u2022 Discover the Premium Wedding Collection"}
                             </div>
                         </div>
@@ -120,22 +120,23 @@ export function Navbar() {
                                         placeholder="Search jewelry..."
                                         value={searchQuery}
                                         onChange={handleSearch}
-                                        className="pl-9 pr-4 py-2 rounded-full border border-gray-200 dark:border-white/15 dark:bg-white/5 dark:text-foreground text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary w-48 lg:w-64 transition-all"
+                                        className="pl-9 pr-4 py-2 rounded-full border border-border bg-card text-sm text-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary w-48 lg:w-64 transition-all"
                                     />
                                     <Search className="w-4 h-4 absolute left-3 text-gray-400" />
                                 </div>
 
                                 <button
                                     onClick={toggleTheme}
-                                    aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-                                    aria-pressed={theme === 'dark'}
-                                    className={`relative h-6 w-12 overflow-hidden rounded-full border shadow-inner transition-all duration-500 focus:outline-none focus:ring-2 focus:ring-primary/35 ${theme === 'dark'
+                                    aria-label={resolvedTheme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+                                    aria-pressed={resolvedTheme === "dark"}
+                                    title={resolvedTheme === "dark" ? "Dark mode enabled" : "Light mode enabled"}
+                                    className={`relative h-6 w-12 overflow-hidden rounded-full border shadow-inner transition-all duration-500 focus:outline-none focus:ring-2 focus:ring-primary/35 ${resolvedTheme === "dark"
                                         ? 'border-[#3d3a35] bg-[linear-gradient(90deg,#171717,#2a2927)]'
                                         : 'border-[#b8962e]/30 bg-[linear-gradient(90deg,#8cc3ef,#62ace6)]'
                                         }`}
                                 >
                                     <span
-                                        className={`absolute inset-0 transition-opacity duration-500 ${theme === 'dark' ? 'opacity-0' : 'opacity-100'}`}
+                                        className={`absolute inset-0 transition-opacity duration-500 ${resolvedTheme === "dark" ? "opacity-0" : "opacity-100"}`}
                                         aria-hidden="true"
                                     >
                                         <span className="absolute -bottom-1 left-2.5 h-3 w-3 rounded-full bg-white/70" />
@@ -145,7 +146,7 @@ export function Navbar() {
                                     </span>
 
                                     <span
-                                        className={`absolute inset-0 transition-opacity duration-500 ${theme === 'dark' ? 'opacity-100' : 'opacity-0'}`}
+                                        className={`absolute inset-0 transition-opacity duration-500 ${resolvedTheme === "dark" ? "opacity-100" : "opacity-0"}`}
                                         aria-hidden="true"
                                     >
                                         <span className="absolute left-2 top-1.5 h-1 w-1 rounded-full bg-white/90" />
@@ -155,13 +156,13 @@ export function Navbar() {
                                     </span>
 
                                     <span
-                                        className={`absolute top-0.5 z-10 h-5 w-5 rounded-full shadow-md transition-all duration-500 ${theme === 'dark'
+                                        className={`absolute top-0.5 z-10 h-5 w-5 rounded-full shadow-md transition-all duration-500 ${resolvedTheme === "dark"
                                             ? 'left-[26px] bg-[#f0e4c3]'
                                             : 'left-0.5 bg-primary'
                                             }`}
                                     >
-                                        <span className={`absolute left-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-[#d6c39a] transition-opacity duration-300 ${theme === 'dark' ? 'opacity-100' : 'opacity-0'}`} />
-                                        <span className={`absolute right-1.5 top-2.5 h-1.5 w-1.5 rounded-full bg-[#d6c39a] transition-opacity duration-300 ${theme === 'dark' ? 'opacity-100' : 'opacity-0'}`} />
+                                        <span className={`absolute left-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-[#d6c39a] transition-opacity duration-300 ${resolvedTheme === "dark" ? "opacity-100" : "opacity-0"}`} />
+                                        <span className={`absolute right-1.5 top-2.5 h-1.5 w-1.5 rounded-full bg-[#d6c39a] transition-opacity duration-300 ${resolvedTheme === "dark" ? "opacity-100" : "opacity-0"}`} />
                                     </span>
                                 </button>
 
@@ -196,8 +197,8 @@ export function Navbar() {
                                                 </div>
                                             </button>
                                             <div className="absolute right-0 top-full pt-4 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-[60]">
-                                                <div className="w-56 bg-white dark:bg-[#242424] rounded-2xl shadow-2xl border border-gray-100 dark:border-white/10 overflow-hidden py-2">
-                                                    <div className="px-4 py-3 border-b dark:border-white/10 mb-1">
+                                                <div className="w-56 rounded-2xl border border-border bg-card shadow-2xl overflow-hidden py-2">
+                                                    <div className="px-4 py-3 border-b border-border mb-1">
                                                         <p className="text-xs text-gray-400 font-medium uppercase tracking-wider">Account</p>
                                                         <p className="text-sm font-semibold truncate text-foreground">{user.user_metadata?.full_name || user.email}</p>
                                                     </div>
@@ -207,13 +208,13 @@ export function Navbar() {
                                                             <Link href="/admin" className="block px-4 py-2.5 text-sm font-bold text-primary hover:bg-primary/5 transition-colors">
                                                                 Admin Dashboard
                                                             </Link>
-                                                            <div className="h-px bg-gray-100 dark:bg-white/10 my-1 mx-4" />
+                                                            <div className="h-px bg-border my-1 mx-4" />
                                                         </>
                                                     )}
 
-                                                    <Link href="/profile" className="block px-4 py-2.5 text-sm text-foreground hover:bg-gray-50 dark:hover:bg-white/10 transition-colors">Your Profile</Link>
-                                                    <Link href="/profile#orders" className="block px-4 py-2.5 text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/10 hover:text-primary transition-all">Order History</Link>
-                                                    <div className="h-px bg-gray-100 dark:bg-white/10 my-1 mx-4" />
+                                                    <Link href="/profile" className="block px-4 py-2.5 text-sm text-foreground hover:bg-accent transition-colors">Your Profile</Link>
+                                                    <Link href="/profile#orders" className="block px-4 py-2.5 text-sm text-muted-foreground hover:bg-accent hover:text-primary transition-all">Order History</Link>
+                                                    <div className="h-px bg-border my-1 mx-4" />
                                                     <button
                                                         onClick={() => signOut()}
                                                         className="w-full text-left px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all font-medium"
@@ -237,6 +238,22 @@ export function Navbar() {
                 </div>
             </header>
 
+            {/* Mobile-only small floating theme toggle */}
+            <div className="fixed bottom-20 left-3 z-[60] md:hidden">
+                <button
+                    onClick={toggleTheme}
+                    aria-label={resolvedTheme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+                    title={resolvedTheme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+                    className="h-10 w-10 rounded-full border border-border bg-card/95 dark:bg-slate-900/90 text-foreground shadow-xl transition-transform duration-150 ease-out hover:scale-105 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                >
+                    {resolvedTheme === "dark" ? (
+                        <Sun className="h-5 w-5 text-amber-300" />
+                    ) : (
+                        <Moon className="h-5 w-5 text-slate-700" />
+                    )}
+                </button>
+            </div>
+
             {mobileMenuOpen && (
                 <div className="fixed inset-0 z-[1500] md:hidden">
                     <div
@@ -244,12 +261,12 @@ export function Navbar() {
                         onClick={() => setMobileMenuOpen(false)}
                     />
 
-                    <div className="absolute inset-y-0 left-0 flex w-[85%] max-w-[320px] animate-in slide-in-from-left flex-col bg-white shadow-2xl duration-300 dark:bg-[#1e1e1e]">
-                        <div className="flex items-center justify-between border-b px-6 py-5">
+                    <div className="absolute inset-y-0 left-0 flex w-[85%] max-w-[320px] animate-in slide-in-from-left flex-col border-r border-border bg-background shadow-2xl duration-300">
+                        <div className="flex items-center justify-between border-b border-border px-6 py-5">
                             <Link href="/" className="" onClick={() => setMobileMenuOpen(false)}>
                                 <Logo className="h-14 w-auto" />
                             </Link>
-                            <button onClick={() => setMobileMenuOpen(false)} className="rounded-full p-2 transition-colors hover:bg-gray-100">
+                            <button onClick={() => setMobileMenuOpen(false)} className="rounded-full p-2 transition-colors hover:bg-accent">
                                 <X className="h-5 w-5 text-gray-500" />
                             </button>
                         </div>
@@ -386,7 +403,7 @@ export function Navbar() {
                         </nav>
 
                         {/* Support Footer */}
-                        <div className="border-t bg-muted/20 p-6">
+                        <div className="border-t border-border bg-muted/20 p-6">
                             <a href={whatsappHref} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 text-muted-foreground hover:text-primary transition-colors">
                                 <div className="p-2 bg-green-500/10 rounded-lg">
                                     <svg viewBox="0 0 24 24" className="h-5 w-5 fill-green-500"><path d="M19.05 4.91A9.82 9.82 0 0 0 12.03 2C6.61 2 2.2 6.41 2.2 11.83c0 1.73.45 3.43 1.3 4.93L2 22l5.39-1.41a9.8 9.8 0 0 0 4.64 1.18h.01c5.42 0 9.83-4.41 9.83-9.83 0-2.63-1.03-5.1-2.82-7.03Zm-7.02 15.2h-.01a8.16 8.16 0 0 1-4.16-1.14l-.3-.18-3.2.84.86-3.12-.2-.32a8.15 8.15 0 0 1-1.25-4.36c0-4.5 3.66-8.16 8.17-8.16 2.18 0 4.22.85 5.76 2.39a8.1 8.1 0 0 1 2.39 5.77c0 4.5-3.66 8.16-8.16 8.16Zm4.48-6.12c-.25-.13-1.47-.72-1.7-.8-.23-.08-.39-.13-.56.12-.17.25-.64.8-.79.97-.15.17-.29.19-.54.06-.25-.13-1.04-.38-1.98-1.22a7.39 7.39 0 0 1-1.37-1.7c-.14-.25-.02-.38.11-.51.11-.11.25-.29.37-.43.12-.15.16-.25.25-.42.08-.17.04-.32-.02-.45-.06-.13-.56-1.35-.77-1.84-.2-.48-.41-.41-.56-.42h-.48c-.17 0-.45.06-.68.32-.23.25-.87.85-.87 2.08 0 1.22.89 2.4 1.01 2.57.13.17 1.76 2.69 4.27 3.77.6.26 1.07.42 1.44.53.6.19 1.14.16 1.56.1.48-.07 1.47-.6 1.68-1.18.21-.58.21-1.08.15-1.18-.06-.1-.23-.17-.48-.29Z" /></svg>

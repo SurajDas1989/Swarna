@@ -7,6 +7,24 @@ import { ToastProvider } from "@/components/ui/Toast";
 import { AppShell } from "@/components/layout/AppShell";
 import "./globals.css";
 
+const themeInitScript = `
+(() => {
+  const storageKey = "theme-preference";
+  const mediaQuery = "(prefers-color-scheme: dark)";
+  const root = document.documentElement;
+  const storedTheme = window.localStorage.getItem(storageKey);
+  const theme = storedTheme === "light" || storedTheme === "dark" || storedTheme === "system"
+    ? storedTheme
+    : "system";
+  const resolvedTheme = theme === "system"
+    ? (window.matchMedia(mediaQuery).matches ? "dark" : "light")
+    : theme;
+
+  root.classList.toggle("dark", resolvedTheme === "dark");
+  root.style.colorScheme = resolvedTheme;
+})();
+`;
+
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -77,10 +95,11 @@ export default function RootLayout({
   };
 
   return (
-    <html lang="en" className="scroll-smooth">
+    <html lang="en" className="scroll-smooth" suppressHydrationWarning>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-[100dvh] flex flex-col`}
       >
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
         <ThemeProvider>
           <AuthProvider>
             <AppProvider>
