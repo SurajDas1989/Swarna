@@ -105,7 +105,7 @@ export function CartModal() {
                     >
 
                         {/* Header */}
-                        <div className="p-6 border-b border-gray-100 dark:border-white/5 flex items-center justify-between bg-stone-50/30 dark:bg-white/[0.02]">
+                        <div className="flex items-center justify-between border-b border-border bg-muted/30 p-6">
                             <div className="flex items-center gap-3">
                                 <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center text-primary">
                                     <ShoppingBag className="w-5 h-5" />
@@ -128,10 +128,10 @@ export function CartModal() {
                         </div>
 
                         {/* Cart Items Area */}
-                        <div className="flex-1 overflow-y-auto p-0 bg-white dark:bg-[#121212]">
+                        <div className="flex-1 overflow-y-auto bg-background p-0">
                             {cart.length === 0 ? (
                                 <div className="h-full flex flex-col items-center justify-center text-gray-500 p-6 space-y-4">
-                                    <div className="p-6 bg-stone-50 dark:bg-white/5 rounded-full mb-4">
+                                    <div className="mb-4 rounded-full bg-muted p-6">
                                         <ShoppingBag className="w-12 h-12 text-gray-400" />
                                     </div>
                                     <p className="text-xl font-bold text-foreground">Your cart is empty</p>
@@ -178,7 +178,7 @@ export function CartModal() {
 
                                                 <div className="flex items-center justify-between mt-auto">
                                                     {/* Quantity Controls */}
-                                                    <div className="flex items-center border dark:border-white/10 rounded-lg bg-stone-50/50 dark:bg-white/5 overflow-hidden scale-90 origin-left">
+                                                    <div className="flex items-center overflow-hidden rounded-lg border border-border bg-muted/70 scale-90 origin-left">
                                                         <button
                                                             className="px-2.5 py-1 hover:bg-gray-200 dark:hover:bg-white/10 text-gray-500 transition-colors"
                                                             onClick={() => updateCartQuantity(item.id, item.quantity - 1)}
@@ -210,13 +210,13 @@ export function CartModal() {
 
                                     {/* Coupon Section (Luxe Style) */}
                                     <div className="px-5 py-4 space-y-4">
-                                        <div className="bg-white dark:bg-card border border-gray-100 dark:border-white/10 rounded-2xl p-4 shadow-sm relative overflow-hidden">
+                                        <div className="relative overflow-hidden rounded-2xl border border-border bg-card p-4 shadow-sm">
                                             {/* Decorative Background Flare */}
                                             <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 -mr-16 -mt-16 rounded-full blur-3xl pointer-events-none" />
                                             
                                             {couponApplied ? (
                                                 <div className="space-y-3 relative z-10">
-                                                    <div className="flex items-center justify-between bg-stone-50/50 dark:bg-white/5 p-3 rounded-xl border border-primary/20 backdrop-blur-sm">
+                                                    <div className="flex items-center justify-between rounded-xl border border-primary/20 bg-muted/70 p-3 backdrop-blur-sm">
                                                         <div className="flex items-center gap-3">
                                                             <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center text-primary-foreground scale-90 shadow-lg shadow-primary/20">
                                                                 <CheckCircle2 className="w-5 h-5" />
@@ -230,12 +230,12 @@ export function CartModal() {
                                                         </div>
                                                         <button 
                                                             onClick={removeCoupon}
-                                                            className="p-2 hover:bg-stone-100 dark:hover:bg-white/10 rounded-full transition-colors group"
+                                                            className="group rounded-full p-2 transition-colors hover:bg-accent"
                                                         >
                                                             <X className="w-4 h-4 text-gray-400 group-hover:text-foreground" />
                                                         </button>
                                                     </div>
-                                                    <div className="pt-2 border-t border-dashed border-gray-100 dark:border-white/5 flex items-center justify-between text-[11px] font-bold">
+                                                    <div className="flex items-center justify-between border-t border-dashed border-border pt-2 text-[11px] font-bold">
                                                         <span className="text-primary/70">1 coupons available</span>
                                                         <button 
                                                             onClick={handleCheckout}
@@ -286,7 +286,7 @@ export function CartModal() {
                             )}
                         </div>
                         {cart.length > 0 && (
-                            <div className="p-0 bg-white dark:bg-[#0a0a0a] border-t border-gray-100 dark:border-white/5 shadow-[0_-10px_30px_rgba(0,0,0,0.05)]">
+                            <div className="border-t border-border bg-background p-0 shadow-[0_-10px_30px_rgba(0,0,0,0.05)]">
                                 {/* Collapsible Total Section */}
                                 <div className="relative">
                                 {/* Saved Badge (Header for the footer) */}
@@ -301,7 +301,7 @@ export function CartModal() {
                                                 initial={{ height: 0, opacity: 0 }}
                                                 animate={{ height: "auto", opacity: 1 }}
                                                 exit={{ height: 0, opacity: 0 }}
-                                                className="overflow-hidden border-b border-gray-50 dark:border-white/5 bg-stone-50/50 dark:bg-white/[0.02]"
+                                                className="overflow-hidden border-b border-border bg-muted/40"
                                             >
                                                 <div className="p-6 space-y-4">
                                                     <div className="flex items-center justify-between mb-2">
@@ -342,7 +342,7 @@ export function CartModal() {
                                                                 <span className="text-foreground">{formatInr(deliveryCharge)}</span>
                                                             )}
                                                         </div>
-                                                        <div className="pt-2 border-t border-dashed border-gray-200 dark:border-white/10 flex justify-between items-center text-primary text-sm">
+                                                        <div className="flex items-center justify-between border-t border-dashed border-border pt-2 text-primary text-sm">
                                                             <span>Total savings</span>
                                                             <span className="font-black">{formatInr(cartDiscount + couponDiscountAmount)}</span>
                                                         </div>
@@ -360,7 +360,7 @@ export function CartModal() {
                                             onClick={() => setIsSummaryExpanded(!isSummaryExpanded)}
                                         >
                                             <div className="flex items-center gap-3">
-                                                <div className="w-8 h-8 bg-foreground/5 dark:bg-white/5 border border-gray-100 dark:border-white/10 rounded-lg flex items-center justify-center shadow-sm">
+                                                <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-foreground/5 shadow-sm dark:bg-white/5">
                                                     <Wallet className="w-4 h-4 text-gray-500" />
                                                 </div>
                                                 <div className="flex items-center gap-2">
