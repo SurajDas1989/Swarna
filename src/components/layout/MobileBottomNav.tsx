@@ -84,7 +84,7 @@ export function MobileBottomNav() {
 
     return (
         <nav
-            className="fixed inset-x-0 bottom-0 z-[60] border-t border-gray-200/70 bg-white/95 px-3 pb-2 pt-2 shadow-[0_-10px_24px_rgba(8,8,8,0.08)] backdrop-blur dark:border-white/10 dark:bg-[#121212]/95 md:hidden isolate"
+            className="fixed inset-x-0 bottom-0 z-[60] border-t border-border/80 bg-background/95 px-3 pb-2 pt-2 shadow-[0_-10px_24px_rgba(8,8,8,0.08)] backdrop-blur md:hidden isolate"
             style={{ 
                 paddingBottom: "calc(env(safe-area-inset-bottom) + 0.5rem)",
                 transform: "translateZ(0)",
@@ -93,7 +93,7 @@ export function MobileBottomNav() {
             aria-label="Mobile bottom navigation"
         >
             <div className="mx-auto w-full max-w-md">
-                <div className="relative grid grid-cols-5 items-center gap-1 rounded-2xl border border-gray-200/70 bg-white/80 p-1 dark:border-white/10 dark:bg-white/[0.04]">
+                <div className="relative grid grid-cols-5 items-center gap-1 rounded-2xl border border-border/80 bg-card/85 p-1">
                     <motion.div
                         aria-hidden="true"
                         className="absolute inset-y-1 left-1 w-[calc(20%-0.2rem)] rounded-xl bg-primary/14"

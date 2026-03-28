@@ -132,6 +132,14 @@
     min-height: 100dvh;
   }
 
+  html {
+    color-scheme: light;
+  }
+
+  html.dark {
+    color-scheme: dark;
+  }
+
   /* Global Flex/Grid Enforcement */
   .flex > *,
   .grid > * {
