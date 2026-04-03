@@ -57,7 +57,7 @@ interface AppContextType {
 
     // Cart functionality
     cart: CartItem[];
-    addToCart: (productId: string) => Promise<void>;
+    addToCart: (productId: string) => Promise<boolean>;
     removeFromCart: (productId: string) => void;
     updateCartQuantity: (productId: string, quantity: number) => void;
     clearCart: () => void;
@@ -403,62 +403,59 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     };
 
     // Cart Methods
-    const addToCart = async (productId: string) => {
-        setIsCartOpen(true); // Auto open cart when adding
+    const addToCart = async (productId: string): Promise<boolean> => {
+        setIsCartOpen(true); 
 
-        let shouldFetchProduct = false;
+        // Check if item exists in current state to decide if we need to fetch
+        const existingItem = cart.find(item => item.id === productId);
+        const availableStock = Math.max(0, existingItem?.stock ?? 0);
 
-        setCart(prev => {
-            const mergedPrev = mergeCartItems(prev);
-            const existingItem = mergedPrev.find(item => item.id === productId);
-            const availableStock = Math.max(0, existingItem?.stock ?? 0);
+        if (existingItem) {
+            if (availableStock <= 0) return true; // Or show out of stock toast
 
-            if (!existingItem) {
-                shouldFetchProduct = true;
-                return mergedPrev;
-            }
-
-            if (availableStock <= 0) {
-                return mergedPrev;
-            }
-
-            return mergedPrev.map(item =>
-                item.id === productId
-                    ? { ...item, quantity: Math.min(item.quantity + 1, availableStock), stock: availableStock }
-                    : item
-            );
-        });
-
-        if (!shouldFetchProduct) {
-            return;
+            setCart(prev => {
+                const mergedPrev = mergeCartItems(prev);
+                const updated = mergedPrev.map(item =>
+                    item.id === productId
+                        ? { ...item, quantity: Math.min(item.quantity + 1, availableStock), stock: availableStock }
+                        : item
+                );
+                return updated;
+            });
+            return true;
         }
 
+        // Item is new — we MUST fetch it.
         try {
             const res = await fetch(`/api/products/${productId}`, { cache: 'no-store' });
-            if (!res.ok) return;
+            if (!res.ok) {
+                console.error(`Failed to fetch product ${productId}: HTTP ${res.status}`);
+                return false;
+            }
 
             const data = await res.json();
             const product = normalizeProduct(data as Product);
-            const availableStock = Math.max(0, product.stock ?? 0);
+            const stock = Math.max(0, product.stock ?? 0);
 
-            if (availableStock <= 0) return;
+            if (stock <= 0) return false;
 
             setCart((prev) => {
                 const mergedPrev = mergeCartItems(prev);
-                const existingItem = mergedPrev.find((item) => item.id === productId);
-
-                if (existingItem) {
-                    return mergedPrev.map((item) =>
+                // Double check if someone added it while we were fetching
+                if (mergedPrev.some(item => item.id === productId)) {
+                     return mergedPrev.map(item =>
                         item.id === productId
-                            ? { ...item, stock: availableStock, quantity: Math.min(item.quantity + 1, availableStock) }
+                            ? { ...item, stock: stock, quantity: Math.min(item.quantity + 1, stock) }
                             : item
                     );
                 }
-
-                return [...mergedPrev, { ...product, stock: availableStock, quantity: 1 }];
+                return [...mergedPrev, { ...product, stock, quantity: 1 }];
             });
+
+            return true;
         } catch (error) {
             console.error('Failed to fetch product for cart', error);
+            return false;
         }
     };
 

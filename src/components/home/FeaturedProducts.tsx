@@ -191,13 +191,17 @@ export function FeaturedProducts({ initialProducts = [] }: { initialProducts?: P
         return showAllProducts ? sortedProducts : sortedProducts.slice(0, 8);
     }, [showAllProducts, sortedProducts]);
 
-    const handleAddToCart = (product: Product) => {
-        addToCart(product.id);
-        setAddedProductId(product.id);
-        setTimeout(() => {
-            setAddedProductId((prev) => (prev === product.id ? null : prev));
-        }, 850);
-        showToast(`Added ${product.name} to cart`, "success");
+    const handleAddToCart = async (product: Product) => {
+        const added = await addToCart(product.id);
+        if (added) {
+            setAddedProductId(product.id);
+            setTimeout(() => {
+                setAddedProductId((prev) => (prev === product.id ? null : prev));
+            }, 850);
+            showToast(`Added ${product.name} to cart`, "success");
+        } else {
+            showToast(`Could not add ${product.name}. Please try again.`, "error");
+        }
     };
 
     const handleCategoryChange = (category: string) => {

@@ -280,10 +280,14 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     const infoSections = getInfoSections(product);
     const soldCount = 40 + (product.id.length * 13) % 160;
 
-    const handleBuyNow = () => {
+    const handleBuyNow = async () => {
         if (isOutOfStock) return;
-        addToCart(product.id);
-        router.push('/checkout');
+        const added = await addToCart(product.id);
+        if (added) {
+            router.push('/checkout');
+        } else {
+            showToast('Could not add to cart. Please try again.', 'error');
+        }
     };
 
     return (
@@ -465,11 +469,15 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                         <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/95 dark:bg-card/95 backdrop-blur-md border-t border-gray-100 dark:border-white/10 shadow-[0_-4px_20px_rgba(0,0,0,0.08)] z-50 flex gap-3 lg:static lg:max-w-md lg:p-0 lg:bg-transparent lg:border-none lg:shadow-none lg:z-auto lg:mb-4" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 80px)' }}>
                             <Button
                                 disabled={isOutOfStock}
-                                onClick={() => {
+                                onClick={async () => {
                                     if (isOutOfStock) return;
-                                    addToCart(product.id);
-                                    showToast(`${product.name} added to cart`, 'cart');
-                                    setIsCartOpen(true);
+                                    const added = await addToCart(product.id);
+                                    if (added) {
+                                        showToast(`${product.name} added to cart`, 'cart');
+                                        setIsCartOpen(true);
+                                    } else {
+                                        showToast('Could not add to cart. Please try again.', 'error');
+                                    }
                                 }}
                                 variant="outline"
                                 className="flex-1 border-2 border-foreground dark:border-primary text-foreground dark:text-primary hover:bg-foreground hover:text-white dark:hover:bg-primary dark:hover:text-background font-semibold py-6 sm:py-7 text-sm sm:text-base transition-all duration-300 cta-element"
