@@ -26,7 +26,7 @@ export async function POST(request: Request) {
 
         const existingOrder = await prisma.order.findUnique({
             where: { id: orderId },
-            select: { total: true },
+            select: { total: true, appliedCoupon: true, userId: true, guestEmail: true },
         });
 
         const updatedOrder = await prisma.order.update({
@@ -41,6 +41,23 @@ export async function POST(request: Request) {
             },
             include: { user: true },
         });
+
+        // Finalize Coupon Redemption now that payment is verified
+        if (existingOrder?.appliedCoupon) {
+            try {
+                await prisma.discountCode.update({
+                    where: { code: existingOrder.appliedCoupon },
+                    data: {
+                        isUsed: true,
+                        usedAt: new Date(),
+                        usedByUserId: existingOrder.userId,
+                        usedByEmail: existingOrder.guestEmail?.toLowerCase() || updatedOrder.user?.email?.toLowerCase(),
+                    },
+                });
+            } catch (couponErr) {
+                console.error("Failed to finalize coupon redemption:", couponErr);
+            }
+        }
 
         // If the order had store credit reserved, finalize the deduction now that payment succeeded
         if (updatedOrder.userId && updatedOrder.storeCreditUsed && Number(updatedOrder.storeCreditUsed) > 0) {

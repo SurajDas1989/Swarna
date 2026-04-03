@@ -107,67 +107,52 @@ export async function POST(request: Request) {
             let finalOrderStatus = 'PENDING';
             let checkoutTotal = parseFloat(total);
 
-            // ===== STEP 0: ATOMIC COUPON REDEMPTION =====
+            // ===== STEP 0: COUPON VALIDATION =====
             if (discountCode && typeof discountCode === 'string' && discountCode.trim()) {
                 const code = discountCode.trim().toUpperCase();
 
-                // Atomic conditional update: only succeeds if isUsed is still false
-                const updated = await tx.discountCode.updateMany({
-                    where: {
-                        code,
-                        isUsed: false,
-                    },
-                    data: {
-                        isUsed: true,
-                        usedAt: new Date(),
-                        usedByUserId: dbUserId,
-                        usedByEmail: shipping.email?.toLowerCase(),
-                    },
-                });
-
-                if (updated.count === 0) {
-                    throw new Error('Coupon code is invalid or has already been used.');
-                }
-
-                // Fetch the coupon details for discount calculation
+                // Fetch the coupon details for validation
                 const coupon = await tx.discountCode.findUnique({ where: { code } });
 
-                if (coupon) {
-                    // Check expiry
-                    if (coupon.expiresAt && new Date(coupon.expiresAt) < new Date()) {
-                        // Rollback: un-use the coupon since it's expired
-                        await tx.discountCode.update({
-                            where: { code },
-                            data: { isUsed: false, usedAt: null, usedByUserId: null, usedByEmail: null },
-                        });
-                        throw new Error('This coupon has expired.');
-                    }
-
-                    // Check user binding (email match)
-                    if (coupon.email) {
-                        const orderEmail = shipping.email?.toLowerCase().trim();
-                        if (orderEmail && orderEmail !== coupon.email) {
-                            // Rollback
-                            await tx.discountCode.update({
-                                where: { code },
-                                data: { isUsed: false, usedAt: null, usedByUserId: null, usedByEmail: null },
-                            });
-                            throw new Error('This coupon is not valid for your account.');
-                        }
-                    }
-
-                    // Calculate discount amount (null maxDiscountAmount = no cap)
-                    const rawDiscount = checkoutTotal * (coupon.discountPercent / 100);
-                    couponDiscountAmount = coupon.maxDiscountAmount
-                        ? Math.min(rawDiscount, Number(coupon.maxDiscountAmount))
-                        : rawDiscount;
-
-                    // Round to 2 decimal places
-                    couponDiscountAmount = Math.round(couponDiscountAmount * 100) / 100;
-
-                    checkoutTotal = Math.max(0, checkoutTotal - couponDiscountAmount);
-                    appliedCouponCode = code;
+                if (!coupon) {
+                    throw new Error('Invalid coupon code.');
                 }
+
+                if (coupon.isUsed) {
+                    throw new Error('This coupon has already been used.');
+                }
+
+                // Check expiry
+                if (coupon.expiresAt && new Date(coupon.expiresAt) < new Date()) {
+                    throw new Error('This coupon has expired.');
+                }
+
+                // Check user binding (email match)
+                if (coupon.email) {
+                    const orderEmail = shipping.email?.toLowerCase().trim();
+                    if (orderEmail && orderEmail !== coupon.email) {
+                        throw new Error('This coupon is not valid for your account.');
+                    }
+                }
+
+                // ATOMIC REDEMPTION: Only if COD or Fully Paid via Credit
+                // For Online payments, we mark it used in the verification step instead.
+                const isCod = paymentMethod === 'cod';
+                // Note: finalOrderStatus isn't calculated yet, but we can check if it WOULD be paid via credit later
+                // or just handle it after store credit calculation.
+                // Let's calculate the discount first, then decide on redemption.
+
+                // Calculate discount amount (null maxDiscountAmount = no cap)
+                const rawDiscount = checkoutTotal * (coupon.discountPercent / 100);
+                couponDiscountAmount = coupon.maxDiscountAmount
+                    ? Math.min(rawDiscount, Number(coupon.maxDiscountAmount))
+                    : rawDiscount;
+
+                // Round to 2 decimal places
+                couponDiscountAmount = Math.round(couponDiscountAmount * 100) / 100;
+
+                checkoutTotal = Math.max(0, checkoutTotal - couponDiscountAmount);
+                appliedCouponCode = code;
             }
 
             // ===== STEP 1: STORE CREDIT =====
@@ -227,6 +212,7 @@ export async function POST(request: Request) {
                     shippingAmount: Number(shippingAmount) || 0,
                     storeCreditUsed: Number(finalCreditUsed) || 0,
                     status: finalOrderStatus as 'PENDING' | 'PAID',
+                    appliedCoupon: appliedCouponCode,
                     items: {
                         create: (items as CheckoutItem[]).map((item) => ({
                             productId: item.id,
@@ -254,11 +240,21 @@ export async function POST(request: Request) {
                 });
             }
 
-            // Link coupon to order
+            // Link coupon to order and mark as used if immediate redemption applies
             if (appliedCouponCode) {
+                const isImmediateRedemption = paymentMethod === 'cod' || finalOrderStatus === 'PAID';
+
                 await tx.discountCode.update({
                     where: { code: appliedCouponCode },
-                    data: { orderId: createdOrder.id },
+                    data: {
+                        orderId: createdOrder.id,
+                        ...(isImmediateRedemption ? {
+                            isUsed: true,
+                            usedAt: new Date(),
+                            usedByUserId: dbUserId,
+                            usedByEmail: shipping.email?.toLowerCase(),
+                        } : {})
+                    },
                 });
             }
 
