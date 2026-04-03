@@ -57,7 +57,7 @@ interface AppContextType {
 
     // Cart functionality
     cart: CartItem[];
-    addToCart: (productId: string) => Promise<void>;
+    addToCart: (productId: string) => Promise<boolean>;
     removeFromCart: (productId: string) => void;
     updateCartQuantity: (productId: string, quantity: number) => void;
     clearCart: () => void;
@@ -403,7 +403,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     };
 
     // Cart Methods
-    const addToCart = async (productId: string) => {
+    const addToCart = async (productId: string): Promise<boolean> => {
         setIsCartOpen(true); // Auto open cart when adding
 
         let shouldFetchProduct = false;
@@ -429,19 +429,24 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
             );
         });
 
+        // Item was already in cart — bumped quantity synchronously, toast can fire
         if (!shouldFetchProduct) {
-            return;
+            return true;
         }
 
+        // Item is new — we need to fetch it first. Toast must wait.
         try {
             const res = await fetch(`/api/products/${productId}`, { cache: 'no-store' });
-            if (!res.ok) return;
+            if (!res.ok) {
+                console.error(`Failed to fetch product ${productId}: HTTP ${res.status}`);
+                return false;
+            }
 
             const data = await res.json();
             const product = normalizeProduct(data as Product);
             const availableStock = Math.max(0, product.stock ?? 0);
 
-            if (availableStock <= 0) return;
+            if (availableStock <= 0) return false;
 
             setCart((prev) => {
                 const mergedPrev = mergeCartItems(prev);
@@ -457,8 +462,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
                 return [...mergedPrev, { ...product, stock: availableStock, quantity: 1 }];
             });
+
+            return true;
         } catch (error) {
             console.error('Failed to fetch product for cart', error);
+            return false;
         }
     };
 
