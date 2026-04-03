@@ -108,6 +108,7 @@ model Order {
 
   razorpayOrderId String?
   paymentId       String?
+  appliedCoupon   String?
 
   items OrderItem[]
 

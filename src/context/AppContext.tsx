@@ -138,10 +138,12 @@ function mergeCartItems(items: CartItem[]) {
             continue;
         }
 
+        // Fix: Use the highest quantity instead of blindly adding them
+        // This stops the doubling bug while keeping the highest user-set value
         merged.set(normalized.id, {
             ...existing,
             ...normalized,
-            quantity: existing.quantity + normalized.quantity,
+            quantity: Math.max(existing.quantity, normalized.quantity),
             stock: Math.max(existing.stock ?? 0, normalized.stock ?? 0),
         });
     }
@@ -268,24 +270,29 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
                     const dbItems = normalizeCartItems(Array.isArray(dbCart) ? dbCart : []);
 
                     setCart(prev => {
-                        // Server is the source of truth for items it knows about.
-                        // Only add local items that DON'T exist on the server yet
-                        // (e.g. added to cart while the sync was still in progress).
                         const serverMap = new Map(dbItems.map(item => [item.id, item]));
                         
                         for (const localItem of prev) {
                             if (!serverMap.has(localItem.id)) {
-                                // Item exists locally but not in DB yet — keep it
                                 serverMap.set(localItem.id, {
                                     ...localItem,
                                     category: getCategoryLabel(localItem.category),
                                     stock: typeof localItem.stock === 'number' ? localItem.stock : 0,
                                 });
                             }
-                            // If item exists on server, server quantity wins — no doubling
                         }
 
-                        return normalizeCartItems(Array.from(serverMap.values()));
+                        // Final pass: clamp EVERYTHING to stock.
+                        // This prevents "Automatic Increase" beyond available inventory.
+                        const results = Array.from(serverMap.values()).map(item => {
+                            const stockLimit = item.stock ?? 0;
+                            return {
+                                ...item,
+                                quantity: Math.min(item.quantity, Math.max(1, stockLimit))
+                            };
+                        });
+
+                        return normalizeCartItems(results);
                     });
                 }
             } catch (error) {

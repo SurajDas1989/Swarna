@@ -12,9 +12,11 @@ function mergeCartItems<T extends { productId: string; quantity: number }>(items
             continue;
         }
 
+        // Fix: Use the highest quantity instead of blindly adding them
+        // This stops the doubling bug while keeping the highest user-set value
         merged.set(item.productId, {
             ...existing,
-            quantity: existing.quantity + item.quantity,
+            quantity: Math.max(existing.quantity, item.quantity),
         });
     }
 
