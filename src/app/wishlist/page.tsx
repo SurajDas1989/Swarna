@@ -1,29 +1,36 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useAppContext, Product } from "@/context/AppContext";
 import { Button } from "@/components/ui/button";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft, Loader2, Share2, Filter, X, ChevronRight, Check } from "lucide-react";
+import { useSearchParams } from "next/navigation";
 import { getProductCategoryLabel } from "@/lib/productCategory";
 
-export default function WishlistPage() {
+function WishlistContent() {
     const { wishlist, toggleWishlist, addToCart, removeFromWishlist } = useAppContext();
+    const searchParams = useSearchParams();
+    const sharedIds = searchParams.get("ids")?.split(",") || null;
+    
     const [wishlistProducts, setWishlistProducts] = useState<Product[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [copied, setCopied] = useState(false);
 
     useEffect(() => {
+        const idsToFetch = sharedIds || wishlist;
+        
         const fetchWishlist = async () => {
-            if (wishlist.length === 0) {
+            if (idsToFetch.length === 0) {
                 setWishlistProducts([]);
                 setIsLoading(false);
                 return;
             }
 
             try {
-                const res = await fetch(`/api/products/by-ids?ids=${wishlist.join(',')}`);
+                const res = await fetch(`/api/products/by-ids?ids=${idsToFetch.join(',')}`);
                 if (res.ok) {
                     const data = await res.json();
                     setWishlistProducts(data);
@@ -36,7 +43,14 @@ export default function WishlistPage() {
         };
 
         fetchWishlist();
-    }, [wishlist]);
+    }, [wishlist, sharedIds]);
+
+    const handleShare = () => {
+        const url = `${window.location.origin}/wishlist?ids=${wishlist.join(',')}`;
+        navigator.clipboard.writeText(url);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+    };
 
     const handleMoveToCart = (productId: string) => {
         addToCart(productId);
@@ -60,8 +74,31 @@ export default function WishlistPage() {
                         <ArrowLeft className="w-4 h-4" />
                     </Link>
                 </Button>
-                <h1 className="text-3xl font-bold text-foreground">My Wishlist</h1>
+                <h1 className="text-3xl font-bold text-foreground">
+                    {sharedIds ? "Shared Wishlist" : "My Wishlist"}
+                </h1>
+                
+                {!sharedIds && wishlist.length > 0 && (
+                    <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={handleShare}
+                        className="ml-auto flex items-center gap-2 text-primary hover:text-primary-dark hover:bg-primary/5 rounded-full"
+                    >
+                        <Share2 className="w-4 h-4" />
+                        {copied ? "Link Copied!" : "Share Wishlist"}
+                    </Button>
+                )}
             </div>
+
+            {sharedIds && (
+                <div className="mb-8 p-4 bg-primary/5 border border-primary/10 rounded-xl flex items-center gap-3">
+                    <Share2 className="w-5 h-5 text-primary" />
+                    <p className="text-sm font-medium text-primary">
+                        You are viewing a shared collection of masterpieces.
+                    </p>
+                </div>
+            )}
 
             {isLoading ? (
                 <div className="flex flex-col items-center justify-center py-20 min-h-[40dvh]">
@@ -159,5 +196,17 @@ export default function WishlistPage() {
                 </div>
             )}
         </div>
+    );
+}
+
+export default function WishlistPage() {
+    return (
+        <Suspense fallback={
+            <div className="container mx-auto px-4 py-16 flex items-center justify-center min-h-[70dvh]">
+                <Loader2 className="w-10 h-10 animate-spin text-primary" />
+            </div>
+        }>
+            <WishlistContent />
+        </Suspense>
     );
 }

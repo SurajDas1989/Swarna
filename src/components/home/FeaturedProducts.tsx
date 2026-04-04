@@ -12,6 +12,7 @@ import { getBlurDataUrl } from "@/lib/utils/imageBlur";
 import { ScrollReveal } from "@/components/ui/ScrollReveal";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { AdaptiveContainer, InputButtonGroup } from "@/components/layout/LayoutPrimitives";
+import { ProductCard } from "@/components/shared/ProductCard";
 
 export const FILTERS = [
     { id: "all", label: "All Products" },
@@ -387,119 +388,13 @@ export function FeaturedProducts({ initialProducts = [] }: { initialProducts?: P
                     </div>
                 ) : sortedProducts.length > 0 ? (
                     <div className="grid grid-cols-2 gap-3 transition-all duration-500 lg:grid-cols-4 lg:gap-6 xl:gap-8">
-                        {displayedProducts.map((product, idx) => {
-                            const isAdded = addedProductId === product.id;
-                            const isOutOfStock = (product.stock ?? 0) <= 0;
-
-                            return (
-                                <ScrollReveal key={`prod-${product.id}`} delay={0.05 * (idx % 4)} direction="up" className="h-full">
-                                    <div className="group flex h-full flex-col overflow-hidden rounded-xl border border-gray-100 bg-white transition-all duration-500 hover:-translate-y-1 hover:border-primary/25 hover:shadow-xl dark:border-white/5 dark:bg-card dark:hover:border-primary/35 dark:hover:shadow-primary/10">
-                                        <div className="relative aspect-[4/5] overflow-hidden bg-[#F8F8F8] p-3 dark:bg-black lg:p-6">
-                                            {product.originalPrice > product.price && (
-                                                <div className="absolute left-2 top-2 z-10 rounded-full bg-red-500 px-2 py-0.5 text-[10px] font-bold text-white shadow-sm lg:left-4 lg:top-4 lg:px-2.5 lg:py-1 lg:text-xs">
-                                                    -{Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}%
-                                                </div>
-                                            )}
-
-                                            <button
-                                                onClick={(e) => {
-                                                    e.preventDefault();
-                                                    toggleWishlist(product.id);
-                                                    const alreadyLiked = isInWishlist(product.id);
-                                                    showToast(alreadyLiked ? "Removed from Wishlist" : "Added to Wishlist", alreadyLiked ? "wishlist" : "success");
-                                                }}
-                                                className="absolute right-2 top-2 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-white/90 text-gray-900 shadow-sm backdrop-blur transition-colors hover:bg-red-50 hover:text-red-500 lg:right-4 lg:top-4 lg:h-8 lg:w-8"
-                                            >
-                                                <span className={`text-base ${isInWishlist(product.id) ? "text-red-500" : ""}`}>
-                                                    {isInWishlist(product.id) ? "❤" : "♡"}
-                                                </span>
-                                            </button>
-
-                                            <Link href={`/product/${product.id}`} className="block">
-                                            <Image
-                                                src={product.image}
-                                                alt={`${product.name} | Swarna Jewellery`}
-                                                fill
-                                                placeholder="blur"
-                                                blurDataURL={getBlurDataUrl()}
-                                                className="object-contain p-4 drop-shadow-lg transition-transform duration-700 ease-in-out group-hover:scale-108 group-hover:rotate-[0.7deg] lg:p-8"
-                                                sizes="(max-width: 768px) 50vw, (max-width: 1200px) 25vw, 25vw"
-                                            />
-                                        </Link>
-
-                                            <div className="absolute inset-x-0 bottom-0 hidden translate-y-4 p-4 opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100 lg:block">
-                                                <Button
-                                                    disabled={isAdded || isOutOfStock}
-                                                    className={`w-full shadow-lg transition-all duration-300 ${isAdded
-                                                        ? "bg-emerald-600 text-white hover:bg-emerald-600"
-                                                        : isOutOfStock
-                                                            ? "bg-gray-200 text-gray-500 hover:bg-gray-200 dark:bg-white/10 dark:text-gray-500"
-                                                        : "bg-white text-gray-900 hover:bg-primary hover:text-white"
-                                                        }`}
-                                                    onClick={(e) => {
-                                                        e.preventDefault();
-                                                        handleAddToCart(product);
-                                                    }}
-                                                >
-                                                    {isAdded ? (
-                                                        <span className="inline-flex items-center gap-2">
-                                                            <Check className="h-4 w-4" /> Added
-                                                        </span>
-                                                    ) : isOutOfStock ? (
-                                                        "Out of Stock"
-                                                    ) : (
-                                                        "Quick Add"
-                                                    )}
-                                                </Button>
-                                            </div>
-                                        </div>
-
-                                        <div className="flex flex-1 flex-col p-3 lg:p-5">
-                                            <Link href={`/product/${product.id}`} className="mb-1 block min-h-[2.75rem] lg:min-h-[1.75rem]">
-                                                <h3 className="line-clamp-2 text-sm font-medium leading-5 text-gray-900 transition-colors hover:text-primary dark:text-foreground lg:line-clamp-1 lg:text-base">
-                                                    {product.name}
-                                                </h3>
-                                            </Link>
-
-                                            <div className="mt-auto flex items-center justify-between pt-2 lg:pt-4">
-                                                <div className="flex min-h-[2.75rem] flex-col justify-end">
-                                                    <span className="text-base font-semibold text-gray-900 dark:text-foreground lg:text-lg">
-                                                        {new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(product.price)}
-                                                    </span>
-                                                    {product.originalPrice > product.price && (
-                                                        <span className="text-xs text-gray-400 line-through lg:text-sm">
-                                                            {new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(product.originalPrice)}
-                                                        </span>
-                                                    )}
-                                                    {product.originalPrice <= product.price && (
-                                                        <span className="text-xs opacity-0 lg:text-sm" aria-hidden="true">
-                                                            placeholder
-                                                        </span>
-                                                    )}
-                                                </div>
-
-                                                <button
-                                                    onClick={(e) => {
-                                                        e.preventDefault();
-                                                        handleAddToCart(product);
-                                                    }}
-                                                    disabled={isAdded || isOutOfStock}
-                                                    className={`flex h-8 w-8 items-center justify-center rounded-full transition-all duration-300 lg:hidden ${isAdded
-                                                        ? "bg-emerald-600 text-white"
-                                                        : isOutOfStock
-                                                            ? "bg-gray-200 text-gray-400 dark:bg-white/10 dark:text-gray-500"
-                                                        : "bg-gray-100 text-gray-900 hover:bg-primary hover:text-white dark:bg-white/5 dark:text-foreground dark:hover:bg-primary"
-                                                        }`}
-                                                    aria-label={isAdded ? "Added" : "Add to Cart"}
-                                                >
-                                                    {isAdded ? <Check className="h-3.5 w-3.5" /> : <Plus className="h-4 w-4" />}
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </ScrollReveal>
-                            );
-                        })}
+                        {displayedProducts.map((product, idx) => (
+                            <ProductCard 
+                                key={`prod-${product.id}`} 
+                                product={product} 
+                                priority={idx < 4}
+                            />
+                        ))}
                     </div>
                 ) : (
                     <div className="rounded-2xl border border-gray-100 bg-gray-50 py-20 text-center dark:border-white/10 dark:bg-white/5">

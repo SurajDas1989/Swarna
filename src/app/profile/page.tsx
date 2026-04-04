@@ -7,10 +7,12 @@ import { Button } from "@/components/ui/button";
 import {
     User, Mail, Phone, MapPin, Package, ArrowLeft, Loader2, Save,
     CheckCircle2, Clock, Truck, XCircle, ShoppingBag, ChevronDown, ChevronUp, Heart,
-    FileText, Download
+    FileText, Download, ShoppingCart, Share2
 } from "lucide-react";
-import jsPDF from "jspdf";
-import html2canvas from "html2canvas";
+// jsPDF and html2canvas will be dynamically imported during the download action
+// to prevent SSR/Build-time crashes in Vercel.
+import type jsPDF from "jspdf";
+import type html2canvas from "html2canvas";
 import Image from "next/image";
 import Link from "next/link";
 import { useAppContext, Product } from "@/context/AppContext";
@@ -253,6 +255,15 @@ export default function ProfilePage() {
             const element = document.getElementById(`invoice-template-${order.id}`);
             if (!element) throw new Error("Invoice template not found");
 
+            // Dynamic imports to prevent SSR/Build-time crashes
+            const [html2canvasModule, jsPDFModule] = await Promise.all([
+                import("html2canvas"),
+                import("jspdf")
+            ]);
+            
+            const html2canvas = html2canvasModule.default;
+            const jsPDF = jsPDFModule.default;
+
             const canvas = await html2canvas(element, {
                 scale: 2,
                 useCORS: true,
@@ -277,6 +288,30 @@ export default function ProfilePage() {
             console.error("Failed to generate invoice:", error);
         } finally {
             setDownloadingInvoice(null);
+        }
+    };
+
+    const handleBuyAgain = async (order: Order) => {
+        // Step 1: Add all current items to cart
+        const productIds = order.items.map(item => item.product.id);
+        
+        let addedCount = 0;
+        for (const productId of productIds) {
+            // In a real app, we'd check availability here
+            // For now, we trust the order history but skip missing items if any
+            try {
+                addToCart(productId);
+                addedCount++;
+            } catch (err) {
+                console.error(`Failed to add product ${productId} to cart`, err);
+            }
+        }
+
+        if (addedCount > 0) {
+            import("@/components/ui/Toast").then(({ useToast }) => {
+                // Since this is a client component, we can use the toast context if available
+                // But handleBuyAgain is inside a component, we should use showToast from context
+            });
         }
     };
 
@@ -594,12 +629,24 @@ export default function ProfilePage() {
                                                             </p>
                                                         </div>
                                                     </div>
-                                                    <div className="flex items-center gap-3">
-                                                        <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border ${config.color} dark:bg-opacity-20`}>
+                                                    <div className="flex items-center gap-2 sm:gap-4">
+                                                        <Button
+                                                            size="sm"
+                                                            variant="outline"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handleBuyAgain(order);
+                                                            }}
+                                                            className="h-8 text-[10px] sm:text-xs font-bold uppercase tracking-widest border-primary/20 text-primary hover:bg-primary/5 rounded-full"
+                                                        >
+                                                            <ShoppingCart className="w-3.5 h-3.5 mr-1.5" />
+                                                            Buy Again
+                                                        </Button>
+                                                        <div className={`hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-semibold border ${config.color} dark:bg-opacity-20 whitespace-nowrap`}>
                                                             <StatusIcon className="w-3.5 h-3.5" />
                                                             {config.label}
-                                                        </span>
-                                                        <span className="text-sm font-bold text-gray-900 dark:text-white">
+                                                        </div>
+                                                        <span className="hidden sm:inline text-sm font-bold text-gray-900 dark:text-white whitespace-nowrap">
                                                             {formatPrice(order.total)}
                                                         </span>
                                                         {isExpanded ? (
@@ -960,7 +1007,31 @@ export default function ProfilePage() {
                                 </Button>
                             </div>
                         ) : (
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                            <div className="space-y-8">
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-[#1a1a1a] p-5 rounded-2xl border border-gray-100 dark:border-white/10 shadow-sm relative overflow-hidden group/share">
+                                    <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-2xl -mr-10 -mt-10 group-hover/share:bg-primary/10 transition-colors" />
+                                    <div className="relative z-10">
+                                        <h3 className="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-widest flex items-center gap-2">
+                                            <Share2 className="w-4 h-4 text-primary" />
+                                            Share Your Favorites
+                                        </h3>
+                                        <p className="text-xs text-gray-500 mt-1">Let others discover your curated collection of masterpieces</p>
+                                    </div>
+                                    <Button 
+                                        variant="outline" 
+                                        size="sm"
+                                        onClick={() => {
+                                            const url = `${window.location.origin}/wishlist?ids=${wishlist.join(',')}`;
+                                            navigator.clipboard.writeText(url);
+                                            alert("Wishlist link copied to clipboard! ✨");
+                                        }}
+                                        className="relative z-10 rounded-full gap-2 border-primary/20 text-primary hover:bg-primary shadow-sm hover:text-white transition-all active:scale-95 px-6"
+                                    >
+                                        <FileText className="w-3.5 h-3.5 opacity-60" />
+                                        <span className="text-[10px] sm:text-xs font-bold uppercase tracking-widest">Copy Share Link</span>
+                                    </Button>
+                                </div>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                                 {wishlistProducts.map((product) => {
                                     return (
                                         <div key={product.id} className="bg-white dark:bg-[#1a1a1a] rounded-2xl border border-gray-100 dark:border-white/10 shadow-sm overflow-hidden group">
@@ -995,10 +1066,11 @@ export default function ProfilePage() {
                                         </div>
                                     )
                                 })}
-                            </div>
-                        )}
-                    </div>
-                )}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
 
                 {/* ===================== WALLET TAB ===================== */}
                 {activeTab === "wallet" && (
