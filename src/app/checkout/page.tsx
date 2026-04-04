@@ -14,6 +14,7 @@ import Link from "next/link";
 import Script from "next/script";
 import { formatInr } from "@/lib/utils";
 
+
 // New components
 import { CheckoutStepper, type CheckoutStep } from "@/components/checkout/CheckoutStepper";
 import { OrderSummary } from "@/components/checkout/OrderSummary";
@@ -459,7 +460,7 @@ export default function CheckoutPage() {
                             <div className="grid grid-cols-3 gap-4 pt-2">
                                 {[
                                     { icon: ShieldCheck, label: "Secure Payment" },
-                                    { icon: Truck, label: "Free Shipping ≥₹2000" },
+                                    { icon: Truck, label: "Free Shipping ≥₹799" },
                                     { icon: RotateCcw, label: "Easy Returns" },
                                 ].map(({ icon: Icon, label }) => (
                                     <div key={label} className="flex flex-col items-center gap-1.5 rounded-lg border bg-card p-3 text-center">
