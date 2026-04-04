@@ -7,6 +7,7 @@ export interface Product {
     id: string;
     name: string;
     category: string | { slug?: string; name?: string; id?: string };
+    category_slug?: string;
     price: number;
     compareAtPrice?: number | null;
     costPerItem?: number | null;
@@ -18,6 +19,7 @@ export interface Product {
     description: string;
     stock?: number;
     isActive?: boolean;
+    isFeatured?: boolean;
 }
 
 export interface CartItem extends Product {

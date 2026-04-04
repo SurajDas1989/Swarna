@@ -3,12 +3,13 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Search, ShoppingCart, Menu, X, User, Heart, Sun, Moon } from "lucide-react";
+import { Sun, Moon, Search, ShoppingCart, Menu, X, User, Heart, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAppContext } from "@/context/AppContext";
 import { useAuth } from "@/context/AuthContext";
 import { useTheme } from "@/context/ThemeContext";
 import { Logo } from "@/components/ui/Logo";
+import { motion, AnimatePresence } from "framer-motion";
 
 export function Navbar() {
     const router = useRouter();
@@ -23,6 +24,12 @@ export function Navbar() {
     const { user, dbUser, signOut } = useAuth();
     const { resolvedTheme, toggleTheme } = useTheme();
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+    const [activeMegaMenu, setActiveMegaMenu] = useState<string | null>(null);
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
 
     useEffect(() => {
         const handleOpenMenu = () => setMobileMenuOpen(true);
@@ -105,11 +112,35 @@ export function Navbar() {
                                 <Logo className="h-14 w-auto" />
                             </Link>
 
-                            <nav className="hidden md:flex gap-8">
+                            <nav className="hidden md:flex gap-10">
                                 {navLinks.map(link => (
-                                    <Link key={link.href} href={link.href} className="text-foreground font-medium hover:text-primary transition-colors">
-                                        {link.label}
-                                    </Link>
+                                    <div 
+                                        key={link.href}
+                                        className="relative flex items-center h-full group py-5"
+                                        onMouseEnter={() => {
+                                            if (link.label === 'Shop' || link.label === 'Categories') {
+                                                setActiveMegaMenu(link.label);
+                                            } else {
+                                                setActiveMegaMenu(null);
+                                            }
+                                        }}
+                                    >
+                                        <Link 
+                                            href={link.href} 
+                                            className={`text-[13px] uppercase tracking-[0.2em] font-bold transition-all duration-300 ${
+                                                activeMegaMenu === link.label 
+                                                ? "text-primary" 
+                                                : "text-foreground/70 hover:text-primary"
+                                            }`}
+                                        >
+                                            {link.label}
+                                        </Link>
+                                        
+                                        {/* Luxury Underline */}
+                                        <span className={`absolute bottom-4 left-0 h-0.5 bg-primary transition-all duration-500 ${
+                                            activeMegaMenu === link.label ? "w-full" : "w-0"
+                                        }`} />
+                                    </div>
                                 ))}
                             </nav>
 
@@ -127,43 +158,47 @@ export function Navbar() {
 
                                 <button
                                     onClick={toggleTheme}
-                                    aria-label={resolvedTheme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
-                                    aria-pressed={resolvedTheme === "dark"}
-                                    title={resolvedTheme === "dark" ? "Dark mode enabled" : "Light mode enabled"}
-                                    className={`relative h-6 w-12 overflow-hidden rounded-full border shadow-inner transition-all duration-500 focus:outline-none focus:ring-2 focus:ring-primary/35 ${resolvedTheme === "dark"
+                                    aria-label={mounted && resolvedTheme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+                                    aria-pressed={mounted && resolvedTheme === "dark"}
+                                    title={mounted && resolvedTheme === "dark" ? "Dark mode enabled" : "Light mode enabled"}
+                                    className={`relative h-6 w-12 overflow-hidden rounded-full border shadow-inner transition-all duration-500 focus:outline-none focus:ring-2 focus:ring-primary/35 ${mounted && resolvedTheme === "dark"
                                         ? 'border-[#3d3a35] bg-[linear-gradient(90deg,#171717,#2a2927)]'
                                         : 'border-[#b8962e]/30 bg-[linear-gradient(90deg,#8cc3ef,#62ace6)]'
                                         }`}
                                 >
-                                    <span
-                                        className={`absolute inset-0 transition-opacity duration-500 ${resolvedTheme === "dark" ? "opacity-0" : "opacity-100"}`}
-                                        aria-hidden="true"
-                                    >
-                                        <span className="absolute -bottom-1 left-2.5 h-3 w-3 rounded-full bg-white/70" />
-                                        <span className="absolute -bottom-1.5 left-4 h-4 w-4 rounded-full bg-white/75" />
-                                        <span className="absolute -bottom-1 left-6.5 h-3 w-3 rounded-full bg-white/70" />
-                                        <span className="absolute top-1.5 right-2.5 h-1.5 w-1.5 rounded-full bg-white/35" />
-                                    </span>
+                                    {mounted && (
+                                        <>
+                                            <span
+                                                className={`absolute inset-0 transition-opacity duration-500 ${resolvedTheme === "dark" ? "opacity-0" : "opacity-100"}`}
+                                                aria-hidden="true"
+                                            >
+                                                <span className="absolute -bottom-1 left-2.5 h-3 w-3 rounded-full bg-white/70" />
+                                                <span className="absolute -bottom-1.5 left-4 h-4 w-4 rounded-full bg-white/75" />
+                                                <span className="absolute -bottom-1 left-6.5 h-3 w-3 rounded-full bg-white/70" />
+                                                <span className="absolute top-1.5 right-2.5 h-1.5 w-1.5 rounded-full bg-white/35" />
+                                            </span>
 
-                                    <span
-                                        className={`absolute inset-0 transition-opacity duration-500 ${resolvedTheme === "dark" ? "opacity-100" : "opacity-0"}`}
-                                        aria-hidden="true"
-                                    >
-                                        <span className="absolute left-2 top-1.5 h-1 w-1 rounded-full bg-white/90" />
-                                        <span className="absolute left-4 top-3 h-1 w-1 rounded-full bg-white/80" />
-                                        <span className="absolute left-7 top-2 h-0.5 w-0.5 rounded-full bg-white/75" />
-                                        <span className="absolute left-8.5 top-3 h-1 w-1 rounded-full bg-white/70" />
-                                    </span>
+                                            <span
+                                                className={`absolute inset-0 transition-opacity duration-500 ${resolvedTheme === "dark" ? "opacity-100" : "opacity-0"}`}
+                                                aria-hidden="true"
+                                            >
+                                                <span className="absolute left-2 top-1.5 h-1 w-1 rounded-full bg-white/90" />
+                                                <span className="absolute left-4 top-3 h-1 w-1 rounded-full bg-white/80" />
+                                                <span className="absolute left-7 top-2 h-0.5 w-0.5 rounded-full bg-white/75" />
+                                                <span className="absolute left-8.5 top-3 h-1 w-1 rounded-full bg-white/70" />
+                                            </span>
 
-                                    <span
-                                        className={`absolute top-0.5 z-10 h-5 w-5 rounded-full shadow-md transition-all duration-500 ${resolvedTheme === "dark"
-                                            ? 'left-[26px] bg-[#f0e4c3]'
-                                            : 'left-0.5 bg-primary'
-                                            }`}
-                                    >
-                                        <span className={`absolute left-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-[#d6c39a] transition-opacity duration-300 ${resolvedTheme === "dark" ? "opacity-100" : "opacity-0"}`} />
-                                        <span className={`absolute right-1.5 top-2.5 h-1.5 w-1.5 rounded-full bg-[#d6c39a] transition-opacity duration-300 ${resolvedTheme === "dark" ? "opacity-100" : "opacity-0"}`} />
-                                    </span>
+                                            <span
+                                                className={`absolute top-0.5 z-10 h-5 w-5 rounded-full shadow-md transition-all duration-500 ${resolvedTheme === "dark"
+                                                    ? 'left-[26px] bg-[#f0e4c3]'
+                                                    : 'left-0.5 bg-primary'
+                                                    }`}
+                                            >
+                                                <span className={`absolute left-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-[#d6c39a] transition-opacity duration-300 ${resolvedTheme === "dark" ? "opacity-100" : "opacity-0"}`} />
+                                                <span className={`absolute right-1.5 top-2.5 h-1.5 w-1.5 rounded-full bg-[#d6c39a] transition-opacity duration-300 ${resolvedTheme === "dark" ? "opacity-100" : "opacity-0"}`} />
+                                            </span>
+                                        </>
+                                    )}
                                 </button>
 
                                 <Link href="/profile#wishlist" className="relative text-foreground hover:text-primary transition-colors">
@@ -188,8 +223,8 @@ export function Navbar() {
                                     )}
                                 </button>
 
-                                <div className="hidden sm:block">
-                                    {user ? (
+                                <div className="hidden sm:block min-w-0">
+                                    {mounted && user ? (
                                         <div className="relative group">
                                             <button className="flex items-center gap-2 text-foreground hover:text-primary transition-colors">
                                                 <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center border border-primary/20 overflow-hidden">
@@ -205,31 +240,37 @@ export function Navbar() {
                                                     
                                                     {dbUser?.role === 'ADMIN' && (
                                                         <>
-                                                            <Link href="/admin" className="block px-4 py-2.5 text-sm font-bold text-primary hover:bg-primary/5 transition-colors">
+                                                            <Link href="/admin" onClick={() => setActiveMegaMenu(null)} className="block px-4 py-2.5 text-sm font-bold text-primary hover:bg-primary/5 transition-colors">
                                                                 Admin Dashboard
                                                             </Link>
                                                             <div className="h-px bg-border my-1 mx-4" />
                                                         </>
                                                     )}
 
-                                                    <Link href="/profile" className="block px-4 py-2.5 text-sm text-foreground hover:bg-accent transition-colors">Your Profile</Link>
-                                                    <Link href="/profile#orders" className="block px-4 py-2.5 text-sm text-muted-foreground hover:bg-accent hover:text-primary transition-all">Order History</Link>
+                                                    <Link href="/profile" onClick={() => setActiveMegaMenu(null)} className="block px-4 py-2.5 text-sm text-foreground hover:bg-accent transition-colors">Your Profile</Link>
+                                                    <Link href="/profile#orders" onClick={() => setActiveMegaMenu(null)} className="block px-4 py-2.5 text-sm text-muted-foreground hover:bg-accent hover:text-primary transition-all">Order History</Link>
                                                     <div className="h-px bg-border my-1 mx-4" />
                                                     <button
-                                                        onClick={() => signOut()}
-                                                        className="w-full text-left px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all font-medium"
+                                                        onClick={() => {
+                                                            setActiveMegaMenu(null);
+                                                            signOut();
+                                                        }}
+                                                        className="w-full text-left px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 transition-colors font-medium"
                                                     >
-                                                        Logout
+                                                        Sign Out
                                                     </button>
                                                 </div>
                                             </div>
                                         </div>
-                                    ) : (
-                                        <Link href="/login">
-                                            <Button variant="outline" className="rounded-full px-6 border-primary/30 text-primary hover:bg-primary/5 uppercase text-xs font-bold tracking-widest h-10 transition-all active:scale-95 shadow-sm">
-                                                Login
-                                            </Button>
+                                    ) : mounted ? (
+                                        <Link 
+                                            href="/login" 
+                                            className="px-6 py-2.5 text-[11px] font-bold uppercase tracking-[0.15em] text-[#111827] bg-white border border-gray-100 rounded-full hover:border-primary/20 hover:bg-primary/5 hover:text-primary transition-all duration-300 shadow-sm whitespace-nowrap"
+                                        >
+                                            Sign In
                                         </Link>
+                                    ) : (
+                                        <div className="w-[84px] h-[34px] bg-gray-50 rounded-full animate-pulse" />
                                     )}
                                 </div>
                             </div>
@@ -237,6 +278,80 @@ export function Navbar() {
                     </div>
                 </div>
             </header>
+
+            {/* Desktop Mega Menu Overlay */}
+            <AnimatePresence>
+                {activeMegaMenu && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -20 }}
+                        onMouseEnter={() => setActiveMegaMenu(activeMegaMenu)}
+                        onMouseLeave={() => setActiveMegaMenu(null)}
+                        className="fixed inset-x-0 top-[110px] z-[45] hidden md:block"
+                    >
+                        {/* Backdrop Blur Layer */}
+                        <div className="absolute inset-0 bg-white/40 dark:bg-black/10 backdrop-blur-2xl shadow-[0_40px_100px_rgba(0,0,0,0.1)] border-b border-white/20 dark:border-white/5" />
+                        
+                        <div className="container relative mx-auto py-12 px-8">
+                            <div className="grid grid-cols-4 gap-12">
+                                {/* Collection Columns */}
+                                <div className="space-y-6">
+                                    <h4 className="text-[11px] font-black uppercase tracking-[0.25em] text-primary">Collections</h4>
+                                    <ul className="space-y-4">
+                                        <li><Link href="/collections/all" onClick={() => setActiveMegaMenu(null)} className="text-sm text-gray-600 dark:text-gray-400 hover:text-primary transition-all flex items-center gap-2 group">Shop All Products <span className="opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all">→</span></Link></li>
+                                        <li><Link href="/collections/all?isFeatured=true" onClick={() => setActiveMegaMenu(null)} className="text-sm text-gray-600 dark:text-gray-400 hover:text-primary transition-all">Featured Masterpieces</Link></li>
+                                        <li><Link href="/collections/all?sortBy=discount" onClick={() => setActiveMegaMenu(null)} className="text-sm text-gray-600 dark:text-gray-400 hover:text-primary transition-all">Exquisite Offers</Link></li>
+                                        <li><Link href="/collections/all?sortBy=rating" onClick={() => setActiveMegaMenu(null)} className="text-sm text-gray-600 dark:text-gray-400 hover:text-primary transition-all">Customer Favorites</Link></li>
+                                    </ul>
+                                </div>
+
+                                <div className="space-y-6">
+                                    <h4 className="text-[11px] font-black uppercase tracking-[0.25em] text-primary">Categories</h4>
+                                    <ul className="space-y-4">
+                                        <li><Link href="/collections/necklaces" onClick={() => setActiveMegaMenu(null)} className="text-sm text-gray-600 dark:text-gray-400 hover:text-primary transition-all">Necklaces & Pendants</Link></li>
+                                        <li><Link href="/collections/earrings" onClick={() => setActiveMegaMenu(null)} className="text-sm text-gray-600 dark:text-gray-400 hover:text-primary transition-all">Earrings & Studs</Link></li>
+                                        <li><Link href="/collections/bangles" onClick={() => setActiveMegaMenu(null)} className="text-sm text-gray-600 dark:text-gray-400 hover:text-primary transition-all">Bangles & Bracelets</Link></li>
+                                        <li><Link href="/collections/rings" onClick={() => setActiveMegaMenu(null)} className="text-sm text-gray-600 dark:text-gray-400 hover:text-primary transition-all">Engagement Rings</Link></li>
+                                        <li><Link href="/collections/sets" onClick={() => setActiveMegaMenu(null)} className="text-sm text-gray-600 dark:text-gray-400 hover:text-primary transition-all">Complete Bridal Sets</Link></li>
+                                    </ul>
+                                </div>
+
+                                {/* Promo Item 1 */}
+                                <div className="col-span-2 grid grid-cols-2 gap-6">
+                                    <Link 
+                                        href="/collections/sets" 
+                                        onClick={() => setActiveMegaMenu(null)}
+                                        className="group relative aspect-[1.1] overflow-hidden rounded-2xl bg-gray-50 dark:bg-white/5 border border-white/20 dark:border-white/5"
+                                    >
+                                        <div className="absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-black/80 to-transparent p-6 pt-12">
+                                            <p className="text-[9px] font-black uppercase tracking-[0.3em] text-primary mb-1">New In</p>
+                                            <h5 className="text-sm font-bold text-white tracking-widest uppercase">The Bridal Edit</h5>
+                                        </div>
+                                        <div className="flex h-full w-full items-center justify-center p-8 transition-transform duration-700 group-hover:scale-110">
+                                            <img src="/products/bridal-jewellery-set.png" alt="Bridal" className="object-contain max-h-full drop-shadow-2xl" />
+                                        </div>
+                                    </Link>
+
+                                    <Link 
+                                        href="/collections/earrings" 
+                                        onClick={() => setActiveMegaMenu(null)}
+                                        className="group relative aspect-[1.1] overflow-hidden rounded-2xl bg-gray-50 dark:bg-white/5 border border-white/20 dark:border-white/5"
+                                    >
+                                        <div className="absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-black/80 to-transparent p-6 pt-12">
+                                            <p className="text-[9px] font-black uppercase tracking-[0.3em] text-primary mb-1">Trending</p>
+                                            <h5 className="text-sm font-bold text-white tracking-widest uppercase">Diamond Studs</h5>
+                                        </div>
+                                        <div className="flex h-full w-full items-center justify-center p-8 transition-transform duration-700 group-hover:scale-110">
+                                            <img src="/products/diamond-studs.png" alt="Earrings" className="object-contain max-h-full drop-shadow-2xl" />
+                                        </div>
+                                    </Link>
+                                </div>
+                            </div>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             {/* Mobile-only small floating theme toggle */}
             <div className="fixed bottom-20 left-3 z-[60] md:hidden">

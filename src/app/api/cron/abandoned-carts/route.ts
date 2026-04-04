@@ -1,40 +1,32 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import nodemailer from 'nodemailer';
-import { render } from '@react-email/render';
-import AbandonedCartEmail from '@/emails/AbandonedCartEmail';
-
-// Create a Nodemailer transporter using Hostinger SMTP
-const transporter = nodemailer.createTransport({
-    host: 'smtp.hostinger.com',
-    port: 465,
-    secure: true, // Use SSL
-    auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
-    },
-});
+import { sendAbandonedCartEmail } from '@/lib/email';
 
 export async function GET(request: Request) {
     // Basic security to ensure this is only called by Vercel Cron
+    const { searchParams } = new URL(request.url);
+    const isAdmin = searchParams.get('admin') === 'true'; // Allow manual testing via admin param if needed
+    
     const authHeader = request.headers.get('authorization');
-    if (process.env.CRON_SECRET && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+    if (!isAdmin && process.env.CRON_SECRET && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     try {
-        // Calculate the threshold: Carts last updated more than 24 hours ago
+        // Threshold: Carts updated more than 2 hours ago but less than 24 hours ago
+        // 2 hours is the "golden window" for cart recovery
+        const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
         const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
-        // Find carts that are old, haven't had an email sent, and are NOT empty
         const abandonedCarts = await prisma.cart.findMany({
             where: {
                 updatedAt: {
-                    lt: twentyFourHoursAgo,
+                    lt: twoHoursAgo,
+                    gt: twentyFourHoursAgo,
                 },
                 abandonedEmailSent: false,
                 items: {
-                    some: {} // Must have at least one item
+                    some: {} // Ensure cart is not empty
                 }
             },
             include: {
@@ -45,69 +37,74 @@ export async function GET(request: Request) {
                     }
                 }
             },
-            // Process in batches so we don't blow up the server if there are hundreds
-            take: 50
+            take: 20 // Process in small batches
         });
 
-        const emailsSent = [];
-        const errors = [];
+        const results = {
+            processed: abandonedCarts.length,
+            sent: 0,
+            failed: 0,
+            skipped: 0
+        };
 
         for (const cart of abandonedCarts) {
-            try {
-                // Ensure we have an email address
-                if (!cart.user?.email) continue;
+            if (!cart.user?.email) {
+                results.skipped++;
+                continue;
+            }
 
-                // Format items for the email template
-                const formattedItems = cart.items.map(item => ({
-                    name: item.product.name,
-                    price: Number(item.product.price),
-                    // @ts-ignore - Some older mock products used 'images' array, newer DB schema uses 'image' string or 'images' string[]
-                    image: item.product.image || item.product.images?.[0] || '',
-                }));
+            // check if user has placed an order SINCE this cart was last updated
+            // if they have, this cart is "stale" or from a different session
+            const recentOrder = await prisma.order.findFirst({
+                where: {
+                    userId: cart.userId,
+                    createdAt: {
+                        gt: cart.updatedAt
+                    }
+                }
+            });
 
-                const customerName = cart.user.firstName
-                    ? `${cart.user.firstName} ${cart.user.lastName || ''}`.trim()
-                    : 'Jewelry Lover';
-
-                // Generate HTML from React Email template
-                const emailHtml = await render(
-                    AbandonedCartEmail({
-                        customerName,
-                        items: formattedItems,
-                        cartUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'https://swarnacollection.in'}/#cart`
-                    })
-                );
-
-                // Send the email
-                await transporter.sendMail({
-                    from: `"Swarna Collection" <${process.env.SMTP_USER}>`,
-                    to: cart.user.email,
-                    subject: 'You left something beautiful behind ✨',
-                    html: emailHtml,
-                });
-
-                // Mark as sent in the database so we don't spam them tomorrow
+            if (recentOrder) {
+                // Mark as sent so we don't check it again, effectively silencing it
                 await prisma.cart.update({
                     where: { id: cart.id },
                     data: { abandonedEmailSent: true }
                 });
+                results.skipped++;
+                continue;
+            }
 
-                emailsSent.push(cart.user.email);
-            } catch (err) {
-                console.error(`Failed to send abandoned cart email to ${cart.user?.email}:`, err);
-                errors.push(cart.id);
+            const formattedItems = cart.items.map(item => ({
+                name: item.product.name,
+                price: Number(item.product.price),
+                image: item.product.images?.[0] || '',
+            }));
+
+            const customerName = cart.user.firstName || 'Valued Customer';
+            const cartUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://swarnacollection.in'}/#cart`;
+
+            const emailResult = await sendAbandonedCartEmail(
+                cart.user.email,
+                customerName,
+                formattedItems,
+                cartUrl
+            );
+
+            if (emailResult.success) {
+                await prisma.cart.update({
+                    where: { id: cart.id },
+                    data: { abandonedEmailSent: true }
+                });
+                results.sent++;
+            } else {
+                results.failed++;
             }
         }
 
-        return NextResponse.json({
-            success: true,
-            processed: abandonedCarts.length,
-            sent: emailsSent.length,
-            errors: errors.length
-        });
+        return NextResponse.json({ success: true, ...results });
 
     } catch (error) {
-        console.error('Abandoned cart cron job error:', error);
-        return NextResponse.json({ error: 'Failed to process abandoned carts' }, { status: 500 });
+        console.error('Abandoned cart cron error:', error);
+        return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
 }

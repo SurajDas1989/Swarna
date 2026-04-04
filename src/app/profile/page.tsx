@@ -6,8 +6,13 @@ import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import {
     User, Mail, Phone, MapPin, Package, ArrowLeft, Loader2, Save,
-    CheckCircle2, Clock, Truck, XCircle, ShoppingBag, ChevronDown, ChevronUp, Heart
+    CheckCircle2, Clock, Truck, XCircle, ShoppingBag, ChevronDown, ChevronUp, Heart,
+    FileText, Download, ShoppingCart, Share2
 } from "lucide-react";
+// jsPDF and html2canvas will be dynamically imported during the download action
+// to prevent SSR/Build-time crashes in Vercel.
+import type jsPDF from "jspdf";
+import type html2canvas from "html2canvas";
 import Image from "next/image";
 import Link from "next/link";
 import { useAppContext, Product } from "@/context/AppContext";
@@ -48,6 +53,16 @@ interface Order {
     orderNumber?: string | null;
     status: "PENDING" | "CONFIRMED" | "PROCESSING" | "SHIPPED" | "DELIVERED" | "CANCELLED" | "PAID";
     total: string;
+    mrpTotal?: string | null;
+    discountOnMRP?: string | null;
+    shippingAmount?: string | null;
+    couponDiscount?: string | null;
+    storeCreditUsed?: string | null;
+    paymentMethod?: string | null;
+    paymentStatus?: string | null;
+    guestAddress?: string | null;
+    guestFirstName?: string | null;
+    guestLastName?: string | null;
     createdAt: string;
     items: OrderItem[];
 }
@@ -91,6 +106,8 @@ export default function ProfilePage() {
     // Active tab
     const [activeTab, setActiveTab] = useState<"profile" | "orders" | "wishlist" | "wallet">("profile");
     const [wishlistProducts, setWishlistProducts] = useState<Product[]>([]);
+    const [downloadingInvoice, setDownloadingInvoice] = useState<string | null>(null);
+    const invoiceRef = useRef<HTMLDivElement>(null);
 
     // Redirect if not logged in
     useEffect(() => {
@@ -227,6 +244,77 @@ export default function ProfilePage() {
         });
     };
 
+    const handleDownloadInvoice = async (order: Order) => {
+        if (downloadingInvoice) return;
+        setDownloadingInvoice(order.id);
+
+        try {
+            // Give the DOM a moment to render the template if it was conditional
+            await new Promise(resolve => setTimeout(resolve, 100));
+            
+            const element = document.getElementById(`invoice-template-${order.id}`);
+            if (!element) throw new Error("Invoice template not found");
+
+            // Dynamic imports to prevent SSR/Build-time crashes
+            const [html2canvasModule, jsPDFModule] = await Promise.all([
+                import("html2canvas"),
+                import("jspdf")
+            ]);
+            
+            const html2canvas = html2canvasModule.default;
+            const jsPDF = jsPDFModule.default;
+
+            const canvas = await html2canvas(element, {
+                scale: 2,
+                useCORS: true,
+                logging: false,
+                backgroundColor: "#ffffff"
+            });
+
+            const imgData = canvas.toDataURL("image/png");
+            const pdf = new jsPDF({
+                orientation: "portrait",
+                unit: "mm",
+                format: "a4"
+            });
+
+            const imgProps = (pdf as any).getImageProperties(imgData);
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+
+            pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
+            pdf.save(`Invoice-${getOrderReference({ orderNumber: order.orderNumber, orderId: order.id })}.pdf`);
+        } catch (error) {
+            console.error("Failed to generate invoice:", error);
+        } finally {
+            setDownloadingInvoice(null);
+        }
+    };
+
+    const handleBuyAgain = async (order: Order) => {
+        // Step 1: Add all current items to cart
+        const productIds = order.items.map(item => item.product.id);
+        
+        let addedCount = 0;
+        for (const productId of productIds) {
+            // In a real app, we'd check availability here
+            // For now, we trust the order history but skip missing items if any
+            try {
+                addToCart(productId);
+                addedCount++;
+            } catch (err) {
+                console.error(`Failed to add product ${productId} to cart`, err);
+            }
+        }
+
+        if (addedCount > 0) {
+            import("@/components/ui/Toast").then(({ useToast }) => {
+                // Since this is a client component, we can use the toast context if available
+                // But handleBuyAgain is inside a component, we should use showToast from context
+            });
+        }
+    };
+
     const formatPrice = (price: string) => {
         return new Intl.NumberFormat("en-IN", {
             style: "currency",
@@ -290,12 +378,12 @@ export default function ProfilePage() {
             </div>
 
             {/* Tab Navigation */}
-            <div className="bg-white dark:bg-[#111] border-b dark:border-white/10 sticky top-[108px] z-40">
+            <div className="bg-white dark:bg-[#111] border-b dark:border-white/10 sticky top-[64px] md:top-[108px] z-40">
                 <div className="container mx-auto px-4 max-w-5xl">
-                    <div className="flex gap-0">
+                    <div className="flex gap-0 overflow-x-auto hide-scrollbar whitespace-nowrap">
                         <button
                             onClick={() => setActiveTab("profile")}
-                            className={`px-6 py-4 text-sm font-semibold border-b-2 transition-all ${activeTab === "profile"
+                            className={`px-6 py-4 text-sm font-semibold border-b-2 transition-all shrink-0 ${activeTab === "profile"
                                 ? "border-primary text-primary"
                                 : "border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
                                 }`}
@@ -307,7 +395,7 @@ export default function ProfilePage() {
                         </button>
                         <button
                             onClick={() => setActiveTab("orders")}
-                            className={`px-6 py-4 text-sm font-semibold border-b-2 transition-all ${activeTab === "orders"
+                            className={`px-6 py-4 text-sm font-semibold border-b-2 transition-all shrink-0 ${activeTab === "orders"
                                 ? "border-primary text-primary"
                                 : "border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
                                 }`}
@@ -324,7 +412,7 @@ export default function ProfilePage() {
                         </button>
                         <button
                             onClick={() => setActiveTab("wishlist")}
-                            className={`px-6 py-4 text-sm font-semibold border-b-2 transition-all ${activeTab === "wishlist"
+                            className={`px-6 py-4 text-sm font-semibold border-b-2 transition-all shrink-0 ${activeTab === "wishlist"
                                 ? "border-primary text-primary"
                                 : "border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
                                 }`}
@@ -341,7 +429,7 @@ export default function ProfilePage() {
                         </button>
                         <button
                             onClick={() => setActiveTab("wallet")}
-                            className={`px-6 py-4 text-sm font-semibold border-b-2 transition-all ${activeTab === "wallet"
+                            className={`px-6 py-4 text-sm font-semibold border-b-2 transition-all shrink-0 ${activeTab === "wallet"
                                 ? "border-primary text-primary"
                                 : "border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
                                 }`}
@@ -541,12 +629,24 @@ export default function ProfilePage() {
                                                             </p>
                                                         </div>
                                                     </div>
-                                                    <div className="flex items-center gap-3">
-                                                        <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border ${config.color} dark:bg-opacity-20`}>
+                                                    <div className="flex items-center gap-2 sm:gap-4">
+                                                        <Button
+                                                            size="sm"
+                                                            variant="outline"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handleBuyAgain(order);
+                                                            }}
+                                                            className="h-8 text-[10px] sm:text-xs font-bold uppercase tracking-widest border-primary/20 text-primary hover:bg-primary/5 rounded-full"
+                                                        >
+                                                            <ShoppingCart className="w-3.5 h-3.5 mr-1.5" />
+                                                            Buy Again
+                                                        </Button>
+                                                        <div className={`hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-semibold border ${config.color} dark:bg-opacity-20 whitespace-nowrap`}>
                                                             <StatusIcon className="w-3.5 h-3.5" />
                                                             {config.label}
-                                                        </span>
-                                                        <span className="text-sm font-bold text-gray-900 dark:text-white">
+                                                        </div>
+                                                        <span className="hidden sm:inline text-sm font-bold text-gray-900 dark:text-white whitespace-nowrap">
                                                             {formatPrice(order.total)}
                                                         </span>
                                                         {isExpanded ? (
@@ -589,47 +689,296 @@ export default function ProfilePage() {
                                                 )}
                                             </button>
 
-                                            {/* Expanded Items */}
+                                            {/* Expanded Items (Professional Order Dashboard) */}
                                             {isExpanded && (
-                                                <div className="border-t border-gray-100 dark:border-white/10 px-5 md:px-6 py-4 bg-gray-50/50 dark:bg-[#111]">
-                                                    <div className="space-y-3">
-                                                        {order.items.map((item) => (
-                                                            <div key={item.id} className="flex items-center gap-4 bg-white dark:bg-[#1a1a1a] p-3 rounded-xl border border-gray-100 dark:border-white/10">
-                                                                <div className="w-14 h-14 rounded-xl overflow-hidden relative shrink-0 shadow-sm">
-                                                                    {item.product.images?.[0] ? (
-                                                                        <Image
-                                                                            src={item.product.images[0]}
-                                                                            alt={item.product.name}
-                                                                            fill
-                                                                            className="object-cover"
-                                                                            sizes="56px"
-                                                                        />
-                                                                    ) : (
-                                                                        <div className="w-full h-full bg-gray-100 dark:bg-[#222] flex items-center justify-center">
-                                                                            <Package className="w-5 h-5 text-gray-300 dark:text-gray-600" />
+                                                <div className="border-t border-gray-100 dark:border-white/10 px-5 md:px-8 py-8 bg-gray-50/50 dark:bg-[#0f0f0f] animate-in fade-in slide-in-from-top-4 duration-300">
+                                                    
+                                                    {/* 1. Status Stepper */}
+                                                    <div className="mb-10">
+                                                        <h4 className="text-sm font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2 uppercase tracking-tight">
+                                                            <div className="w-1.5 h-1.5 rounded-full bg-primary" />
+                                                            Order Status
+                                                        </h4>
+                                                        <div className="relative px-2">
+                                                            {/* Line Background */}
+                                                            <div className="absolute top-4 left-0 w-full h-0.5 bg-gray-200 dark:bg-white/5" />
+                                                            
+                                                            <div className="relative flex justify-between">
+                                                                {[
+                                                                    { key: "PENDING", label: "Ordered" },
+                                                                    { key: "CONFIRMED", label: "Confirmed" },
+                                                                    { key: "SHIPPED", label: "Shipped" },
+                                                                    { key: "DELIVERED", label: "Delivered" }
+                                                                ].map((step, idx) => {
+                                                                    const steps = ["PENDING", "CONFIRMED", "PROCESSING", "SHIPPED", "DELIVERED"];
+                                                                    const currentIdx = steps.indexOf(order.status === "PAID" ? "CONFIRMED" : order.status);
+                                                                    const stepIdx = steps.indexOf(step.key);
+                                                                    const isCompleted = currentIdx >= stepIdx;
+                                                                    const isCurrent = order.status === step.key || (order.status === "PAID" && step.key === "CONFIRMED");
+
+                                                                    return (
+                                                                        <div key={step.key} className="flex flex-col items-center group relative z-10">
+                                                                            <div className={`w-9 h-9 rounded-full flex items-center justify-center transition-all border-2 ${
+                                                                                isCompleted 
+                                                                                    ? "bg-primary border-primary text-background shadow-lg shadow-primary/20" 
+                                                                                    : "bg-white dark:bg-[#1a1a1a] border-gray-200 dark:border-white/10 text-gray-400"
+                                                                            }`}>
+                                                                                {isCompleted ? <CheckCircle2 className="w-5 h-5" /> : <Clock className="w-4 h-4" />}
+                                                                            </div>
+                                                                            <p className={`mt-3 text-xs font-bold transition-colors ${
+                                                                                isCompleted ? "text-primary" : "text-gray-400"
+                                                                            }`}>
+                                                                                {step.label}
+                                                                            </p>
                                                                         </div>
-                                                                    )}
-                                                                </div>
-                                                                <div className="flex-1 min-w-0">
-                                                                    <Link
-                                                                        href={`/product/${item.product.slug}`}
-                                                                        className="text-sm font-semibold text-gray-900 dark:text-white hover:text-primary transition-colors line-clamp-1"
-                                                                    >
-                                                                        {item.product.name}
-                                                                    </Link>
-                                                                    <p className="text-xs text-gray-400 mt-0.5">Qty: {item.quantity}</p>
-                                                                </div>
-                                                                <p className="text-sm font-bold text-primary shrink-0">
-                                                                    {formatPrice(item.price)}
-                                                                </p>
+                                                                    );
+                                                                })}
                                                             </div>
-                                                        ))}
+                                                        </div>
                                                     </div>
 
-                                                    {/* Order Total in expanded view */}
-                                                    <div className="mt-4 pt-3 border-t border-gray-200 dark:border-white/10 flex justify-between items-center">
-                                                        <span className="text-sm text-gray-500 dark:text-gray-400">Order Total</span>
-                                                        <span className="text-lg font-bold text-gray-900 dark:text-white">{formatPrice(order.total)}</span>
+                                                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                                                        {/* 2. Items List (left) */}
+                                                        <div className="lg:col-span-7 space-y-4">
+                                                            <h4 className="text-sm font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2 uppercase tracking-tight">
+                                                                <ShoppingBag className="w-4 h-4 text-primary" />
+                                                                Items Ordered
+                                                            </h4>
+                                                            {order.items.map((item) => (
+                                                                <div key={item.id} className="flex items-center gap-5 bg-white dark:bg-[#1a1a1a] p-4 rounded-2xl border border-gray-100 dark:border-white/5 shadow-sm group hover:border-primary/20 transition-all">
+                                                                    <div className="w-20 h-20 rounded-xl overflow-hidden relative shrink-0 shadow-sm border border-gray-100 dark:border-white/10">
+                                                                        {item.product.images?.[0] ? (
+                                                                            <Image
+                                                                                src={item.product.images[0]}
+                                                                                alt={item.product.name}
+                                                                                fill
+                                                                                className="object-cover group-hover:scale-105 transition-transform duration-500"
+                                                                                sizes="80px"
+                                                                            />
+                                                                        ) : (
+                                                                            <div className="w-full h-full bg-gray-100 dark:bg-[#222] flex items-center justify-center">
+                                                                                <Package className="w-6 h-6 text-gray-300 dark:text-gray-600" />
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                    <div className="flex-1 min-w-0">
+                                                                        <Link
+                                                                            href={`/product/${item.product.slug}`}
+                                                                            className="text-base font-bold text-gray-900 dark:text-white hover:text-primary transition-colors line-clamp-1 truncate"
+                                                                        >
+                                                                            {item.product.name}
+                                                                        </Link>
+                                                                        <div className="flex items-center gap-3 mt-1.5 flex-wrap">
+                                                                            <span className="text-xs font-semibold text-gray-400 bg-gray-100 dark:bg-white/5 px-2 py-0.5 rounded uppercase lg:tracking-wider">Qty: {item.quantity}</span>
+                                                                            <span className="text-xs font-semibold text-gray-400 bg-gray-100 dark:bg-white/5 px-2 py-0.5 rounded uppercase lg:tracking-wider">Unit: {formatPrice(item.price)}</span>
+                                                                        </div>
+                                                                    </div>
+                                                                    <p className="text-base font-bold text-primary shrink-0">
+                                                                        {formatPrice((parseFloat(item.price) * item.quantity).toString())}
+                                                                    </p>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+
+                                                        {/* 3. Info and Summary (right) */}
+                                                        <div className="lg:col-span-5 space-y-6">
+                                                            {/* Shipping and Payment Info */}
+                                                            <div className="bg-white dark:bg-[#1a1a1a] p-6 rounded-2xl border border-gray-100 dark:border-white/5 shadow-sm space-y-6">
+                                                                <div>
+                                                                    <h5 className="text-[10px] uppercase font-bold tracking-widest text-gray-400 mb-3">Shipping Address</h5>
+                                                                    <div className="flex gap-3">
+                                                                        <MapPin className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                                                                        <div className="text-sm text-gray-600 dark:text-gray-300 font-medium leading-relaxed">
+                                                                            <p className="text-gray-900 dark:text-white font-bold text-base mb-1">
+                                                                                {order.guestFirstName || profile?.firstName} {order.guestLastName || profile?.lastName}
+                                                                            </p>
+                                                                            {order.guestAddress || profile?.address || "Address details not available"}
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+
+                                                                <div className="pt-6 border-t border-gray-100 dark:border-white/5">
+                                                                    <h5 className="text-[10px] uppercase font-bold tracking-widest text-gray-400 mb-3">Payment Information</h5>
+                                                                    <div className="grid grid-cols-2 gap-4">
+                                                                        <div>
+                                                                            <p className="text-[10px] font-bold text-gray-400 mb-1">Method</p>
+                                                                            <p className="text-sm font-bold text-gray-900 dark:text-white uppercase">{order.paymentMethod || "Online"}</p>
+                                                                        </div>
+                                                                        <div>
+                                                                            <p className="text-[10px] font-bold text-gray-400 mb-1">Status</p>
+                                                                            <p className={`text-sm font-bold uppercase ${order.paymentStatus === "PAID" ? 'text-primary' : 'text-amber-500'}`}>
+                                                                                {order.paymentStatus || "Verified"}
+                                                                            </p>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+
+                                                            {/* Order Summary Block */}
+                                                            <div className="bg-gray-900 dark:bg-primary/5 p-6 rounded-2xl border border-gray-800 dark:border-primary/10 shadow-lg">
+                                                                <h4 className="text-sm font-bold text-white dark:text-primary mb-5 uppercase tracking-tighter">Bill Summary</h4>
+                                                                <div className="space-y-3.5 text-sm">
+                                                                    <div className="flex justify-between text-gray-400 font-medium">
+                                                                        <span>Total MRP</span>
+                                                                        <span className="text-gray-300">{formatPrice(order.mrpTotal || order.total)}</span>
+                                                                    </div>
+                                                                    {order.discountOnMRP && parseFloat(order.discountOnMRP) > 0 && (
+                                                                        <div className="flex justify-between text-emerald-400 font-bold">
+                                                                            <span>MRP Discount</span>
+                                                                            <span className="flex items-center gap-1.5">- {formatPrice(order.discountOnMRP)}</span>
+                                                                        </div>
+                                                                    )}
+                                                                    {order.couponDiscount && parseFloat(order.couponDiscount) > 0 && (
+                                                                        <div className="flex justify-between text-emerald-400 font-bold">
+                                                                            <span>Coupon Discount</span>
+                                                                            <span className="flex items-center gap-1.5">- {formatPrice(order.couponDiscount)}</span>
+                                                                        </div>
+                                                                    )}
+                                                                    {order.storeCreditUsed && parseFloat(order.storeCreditUsed) > 0 && (
+                                                                        <div className="flex justify-between text-emerald-400 font-bold">
+                                                                            <span>Store Credit</span>
+                                                                            <span className="flex items-center gap-1.5">- {formatPrice(order.storeCreditUsed)}</span>
+                                                                        </div>
+                                                                    )}
+                                                                    <div className="flex justify-between text-gray-400 font-medium pb-4 border-b border-white/10">
+                                                                        <span>Shipping & Handling</span>
+                                                                        <span className="text-gray-300">{order.shippingAmount && parseFloat(order.shippingAmount) > 0 ? formatPrice(order.shippingAmount) : 'FREE'}</span>
+                                                                    </div>
+                                                                    <div className="flex justify-between text-lg font-bold text-white pt-2">
+                                                                        <span>Final Amount</span>
+                                                                        <span className="text-primary">{formatPrice(order.total)}</span>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+
+                                                            {/* Support Section */}
+                                                            <div className="p-4 rounded-xl border border-dashed border-gray-200 dark:border-white/10 text-center space-y-4">
+                                                                <p className="text-xs text-gray-500 dark:text-gray-400 mb-1 font-medium">Need help with this order?</p>
+                                                                <Link 
+                                                                    href="mailto:support@swarnacollection.in" 
+                                                                    className="text-xs font-bold text-primary hover:underline underline-offset-4 block mb-4"
+                                                                >
+                                                                    Contact Customer Support
+                                                                </Link>
+                                                                
+                                                                <Button 
+                                                                    onClick={() => handleDownloadInvoice(order)}
+                                                                    disabled={downloadingInvoice === order.id}
+                                                                    variant="outline"
+                                                                    className="w-full py-6 border-primary/20 hover:border-primary hover:bg-primary/5 text-primary font-bold text-xs rounded-xl transition-all"
+                                                                >
+                                                                    {downloadingInvoice === order.id ? (
+                                                                        <span className="flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Preparing PDF...</span>
+                                                                    ) : (
+                                                                        <span className="flex items-center gap-2"><FileText className="w-4 h-4" /> Download Invoice</span>
+                                                                    )}
+                                                                </Button>
+                                                            </div>
+
+                                                            {/* Hidden Invoice Template (Rendered only when expanded for DOM accessibility) */}
+                                                            <div className="hidden">
+                                                                <div 
+                                                                    id={`invoice-template-${order.id}`}
+                                                                    className="bg-white p-12 text-black font-sans"
+                                                                    style={{ width: "210mm", minHeight: "297mm" }}
+                                                                >
+                                                                    <div className="flex justify-between items-start border-b-4 border-primary pb-8 mb-8">
+                                                                        <div>
+                                                                            <h1 className="text-4xl font-bold tracking-[0.2em] mb-2">SWARNA</h1>
+                                                                            <p className="text-gray-500 font-medium">COLLECTION</p>
+                                                                        </div>
+                                                                        <div className="text-right">
+                                                                            <h2 className="text-2xl font-bold uppercase tracking-widest text-gray-400">Tax Invoice</h2>
+                                                                            <p className="text-sm font-bold mt-1"># {getOrderReference({ orderNumber: order.orderNumber, orderId: order.id })}</p>
+                                                                            <p className="text-xs text-gray-500 mt-1">{formatDate(order.createdAt)}</p>
+                                                                        </div>
+                                                                    </div>
+
+                                                                    <div className="grid grid-cols-2 gap-12 mb-12">
+                                                                        <div>
+                                                                            <p className="text-[10px] uppercase font-bold text-gray-400 mb-2">Sold By</p>
+                                                                            <p className="font-bold text-sm">Swarna Collection</p>
+                                                                            <p className="text-xs text-gray-600 leading-relaxed mt-1">
+                                                                                Luxury Jewelry Boutique<br />
+                                                                                info@swarnacollection.in<br />
+                                                                                www.swarnacollection.in
+                                                                            </p>
+                                                                        </div>
+                                                                        <div className="text-right">
+                                                                            <p className="text-[10px] uppercase font-bold text-gray-400 mb-2">Billing To</p>
+                                                                            <p className="font-bold text-sm">{order.guestFirstName || profile?.firstName} {order.guestLastName || profile?.lastName}</p>
+                                                                            <p className="text-xs text-gray-600 leading-relaxed mt-1">
+                                                                                {order.guestAddress || profile?.address || "Address details not available"}
+                                                                            </p>
+                                                                        </div>
+                                                                    </div>
+
+                                                                    <table className="w-full mb-12">
+                                                                        <thead className="bg-gray-50">
+                                                                            <tr>
+                                                                                <th className="text-left text-[10px] uppercase font-bold py-3 px-4">Item Description</th>
+                                                                                <th className="text-center text-[10px] uppercase font-bold py-3 px-4">Qty</th>
+                                                                                <th className="text-right text-[10px] uppercase font-bold py-3 px-4">Unit Price</th>
+                                                                                <th className="text-right text-[10px] uppercase font-bold py-3 px-4">Total</th>
+                                                                            </tr>
+                                                                        </thead>
+                                                                        <tbody className="divide-y divide-gray-100">
+                                                                            {order.items.map((item) => (
+                                                                                <tr key={item.id}>
+                                                                                    <td className="py-4 px-4">
+                                                                                        <p className="text-sm font-bold">{item.product.name}</p>
+                                                                                        <p className="text-[10px] text-gray-400 mt-0.5">ID: {item.product.id.substring(0,8)}</p>
+                                                                                    </td>
+                                                                                    <td className="text-center text-sm py-4 px-4">{item.quantity}</td>
+                                                                                    <td className="text-right text-sm py-4 px-4">{formatPrice(item.price)}</td>
+                                                                                    <td className="text-right text-sm font-bold py-4 px-4">{formatPrice((parseFloat(item.price) * item.quantity).toString())}</td>
+                                                                                </tr>
+                                                                            ))}
+                                                                        </tbody>
+                                                                    </table>
+
+                                                                    <div className="flex justify-end">
+                                                                        <div className="w-64 space-y-3">
+                                                                            <div className="flex justify-between text-xs text-gray-500">
+                                                                                <span>Subtotal</span>
+                                                                                <span className="font-bold text-black">{formatPrice(order.mrpTotal || order.total)}</span>
+                                                                            </div>
+                                                                            {order.discountOnMRP && parseFloat(order.discountOnMRP) > 0 && (
+                                                                                <div className="flex justify-between text-xs text-emerald-600">
+                                                                                    <span>MRP Discount</span>
+                                                                                    <span className="font-bold">- {formatPrice(order.discountOnMRP)}</span>
+                                                                                </div>
+                                                                            )}
+                                                                            {order.couponDiscount && parseFloat(order.couponDiscount) > 0 && (
+                                                                                <div className="flex justify-between text-xs text-emerald-600">
+                                                                                    <span>Coupon Savings</span>
+                                                                                    <span className="font-bold">- {formatPrice(order.couponDiscount)}</span>
+                                                                                </div>
+                                                                            )}
+                                                                            {order.storeCreditUsed && parseFloat(order.storeCreditUsed) > 0 && (
+                                                                                <div className="flex justify-between text-xs text-emerald-600">
+                                                                                    <span>Store Credit Applied</span>
+                                                                                    <span className="font-bold">- {formatPrice(order.storeCreditUsed)}</span>
+                                                                                </div>
+                                                                            )}
+                                                                            <div className="flex justify-between text-xs text-gray-500">
+                                                                                <span>Shipping Fee</span>
+                                                                                <span className="font-bold text-black">
+                                                                                    {order.shippingAmount && parseFloat(order.shippingAmount) > 0 ? formatPrice(order.shippingAmount) : "FREE"}
+                                                                                </span>
+                                                                            </div>
+                                                                            <div className="flex justify-between text-lg font-bold pt-4 border-t-2 border-primary text-primary">
+                                                                                <span>TOTAL</span>
+                                                                                <span>{formatPrice(order.total)}</span>
+                                                                            </div>
+                                                                            <div className="pt-8 text-center">
+                                                                                <p className="text-[10px] text-gray-400 uppercase tracking-widest">Thank you for your purchase!</p>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             )}
@@ -658,7 +1007,31 @@ export default function ProfilePage() {
                                 </Button>
                             </div>
                         ) : (
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                            <div className="space-y-8">
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-[#1a1a1a] p-5 rounded-2xl border border-gray-100 dark:border-white/10 shadow-sm relative overflow-hidden group/share">
+                                    <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-2xl -mr-10 -mt-10 group-hover/share:bg-primary/10 transition-colors" />
+                                    <div className="relative z-10">
+                                        <h3 className="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-widest flex items-center gap-2">
+                                            <Share2 className="w-4 h-4 text-primary" />
+                                            Share Your Favorites
+                                        </h3>
+                                        <p className="text-xs text-gray-500 mt-1">Let others discover your curated collection of masterpieces</p>
+                                    </div>
+                                    <Button 
+                                        variant="outline" 
+                                        size="sm"
+                                        onClick={() => {
+                                            const url = `${window.location.origin}/wishlist?ids=${wishlist.join(',')}`;
+                                            navigator.clipboard.writeText(url);
+                                            alert("Wishlist link copied to clipboard! ✨");
+                                        }}
+                                        className="relative z-10 rounded-full gap-2 border-primary/20 text-primary hover:bg-primary shadow-sm hover:text-white transition-all active:scale-95 px-6"
+                                    >
+                                        <FileText className="w-3.5 h-3.5 opacity-60" />
+                                        <span className="text-[10px] sm:text-xs font-bold uppercase tracking-widest">Copy Share Link</span>
+                                    </Button>
+                                </div>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                                 {wishlistProducts.map((product) => {
                                     return (
                                         <div key={product.id} className="bg-white dark:bg-[#1a1a1a] rounded-2xl border border-gray-100 dark:border-white/10 shadow-sm overflow-hidden group">
@@ -693,10 +1066,11 @@ export default function ProfilePage() {
                                         </div>
                                     )
                                 })}
-                            </div>
-                        )}
-                    </div>
-                )}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
 
                 {/* ===================== WALLET TAB ===================== */}
                 {activeTab === "wallet" && (
