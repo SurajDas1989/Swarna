@@ -269,7 +269,7 @@ export default function CheckoutPage() {
             if (rzpOrder.error) throw new Error(rzpOrder.error);
 
             const options = {
-                key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+                key: rzpOrder.key || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
                 amount: rzpOrder.amount,
                 currency: rzpOrder.currency,
                 name: "Swarna",
