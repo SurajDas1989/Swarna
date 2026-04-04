@@ -314,9 +314,15 @@ export async function POST(request: Request) {
         }
 
         return NextResponse.json(order, { status: 201 });
-    } catch (error: unknown) {
-        console.error('Failed to create order:', error);
-        return NextResponse.json({ error: 'Failed to create order' }, { status: 500 });
+    } catch (error: any) {
+        console.error('FAILED_TO_CREATE_ORDER_FULL_ERROR:', {
+            message: error.message,
+            stack: error.stack,
+            name: error.name,
+            code: error.code, // Useful for Prisma errors
+            meta: error.meta  // Useful for Prisma errors
+        });
+        return NextResponse.json({ error: 'Failed to create order', details: error.message }, { status: 500 });
     }
 }
 

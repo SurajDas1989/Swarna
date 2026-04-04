@@ -278,7 +278,7 @@ export default function CheckoutPage() {
                 handler: async function (response: RazorpaySuccessResponse) {
                     try {
                         if (dbOrderId) {
-                            await fetch("/api/payment/verify", {
+                            const verifyRes = await fetch("/api/payment/verify", {
                                 method: "POST",
                                 headers: { "Content-Type": "application/json" },
                                 body: JSON.stringify({
@@ -288,11 +288,19 @@ export default function CheckoutPage() {
                                     orderId: dbOrderId,
                                 })
                             });
+                            
+                            const verifyData = await verifyRes.json();
+                            if (verifyData.error) {
+                                throw new Error(verifyData.error);
+                            }
                         }
+                        
+                        // Successfully verified and finalized on server
                         finalizeOrder(localOrderId, "credit-card", response.razorpay_payment_id);
-                    } catch (err) {
+                    } catch (err: any) {
                         console.error("Verification failed", err);
                         setIsSubmitting(false);
+                        alert(`Payment verification failed: ${err.message || 'Please contact support.'}`);
                     }
                 },
                 prefill: {
@@ -300,15 +308,28 @@ export default function CheckoutPage() {
                     email: formData.email,
                     contact: formData.phone,
                 },
+                notes: {
+                    orderNumber: localOrderId,
+                    customerName: formData.fullName,
+                    customerEmail: formData.email
+                },
                 theme: {
                     color: "#D4AF37"
                 }
             };
 
             const rzp = new window.Razorpay(options);
-            rzp.on("payment.failed", function (response: RazorpayFailedResponse) {
-                console.error("Payment Failed", response.error);
+            rzp.on("payment.failed", function (response: any) {
+                console.error("Payment Failed", {
+                    code: response.error?.code,
+                    description: response.error?.description,
+                    source: response.error?.source,
+                    step: response.error?.step,
+                    reason: response.error?.reason,
+                    metadata: response.error?.metadata
+                });
                 setIsSubmitting(false);
+                alert(`Payment failed: ${response.error?.description || 'Please try again or use another payment method.'}`);
             });
             rzp.open();
 

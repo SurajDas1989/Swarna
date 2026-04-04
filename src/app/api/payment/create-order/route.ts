@@ -9,10 +9,9 @@ const razorpay = new Razorpay({
 
 export async function POST(request: Request) {
     try {
+        // No strict auth check here to allow guest payments. 
+        // We'll link the user info if they are logged in.
         const user = await getAuthenticatedUser();
-        if (!user) {
-            return NextResponse.json({ error: 'Unauthorized. Please log in to complete payment.' }, { status: 401 });
-        }
 
         const { amount, receipt } = await request.json();
 
