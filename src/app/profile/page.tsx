@@ -6,8 +6,11 @@ import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import {
     User, Mail, Phone, MapPin, Package, ArrowLeft, Loader2, Save,
-    CheckCircle2, Clock, Truck, XCircle, ShoppingBag, ChevronDown, ChevronUp, Heart
+    CheckCircle2, Clock, Truck, XCircle, ShoppingBag, ChevronDown, ChevronUp, Heart,
+    FileText, Download
 } from "lucide-react";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
 import Image from "next/image";
 import Link from "next/link";
 import { useAppContext, Product } from "@/context/AppContext";
@@ -101,6 +104,8 @@ export default function ProfilePage() {
     // Active tab
     const [activeTab, setActiveTab] = useState<"profile" | "orders" | "wishlist" | "wallet">("profile");
     const [wishlistProducts, setWishlistProducts] = useState<Product[]>([]);
+    const [downloadingInvoice, setDownloadingInvoice] = useState<string | null>(null);
+    const invoiceRef = useRef<HTMLDivElement>(null);
 
     // Redirect if not logged in
     useEffect(() => {
@@ -235,6 +240,44 @@ export default function ProfilePage() {
             month: "short",
             day: "numeric",
         });
+    };
+
+    const handleDownloadInvoice = async (order: Order) => {
+        if (downloadingInvoice) return;
+        setDownloadingInvoice(order.id);
+
+        try {
+            // Give the DOM a moment to render the template if it was conditional
+            await new Promise(resolve => setTimeout(resolve, 100));
+            
+            const element = document.getElementById(`invoice-template-${order.id}`);
+            if (!element) throw new Error("Invoice template not found");
+
+            const canvas = await html2canvas(element, {
+                scale: 2,
+                useCORS: true,
+                logging: false,
+                backgroundColor: "#ffffff"
+            });
+
+            const imgData = canvas.toDataURL("image/png");
+            const pdf = new jsPDF({
+                orientation: "portrait",
+                unit: "mm",
+                format: "a4"
+            });
+
+            const imgProps = pdf.getImageProperties(imgData);
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+
+            pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
+            pdf.save(`Invoice-${getOrderReference({ orderNumber: order.orderNumber, orderId: order.id })}.pdf`);
+        } catch (error) {
+            console.error("Failed to generate invoice:", error);
+        } finally {
+            setDownloadingInvoice(null);
+        }
     };
 
     const formatPrice = (price: string) => {
@@ -762,14 +805,131 @@ export default function ProfilePage() {
                                                             </div>
 
                                                             {/* Support Section */}
-                                                            <div className="p-4 rounded-xl border border-dashed border-gray-200 dark:border-white/10 text-center">
-                                                                <p className="text-xs text-gray-500 dark:text-gray-400 mb-3 font-medium">Need help with this order?</p>
+                                                            <div className="p-4 rounded-xl border border-dashed border-gray-200 dark:border-white/10 text-center space-y-4">
+                                                                <p className="text-xs text-gray-500 dark:text-gray-400 mb-1 font-medium">Need help with this order?</p>
                                                                 <Link 
                                                                     href="mailto:support@swarnacollection.in" 
-                                                                    className="text-xs font-bold text-primary hover:underline underline-offset-4"
+                                                                    className="text-xs font-bold text-primary hover:underline underline-offset-4 block mb-4"
                                                                 >
                                                                     Contact Customer Support
                                                                 </Link>
+                                                                
+                                                                <Button 
+                                                                    onClick={() => handleDownloadInvoice(order)}
+                                                                    disabled={downloadingInvoice === order.id}
+                                                                    variant="outline"
+                                                                    className="w-full py-6 border-primary/20 hover:border-primary hover:bg-primary/5 text-primary font-bold text-xs rounded-xl transition-all"
+                                                                >
+                                                                    {downloadingInvoice === order.id ? (
+                                                                        <span className="flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Preparing PDF...</span>
+                                                                    ) : (
+                                                                        <span className="flex items-center gap-2"><FileText className="w-4 h-4" /> Download Invoice</span>
+                                                                    )}
+                                                                </Button>
+                                                            </div>
+
+                                                            {/* Hidden Invoice Template (Rendered only when expanded for DOM accessibility) */}
+                                                            <div className="hidden">
+                                                                <div 
+                                                                    id={`invoice-template-${order.id}`}
+                                                                    className="bg-white p-12 text-black font-sans"
+                                                                    style={{ width: "210mm", minHeight: "297mm" }}
+                                                                >
+                                                                    <div className="flex justify-between items-start border-b-4 border-primary pb-8 mb-8">
+                                                                        <div>
+                                                                            <h1 className="text-4xl font-bold tracking-[0.2em] mb-2">SWARNA</h1>
+                                                                            <p className="text-gray-500 font-medium">COLLECTION</p>
+                                                                        </div>
+                                                                        <div className="text-right">
+                                                                            <h2 className="text-2xl font-bold uppercase tracking-widest text-gray-400">Tax Invoice</h2>
+                                                                            <p className="text-sm font-bold mt-1"># {getOrderReference({ orderNumber: order.orderNumber, orderId: order.id })}</p>
+                                                                            <p className="text-xs text-gray-500 mt-1">{formatDate(order.createdAt)}</p>
+                                                                        </div>
+                                                                    </div>
+
+                                                                    <div className="grid grid-cols-2 gap-12 mb-12">
+                                                                        <div>
+                                                                            <p className="text-[10px] uppercase font-bold text-gray-400 mb-2">Sold By</p>
+                                                                            <p className="font-bold text-sm">Swarna Collection</p>
+                                                                            <p className="text-xs text-gray-600 leading-relaxed mt-1">
+                                                                                Luxury Jewelry Boutique<br />
+                                                                                info@swarnacollection.in<br />
+                                                                                www.swarnacollection.in
+                                                                            </p>
+                                                                        </div>
+                                                                        <div className="text-right">
+                                                                            <p className="text-[10px] uppercase font-bold text-gray-400 mb-2">Billing To</p>
+                                                                            <p className="font-bold text-sm">{order.guestFirstName || profile?.firstName} {order.guestLastName || profile?.lastName}</p>
+                                                                            <p className="text-xs text-gray-600 leading-relaxed mt-1">
+                                                                                {order.guestAddress || profile?.address || "Address details not available"}
+                                                                            </p>
+                                                                        </div>
+                                                                    </div>
+
+                                                                    <table className="w-full mb-12">
+                                                                        <thead className="bg-gray-50">
+                                                                            <tr>
+                                                                                <th className="text-left text-[10px] uppercase font-bold py-3 px-4">Item Description</th>
+                                                                                <th className="text-center text-[10px] uppercase font-bold py-3 px-4">Qty</th>
+                                                                                <th className="text-right text-[10px] uppercase font-bold py-3 px-4">Unit Price</th>
+                                                                                <th className="text-right text-[10px] uppercase font-bold py-3 px-4">Total</th>
+                                                                            </tr>
+                                                                        </thead>
+                                                                        <tbody className="divide-y divide-gray-100">
+                                                                            {order.items.map((item) => (
+                                                                                <tr key={item.id}>
+                                                                                    <td className="py-4 px-4">
+                                                                                        <p className="text-sm font-bold">{item.product.name}</p>
+                                                                                        <p className="text-[10px] text-gray-400 mt-0.5">ID: {item.product.id.substring(0,8)}</p>
+                                                                                    </td>
+                                                                                    <td className="text-center text-sm py-4 px-4">{item.quantity}</td>
+                                                                                    <td className="text-right text-sm py-4 px-4">{formatPrice(item.price)}</td>
+                                                                                    <td className="text-right text-sm font-bold py-4 px-4">{formatPrice((parseFloat(item.price) * item.quantity).toString())}</td>
+                                                                                </tr>
+                                                                            ))}
+                                                                        </tbody>
+                                                                    </table>
+
+                                                                    <div className="flex justify-end">
+                                                                        <div className="w-64 space-y-3">
+                                                                            <div className="flex justify-between text-xs text-gray-500">
+                                                                                <span>Subtotal</span>
+                                                                                <span className="font-bold text-black">{formatPrice(order.mrpTotal || order.total)}</span>
+                                                                            </div>
+                                                                            {order.discountOnMRP && parseFloat(order.discountOnMRP) > 0 && (
+                                                                                <div className="flex justify-between text-xs text-emerald-600">
+                                                                                    <span>MRP Discount</span>
+                                                                                    <span className="font-bold">- {formatPrice(order.discountOnMRP)}</span>
+                                                                                </div>
+                                                                            )}
+                                                                            {order.couponDiscount && parseFloat(order.couponDiscount) > 0 && (
+                                                                                <div className="flex justify-between text-xs text-emerald-600">
+                                                                                    <span>Coupon Savings</span>
+                                                                                    <span className="font-bold">- {formatPrice(order.couponDiscount)}</span>
+                                                                                </div>
+                                                                            )}
+                                                                            {order.storeCreditUsed && parseFloat(order.storeCreditUsed) > 0 && (
+                                                                                <div className="flex justify-between text-xs text-emerald-600">
+                                                                                    <span>Store Credit Applied</span>
+                                                                                    <span className="font-bold">- {formatPrice(order.storeCreditUsed)}</span>
+                                                                                </div>
+                                                                            )}
+                                                                            <div className="flex justify-between text-xs text-gray-500">
+                                                                                <span>Shipping Fee</span>
+                                                                                <span className="font-bold text-black">
+                                                                                    {order.shippingAmount && parseFloat(order.shippingAmount) > 0 ? formatPrice(order.shippingAmount) : "FREE"}
+                                                                                </span>
+                                                                            </div>
+                                                                            <div className="flex justify-between text-lg font-bold pt-4 border-t-2 border-primary text-primary">
+                                                                                <span>TOTAL</span>
+                                                                                <span>{formatPrice(order.total)}</span>
+                                                                            </div>
+                                                                            <div className="pt-8 text-center">
+                                                                                <p className="text-[10px] text-gray-400 uppercase tracking-widest">Thank you for your purchase!</p>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
                                                             </div>
                                                         </div>
                                                     </div>
