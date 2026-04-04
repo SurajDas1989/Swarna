@@ -18,6 +18,7 @@ export async function GET() {
             include: {
                 creditLog: {
                     orderBy: { createdAt: 'desc' },
+                    take: 50,
                 }
             } as any
         }) as any;
