@@ -290,12 +290,12 @@ export default function ProfilePage() {
             </div>
 
             {/* Tab Navigation */}
-            <div className="bg-white dark:bg-[#111] border-b dark:border-white/10 sticky top-[108px] z-40">
+            <div className="bg-white dark:bg-[#111] border-b dark:border-white/10 sticky top-[64px] md:top-[108px] z-40">
                 <div className="container mx-auto px-4 max-w-5xl">
-                    <div className="flex gap-0">
+                    <div className="flex gap-0 overflow-x-auto hide-scrollbar whitespace-nowrap">
                         <button
                             onClick={() => setActiveTab("profile")}
-                            className={`px-6 py-4 text-sm font-semibold border-b-2 transition-all ${activeTab === "profile"
+                            className={`px-6 py-4 text-sm font-semibold border-b-2 transition-all shrink-0 ${activeTab === "profile"
                                 ? "border-primary text-primary"
                                 : "border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
                                 }`}
@@ -307,7 +307,7 @@ export default function ProfilePage() {
                         </button>
                         <button
                             onClick={() => setActiveTab("orders")}
-                            className={`px-6 py-4 text-sm font-semibold border-b-2 transition-all ${activeTab === "orders"
+                            className={`px-6 py-4 text-sm font-semibold border-b-2 transition-all shrink-0 ${activeTab === "orders"
                                 ? "border-primary text-primary"
                                 : "border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
                                 }`}
@@ -324,7 +324,7 @@ export default function ProfilePage() {
                         </button>
                         <button
                             onClick={() => setActiveTab("wishlist")}
-                            className={`px-6 py-4 text-sm font-semibold border-b-2 transition-all ${activeTab === "wishlist"
+                            className={`px-6 py-4 text-sm font-semibold border-b-2 transition-all shrink-0 ${activeTab === "wishlist"
                                 ? "border-primary text-primary"
                                 : "border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
                                 }`}
@@ -341,7 +341,7 @@ export default function ProfilePage() {
                         </button>
                         <button
                             onClick={() => setActiveTab("wallet")}
-                            className={`px-6 py-4 text-sm font-semibold border-b-2 transition-all ${activeTab === "wallet"
+                            className={`px-6 py-4 text-sm font-semibold border-b-2 transition-all shrink-0 ${activeTab === "wallet"
                                 ? "border-primary text-primary"
                                 : "border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
                                 }`}
