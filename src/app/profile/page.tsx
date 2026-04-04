@@ -48,6 +48,16 @@ interface Order {
     orderNumber?: string | null;
     status: "PENDING" | "CONFIRMED" | "PROCESSING" | "SHIPPED" | "DELIVERED" | "CANCELLED" | "PAID";
     total: string;
+    mrpTotal?: string | null;
+    discountOnMRP?: string | null;
+    shippingAmount?: string | null;
+    couponDiscount?: string | null;
+    storeCreditUsed?: string | null;
+    paymentMethod?: string | null;
+    paymentStatus?: string | null;
+    guestAddress?: string | null;
+    guestFirstName?: string | null;
+    guestLastName?: string | null;
     createdAt: string;
     items: OrderItem[];
 }
@@ -589,47 +599,179 @@ export default function ProfilePage() {
                                                 )}
                                             </button>
 
-                                            {/* Expanded Items */}
+                                            {/* Expanded Items (Professional Order Dashboard) */}
                                             {isExpanded && (
-                                                <div className="border-t border-gray-100 dark:border-white/10 px-5 md:px-6 py-4 bg-gray-50/50 dark:bg-[#111]">
-                                                    <div className="space-y-3">
-                                                        {order.items.map((item) => (
-                                                            <div key={item.id} className="flex items-center gap-4 bg-white dark:bg-[#1a1a1a] p-3 rounded-xl border border-gray-100 dark:border-white/10">
-                                                                <div className="w-14 h-14 rounded-xl overflow-hidden relative shrink-0 shadow-sm">
-                                                                    {item.product.images?.[0] ? (
-                                                                        <Image
-                                                                            src={item.product.images[0]}
-                                                                            alt={item.product.name}
-                                                                            fill
-                                                                            className="object-cover"
-                                                                            sizes="56px"
-                                                                        />
-                                                                    ) : (
-                                                                        <div className="w-full h-full bg-gray-100 dark:bg-[#222] flex items-center justify-center">
-                                                                            <Package className="w-5 h-5 text-gray-300 dark:text-gray-600" />
+                                                <div className="border-t border-gray-100 dark:border-white/10 px-5 md:px-8 py-8 bg-gray-50/50 dark:bg-[#0f0f0f] animate-in fade-in slide-in-from-top-4 duration-300">
+                                                    
+                                                    {/* 1. Status Stepper */}
+                                                    <div className="mb-10">
+                                                        <h4 className="text-sm font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2 uppercase tracking-tight">
+                                                            <div className="w-1.5 h-1.5 rounded-full bg-primary" />
+                                                            Order Status
+                                                        </h4>
+                                                        <div className="relative px-2">
+                                                            {/* Line Background */}
+                                                            <div className="absolute top-4 left-0 w-full h-0.5 bg-gray-200 dark:bg-white/5" />
+                                                            
+                                                            <div className="relative flex justify-between">
+                                                                {[
+                                                                    { key: "PENDING", label: "Ordered" },
+                                                                    { key: "CONFIRMED", label: "Confirmed" },
+                                                                    { key: "SHIPPED", label: "Shipped" },
+                                                                    { key: "DELIVERED", label: "Delivered" }
+                                                                ].map((step, idx) => {
+                                                                    const steps = ["PENDING", "CONFIRMED", "PROCESSING", "SHIPPED", "DELIVERED"];
+                                                                    const currentIdx = steps.indexOf(order.status === "PAID" ? "CONFIRMED" : order.status);
+                                                                    const stepIdx = steps.indexOf(step.key);
+                                                                    const isCompleted = currentIdx >= stepIdx;
+                                                                    const isCurrent = order.status === step.key || (order.status === "PAID" && step.key === "CONFIRMED");
+
+                                                                    return (
+                                                                        <div key={step.key} className="flex flex-col items-center group relative z-10">
+                                                                            <div className={`w-9 h-9 rounded-full flex items-center justify-center transition-all border-2 ${
+                                                                                isCompleted 
+                                                                                    ? "bg-primary border-primary text-background shadow-lg shadow-primary/20" 
+                                                                                    : "bg-white dark:bg-[#1a1a1a] border-gray-200 dark:border-white/10 text-gray-400"
+                                                                            }`}>
+                                                                                {isCompleted ? <CheckCircle2 className="w-5 h-5" /> : <Clock className="w-4 h-4" />}
+                                                                            </div>
+                                                                            <p className={`mt-3 text-xs font-bold transition-colors ${
+                                                                                isCompleted ? "text-primary" : "text-gray-400"
+                                                                            }`}>
+                                                                                {step.label}
+                                                                            </p>
                                                                         </div>
-                                                                    )}
-                                                                </div>
-                                                                <div className="flex-1 min-w-0">
-                                                                    <Link
-                                                                        href={`/product/${item.product.slug}`}
-                                                                        className="text-sm font-semibold text-gray-900 dark:text-white hover:text-primary transition-colors line-clamp-1"
-                                                                    >
-                                                                        {item.product.name}
-                                                                    </Link>
-                                                                    <p className="text-xs text-gray-400 mt-0.5">Qty: {item.quantity}</p>
-                                                                </div>
-                                                                <p className="text-sm font-bold text-primary shrink-0">
-                                                                    {formatPrice(item.price)}
-                                                                </p>
+                                                                    );
+                                                                })}
                                                             </div>
-                                                        ))}
+                                                        </div>
                                                     </div>
 
-                                                    {/* Order Total in expanded view */}
-                                                    <div className="mt-4 pt-3 border-t border-gray-200 dark:border-white/10 flex justify-between items-center">
-                                                        <span className="text-sm text-gray-500 dark:text-gray-400">Order Total</span>
-                                                        <span className="text-lg font-bold text-gray-900 dark:text-white">{formatPrice(order.total)}</span>
+                                                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                                                        {/* 2. Items List (left) */}
+                                                        <div className="lg:col-span-7 space-y-4">
+                                                            <h4 className="text-sm font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2 uppercase tracking-tight">
+                                                                <ShoppingBag className="w-4 h-4 text-primary" />
+                                                                Items Ordered
+                                                            </h4>
+                                                            {order.items.map((item) => (
+                                                                <div key={item.id} className="flex items-center gap-5 bg-white dark:bg-[#1a1a1a] p-4 rounded-2xl border border-gray-100 dark:border-white/5 shadow-sm group hover:border-primary/20 transition-all">
+                                                                    <div className="w-20 h-20 rounded-xl overflow-hidden relative shrink-0 shadow-sm border border-gray-100 dark:border-white/10">
+                                                                        {item.product.images?.[0] ? (
+                                                                            <Image
+                                                                                src={item.product.images[0]}
+                                                                                alt={item.product.name}
+                                                                                fill
+                                                                                className="object-cover group-hover:scale-105 transition-transform duration-500"
+                                                                                sizes="80px"
+                                                                            />
+                                                                        ) : (
+                                                                            <div className="w-full h-full bg-gray-100 dark:bg-[#222] flex items-center justify-center">
+                                                                                <Package className="w-6 h-6 text-gray-300 dark:text-gray-600" />
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                    <div className="flex-1 min-w-0">
+                                                                        <Link
+                                                                            href={`/product/${item.product.slug}`}
+                                                                            className="text-base font-bold text-gray-900 dark:text-white hover:text-primary transition-colors line-clamp-1 truncate"
+                                                                        >
+                                                                            {item.product.name}
+                                                                        </Link>
+                                                                        <div className="flex items-center gap-3 mt-1.5 flex-wrap">
+                                                                            <span className="text-xs font-semibold text-gray-400 bg-gray-100 dark:bg-white/5 px-2 py-0.5 rounded uppercase lg:tracking-wider">Qty: {item.quantity}</span>
+                                                                            <span className="text-xs font-semibold text-gray-400 bg-gray-100 dark:bg-white/5 px-2 py-0.5 rounded uppercase lg:tracking-wider">Unit: {formatPrice(item.price)}</span>
+                                                                        </div>
+                                                                    </div>
+                                                                    <p className="text-base font-bold text-primary shrink-0">
+                                                                        {formatPrice((parseFloat(item.price) * item.quantity).toString())}
+                                                                    </p>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+
+                                                        {/* 3. Info and Summary (right) */}
+                                                        <div className="lg:col-span-5 space-y-6">
+                                                            {/* Shipping and Payment Info */}
+                                                            <div className="bg-white dark:bg-[#1a1a1a] p-6 rounded-2xl border border-gray-100 dark:border-white/5 shadow-sm space-y-6">
+                                                                <div>
+                                                                    <h5 className="text-[10px] uppercase font-bold tracking-widest text-gray-400 mb-3">Shipping Address</h5>
+                                                                    <div className="flex gap-3">
+                                                                        <MapPin className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                                                                        <div className="text-sm text-gray-600 dark:text-gray-300 font-medium leading-relaxed">
+                                                                            <p className="text-gray-900 dark:text-white font-bold text-base mb-1">
+                                                                                {order.guestFirstName || profile?.firstName} {order.guestLastName || profile?.lastName}
+                                                                            </p>
+                                                                            {order.guestAddress || profile?.address || "Address details not available"}
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+
+                                                                <div className="pt-6 border-t border-gray-100 dark:border-white/5">
+                                                                    <h5 className="text-[10px] uppercase font-bold tracking-widest text-gray-400 mb-3">Payment Information</h5>
+                                                                    <div className="grid grid-cols-2 gap-4">
+                                                                        <div>
+                                                                            <p className="text-[10px] font-bold text-gray-400 mb-1">Method</p>
+                                                                            <p className="text-sm font-bold text-gray-900 dark:text-white uppercase">{order.paymentMethod || "Online"}</p>
+                                                                        </div>
+                                                                        <div>
+                                                                            <p className="text-[10px] font-bold text-gray-400 mb-1">Status</p>
+                                                                            <p className={`text-sm font-bold uppercase ${order.paymentStatus === "PAID" ? 'text-primary' : 'text-amber-500'}`}>
+                                                                                {order.paymentStatus || "Verified"}
+                                                                            </p>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+
+                                                            {/* Order Summary Block */}
+                                                            <div className="bg-gray-900 dark:bg-primary/5 p-6 rounded-2xl border border-gray-800 dark:border-primary/10 shadow-lg">
+                                                                <h4 className="text-sm font-bold text-white dark:text-primary mb-5 uppercase tracking-tighter">Bill Summary</h4>
+                                                                <div className="space-y-3.5 text-sm">
+                                                                    <div className="flex justify-between text-gray-400 font-medium">
+                                                                        <span>Total MRP</span>
+                                                                        <span className="text-gray-300">{formatPrice(order.mrpTotal || order.total)}</span>
+                                                                    </div>
+                                                                    {order.discountOnMRP && parseFloat(order.discountOnMRP) > 0 && (
+                                                                        <div className="flex justify-between text-emerald-400 font-bold">
+                                                                            <span>MRP Discount</span>
+                                                                            <span className="flex items-center gap-1.5">- {formatPrice(order.discountOnMRP)}</span>
+                                                                        </div>
+                                                                    )}
+                                                                    {order.couponDiscount && parseFloat(order.couponDiscount) > 0 && (
+                                                                        <div className="flex justify-between text-emerald-400 font-bold">
+                                                                            <span>Coupon Discount</span>
+                                                                            <span className="flex items-center gap-1.5">- {formatPrice(order.couponDiscount)}</span>
+                                                                        </div>
+                                                                    )}
+                                                                    {order.storeCreditUsed && parseFloat(order.storeCreditUsed) > 0 && (
+                                                                        <div className="flex justify-between text-emerald-400 font-bold">
+                                                                            <span>Store Credit</span>
+                                                                            <span className="flex items-center gap-1.5">- {formatPrice(order.storeCreditUsed)}</span>
+                                                                        </div>
+                                                                    )}
+                                                                    <div className="flex justify-between text-gray-400 font-medium pb-4 border-b border-white/10">
+                                                                        <span>Shipping & Handling</span>
+                                                                        <span className="text-gray-300">{order.shippingAmount && parseFloat(order.shippingAmount) > 0 ? formatPrice(order.shippingAmount) : 'FREE'}</span>
+                                                                    </div>
+                                                                    <div className="flex justify-between text-lg font-bold text-white pt-2">
+                                                                        <span>Final Amount</span>
+                                                                        <span className="text-primary">{formatPrice(order.total)}</span>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+
+                                                            {/* Support Section */}
+                                                            <div className="p-4 rounded-xl border border-dashed border-gray-200 dark:border-white/10 text-center">
+                                                                <p className="text-xs text-gray-500 dark:text-gray-400 mb-3 font-medium">Need help with this order?</p>
+                                                                <Link 
+                                                                    href="mailto:support@swarnacollection.in" 
+                                                                    className="text-xs font-bold text-primary hover:underline underline-offset-4"
+                                                                >
+                                                                    Contact Customer Support
+                                                                </Link>
+                                                            </div>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             )}
