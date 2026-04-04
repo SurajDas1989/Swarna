@@ -1,7 +1,8 @@
-﻿import nodemailer from 'nodemailer';
+import nodemailer from 'nodemailer';
 import { render } from '@react-email/render';
 import { ReceiptEmail } from '@/emails/ReceiptEmail';
 import { OrderStatusEmail } from '@/emails/OrderStatusEmail';
+import { AbandonedCartEmail } from '@/emails/AbandonedCartEmail';
 import { getOrderReference } from '@/lib/order-reference';
 
 const transporter = nodemailer.createTransport({
@@ -105,6 +106,43 @@ export const sendOrderStatusEmail = async (
         return { success: true, messageId: info.messageId };
     } catch (error) {
         console.error('Error sending order status email:', error);
+        return { success: false, error };
+    }
+};
+
+export const sendAbandonedCartEmail = async (
+    customerEmail: string,
+    customerName: string,
+    items: { name: string; price: number; image: string }[],
+    cartUrl: string
+) => {
+    if (!process.env.SMTP_USER || !process.env.SMTP_PASSWORD) {
+        console.warn('SMTP credentials not found. Email not sent.');
+        return { success: false, message: 'SMTP credentials missing' };
+    }
+
+    try {
+        const htmlContent = await render(
+            AbandonedCartEmail({
+                customerName,
+                items,
+                cartUrl,
+            })
+        );
+
+        const mailOptions = {
+            from: `"Swarna Collection" <${process.env.SMTP_USER}>`,
+            to: customerEmail,
+            subject: 'You left something beautiful behind ✨',
+            html: htmlContent,
+        };
+
+        const info = await transporter.sendMail(mailOptions);
+        console.log('Abandoned cart email sent: %s', info.messageId);
+
+        return { success: true, messageId: info.messageId };
+    } catch (error) {
+        console.error('Error sending abandoned cart email:', error);
         return { success: false, error };
     }
 };
