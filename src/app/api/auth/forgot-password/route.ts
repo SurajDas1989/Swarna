@@ -16,13 +16,17 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
         }
 
+        // Determine the redirect origin. 
+        // We prioritize the configured APP_URL for production consistency.
+        const siteUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.swarnacollection.in';
+        const redirectTo = `${siteUrl.replace(/\/$/, '')}/reset-password`;
+
         // Generate a recovery link using Supabase Admin
-        // This link is used for the "Reset Password" flow
         const { data, error } = await supabaseAdmin.auth.admin.generateLink({
             type: 'recovery',
             email: email,
             options: {
-                redirectTo: `${new URL(request.url).origin}/reset-password`,
+                redirectTo: redirectTo,
             },
         });
 
