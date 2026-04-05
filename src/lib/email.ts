@@ -3,6 +3,7 @@ import { render } from '@react-email/render';
 import { ReceiptEmail } from '@/emails/ReceiptEmail';
 import { OrderStatusEmail } from '@/emails/OrderStatusEmail';
 import { AbandonedCartEmail } from '@/emails/AbandonedCartEmail';
+import { ResetPasswordEmail } from '@/emails/ResetPasswordEmail';
 import { getOrderReference } from '@/lib/order-reference';
 
 const transporter = nodemailer.createTransport({
@@ -146,5 +147,36 @@ export const sendAbandonedCartEmail = async (
         return { success: false, error };
     }
 };
+export const sendResetPasswordEmail = async (
+    customerEmail: string,
+    resetLink: string
+) => {
+    if (!process.env.SMTP_USER || !process.env.SMTP_PASSWORD) {
+        console.warn('SMTP credentials not found. Email not sent.');
+        return { success: false, message: 'SMTP credentials missing' };
+    }
 
+    try {
+        const htmlContent = await render(
+            ResetPasswordEmail({
+                userEmail: customerEmail,
+                resetLink,
+            })
+        );
 
+        const mailOptions = {
+            from: `"Swarna Collection" <${process.env.SMTP_USER}>`,
+            to: customerEmail,
+            subject: 'Reset your Swarna Collection password',
+            html: htmlContent,
+        };
+
+        const info = await transporter.sendMail(mailOptions);
+        console.log('Reset password email sent: %s', info.messageId);
+
+        return { success: true, messageId: info.messageId };
+    } catch (error) {
+        console.error('Error sending reset password email:', error);
+        return { success: false, error };
+    }
+};
