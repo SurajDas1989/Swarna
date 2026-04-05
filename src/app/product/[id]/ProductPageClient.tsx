@@ -400,7 +400,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                         </h1>
 
                         {/* Rating */}
-                        <div className="flex items-center gap-2 mb-5">
+                        <div className="flex items-center gap-2 mb-3">
                             <div className="flex items-center gap-0.5">
                                 {[1, 2, 3, 4, 5].map((star) => (
                                     <Star
@@ -421,27 +421,27 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                         </div>
 
                         {/* Price Block */}
-                        <div className="bg-gray-50/50 dark:bg-white/5 rounded-xl p-5 mb-6">
-                            <div className="flex items-baseline gap-3 mb-1">
-                                <span className="text-3xl sm:text-4xl font-bold text-primary">{"\u20B9"}{product.price}</span>
-                                <span className="text-lg text-gray-400 line-through">{"\u20B9"}{product.originalPrice}</span>
+                        <div className="mb-4 mt-2 max-w-fit">
+                            <div className="inline-block border-b-2 border-green-600 pb-0.5 mb-1.5">
+                                <span className="text-green-600 font-bold text-sm tracking-wide">{discount}% OFF</span>
                             </div>
-                            <div className="flex items-center gap-2 mb-3">
-                                <span className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 px-2.5 py-0.5 rounded-full text-xs font-bold">
-                                    Save {"\u20B9"}{product.originalPrice - product.price}
-                                </span>
-                                <span className="text-xs text-gray-500 dark:text-gray-400">Inclusive of all taxes</span>
+                            <div className="flex items-baseline gap-2 mb-1">
+                                <span className="text-xl sm:text-2xl text-gray-500 line-through">{"\u20B9"}{product.originalPrice}</span>
+                                <span className="text-3xl sm:text-4xl font-black text-foreground">{"\u20B9"}{product.price}</span>
+                                <span className="text-green-600 font-bold text-sm">(Save {"\u20B9"}{product.originalPrice - product.price})</span>
                             </div>
-                            {/* Relocated Free Delivery Badge */}
+                            <div className="text-xs text-gray-500 dark:text-gray-400 mb-3">Inclusive of all taxes</div>
+                            
+                            {/* Free Delivery Badge */}
                             {product.price >= 799 && (
-                                <div className="inline-flex items-center gap-1.5 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 px-3 py-1.5 rounded-full text-xs font-semibold border border-emerald-100 dark:border-emerald-800/30">
-                                    <Truck className="w-4 h-4" /> Free Delivery
+                                <div className="inline-flex items-center gap-1.5 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 px-3 py-1 rounded-full text-xs font-semibold border border-emerald-100 dark:border-emerald-800/30 mb-2">
+                                    <Truck className="w-4 h-4" /> Free shipping on this piece
                                 </div>
                             )}
                         </div>
 
                         {/* Description */}
-                        <p className="text-gray-600 dark:text-gray-300 leading-relaxed mb-6 text-sm sm:text-base max-w-prose">
+                        <p className="text-gray-600 dark:text-gray-300 leading-relaxed mb-5 text-sm sm:text-base max-w-prose">
                             {product.description}
                         </p>
 
@@ -465,9 +465,9 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                         {/* Divider */}
                         <div className="h-px bg-gray-100 dark:bg-white/10 mb-6" />
 
-                        {/* Action Buttons — Side by Side */}
-                        <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/95 dark:bg-card/95 backdrop-blur-md border-t border-gray-100 dark:border-white/10 shadow-[0_-4px_20px_rgba(0,0,0,0.08)] z-50 flex gap-3 lg:static lg:max-w-md lg:p-0 lg:bg-transparent lg:border-none lg:shadow-none lg:z-auto lg:mb-4" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 80px)' }}>
-                            <Button
+                        {/* Action Buttons — Black Sticky Bar */}
+                        <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/95 dark:bg-card/95 backdrop-blur-md border-t border-gray-100 dark:border-white/10 shadow-[0_-4px_20px_rgba(0,0,0,0.15)] z-50 lg:static lg:w-[80%] lg:p-0 lg:bg-transparent lg:border-none lg:shadow-none lg:z-auto lg:mb-4" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 80px)' }}>
+                            <button
                                 disabled={isOutOfStock}
                                 onClick={async () => {
                                     if (isOutOfStock) return;
@@ -479,20 +479,22 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                                         showToast('Could not add to cart. Please try again.', 'error');
                                     }
                                 }}
-                                variant="outline"
-                                className="flex-1 border-2 border-foreground dark:border-primary text-foreground dark:text-primary hover:bg-foreground hover:text-white dark:hover:bg-primary dark:hover:text-background font-semibold py-6 sm:py-7 text-sm sm:text-base transition-all duration-300 cta-element"
+                                className="w-full bg-black dark:bg-primary text-white dark:text-background hover:bg-black/90 transition-colors flex items-center justify-between px-6 py-4 rounded-md shadow-xl disabled:opacity-70 disabled:cursor-not-allowed cta-element"
                             >
-                                <ShoppingCart className="w-5 h-5 mr-2" />
-                                <span className="truncate">Add to Cart</span>
-                            </Button>
-                            <Button
-                                disabled={isOutOfStock}
-                                onClick={handleBuyNow}
-                                className="flex-1 bg-foreground dark:bg-primary hover:bg-primary dark:hover:bg-primary-dark text-white dark:text-background font-semibold py-6 sm:py-7 text-sm sm:text-base transition-all duration-300 shadow-lg hover:shadow-xl cta-element"
-                            >
-                                <Zap className="w-5 h-5 mr-2" />
-                                <span className="truncate">{isOutOfStock ? "Out of Stock" : "Buy Now"}</span>
-                            </Button>
+                                <span className="text-base sm:text-lg font-bold tracking-wide">
+                                    {isOutOfStock ? "OUT OF STOCK" : "Add To Cart"}
+                                </span>
+                                
+                                {!isOutOfStock && (
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-px h-6 bg-white/30" />
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-base sm:text-lg font-bold">{"\u20B9"}{product.price}</span>
+                                            <span className="text-sm text-gray-400 line-through md:inline hidden">{"\u20B9"}{product.originalPrice}</span>
+                                        </div>
+                                    </div>
+                                )}
+                            </button>
                         </div>
 
                         {/* Wishlist & Share */}
