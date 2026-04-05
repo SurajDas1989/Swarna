@@ -14,11 +14,11 @@ function isTheme(value: string | null): value is Theme {
 
 function getStoredTheme(): Theme {
     if (typeof window === "undefined") {
-        return "system";
+        return "light";
     }
 
     const storedTheme = window.localStorage.getItem(THEME_STORAGE_KEY);
-    return isTheme(storedTheme) ? storedTheme : "system";
+    return isTheme(storedTheme) ? storedTheme : "light";
 }
 
 function getSystemTheme(): ResolvedTheme {

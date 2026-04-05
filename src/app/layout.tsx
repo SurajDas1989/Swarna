@@ -15,7 +15,7 @@ const themeInitScript = `
   const storedTheme = window.localStorage.getItem(storageKey);
   const theme = storedTheme === "light" || storedTheme === "dark" || storedTheme === "system"
     ? storedTheme
-    : "system";
+    : "light";
   const resolvedTheme = theme === "system"
     ? (window.matchMedia(mediaQuery).matches ? "dark" : "light")
     : theme;
