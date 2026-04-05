@@ -40,9 +40,14 @@ export async function POST(request: Request) {
             });
         }
 
-        if (data?.properties?.action_link) {
-            // Send the custom branded email
-            const emailResult = await sendResetPasswordEmail(email, data.properties.action_link);
+        // Extremely important: Use the hashed_token from Supabase directly to construct our OWN custom callback URL.
+        // This entirely bypasses the Supabase default action_link behavior which causes Implicit Flow hash fragment issues.
+        const tokenHash = data?.properties?.hashed_token;
+        if (tokenHash) {
+            const secureDirectLink = `${siteUrl.replace(/\/$/, '')}/api/auth/reset-callback?token_hash=${tokenHash}&type=recovery&next=/reset-password`;
+            
+            // Send the custom branded email connecting directly to our server
+            const emailResult = await sendResetPasswordEmail(email, secureDirectLink);
             
             if (!emailResult.success) {
                 console.error('Failed to send reset email:', emailResult.error);
