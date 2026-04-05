@@ -568,7 +568,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
             : cartTotal * (couponDiscount / 100)
         : 0;
 
-    const deliveryCharge = cartTotal > 0 && cartTotal < 799 ? 99 : 0;
+    const deliveryCharge = (cartTotal - couponDiscountAmount) > 0 && (cartTotal - couponDiscountAmount) < 799 ? 99 : 0;
     
     // Prepaid Discount is 5% of cartTotal (after MRP discount, before coupon?)
     // User logic: cartTotal is the subtotal after MRP discount.

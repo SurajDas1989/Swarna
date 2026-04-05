@@ -126,8 +126,8 @@ export default function CheckoutPage() {
     }, [user]);
 
     // Calculate totals
-    const afterCouponTotal = Math.max(0, cartTotal - Math.round(couponDiscountAmount));
-    const afterShippingTotal = afterCouponTotal + deliveryCharge;
+    const couponAmt = Math.round(couponDiscountAmount);
+    const afterCouponTotal = Math.max(0, cartTotal - couponAmt);
 
     const isEligibleForPrepaidDiscount =
         paymentMethod !== 'cod' && !useStoreCredit;
@@ -136,9 +136,14 @@ export default function CheckoutPage() {
         ? Math.round(cartTotal * 0.05)
         : 0;
 
+    // Delivery charge reassessment
+    // Base amount for shipping threshold = cartTotal - coupon - prepaid discount
+    const amountBeforeShipping = Math.max(0, cartTotal - couponAmt - prepaidDiscountAmount);
+    const finalDeliveryCharge = (amountBeforeShipping > 0 && amountBeforeShipping < 799) ? 99 : 0;
+
     const finalCalculatedTotal = useStoreCredit
-        ? Math.max(0, afterShippingTotal - availableCredit)
-        : afterShippingTotal - prepaidDiscountAmount;
+        ? Math.max(0, (amountBeforeShipping + finalDeliveryCharge) - availableCredit)
+        : (amountBeforeShipping + finalDeliveryCharge);
 
     // Handle address form submit
     const handleAddressSubmit = (values: AddressFormValues) => {
@@ -175,7 +180,7 @@ export default function CheckoutPage() {
                         quantity: item.quantity,
                         price: item.price,
                     })),
-                    total: afterShippingTotal,
+                    total: amountBeforeShipping + finalDeliveryCharge,
                     shipping: {
                         firstName,
                         lastName,
@@ -192,7 +197,7 @@ export default function CheckoutPage() {
                     discountCode: appliedCouponCode || undefined,
                     mrpTotal: cartMRP,
                     discountOnMRP: cartDiscount,
-                    shippingAmount: deliveryCharge,
+                    shippingAmount: finalDeliveryCharge,
                 }),
             });
             const dbOrder = await res.json();
@@ -277,8 +282,8 @@ export default function CheckoutPage() {
             mrpTotal: cartMRP,
             discountOnMRP: cartDiscount,
             couponDiscount: couponDiscountAmount,
-            storeCreditUsed: useStoreCredit ? Math.min(afterShippingTotal, availableCredit) : 0,
-            shipping: deliveryCharge,
+            storeCreditUsed: useStoreCredit ? Math.min(amountBeforeShipping + finalDeliveryCharge, availableCredit) : 0,
+            shipping: finalDeliveryCharge,
             finalTotal: finalCalculatedTotal,
             billingInfo: {
                 firstName: names[0],
@@ -479,9 +484,9 @@ export default function CheckoutPage() {
                                 discountOnMRP={cartDiscount}
                                 couponCode={appliedCouponCode || undefined}
                                 couponDiscount={Math.round(couponDiscountAmount)}
-                                deliveryCharge={deliveryCharge}
+                                deliveryCharge={finalDeliveryCharge}
                                 prepaidDiscount={prepaidDiscountAmount}
-                                storeCreditUsed={useStoreCredit ? Math.min(afterShippingTotal, availableCredit) : 0}
+                                storeCreditUsed={useStoreCredit ? Math.min(amountBeforeShipping + finalDeliveryCharge, availableCredit) : 0}
                                 finalTotal={finalCalculatedTotal}
                             />
                         </div>
