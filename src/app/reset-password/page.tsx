@@ -10,6 +10,7 @@ export default function ResetPasswordPage() {
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [loading, setLoading] = useState(false);
+    const [verifying, setVerifying] = useState(true);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState(false);
     const router = useRouter();
@@ -17,15 +18,38 @@ export default function ResetPasswordPage() {
 
     // Check if the user is actually in a recovery session
     useEffect(() => {
-        const checkSession = async () => {
+        let isMounted = true;
+
+        // 1. Give the browser a moment to process the URL fragment tokens
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+            if (!isMounted) return;
+            
+            console.log("Auth Event:", event, "Session exists:", !!session);
+            
+            if (event === 'PASSWORD_RECOVERY' || session) {
+                setVerifying(false);
+                setError('');
+            }
+        });
+
+        // 2. Perform an initial check after a short delay to account for race conditions
+        const timer = setTimeout(async () => {
+            if (!isMounted) return;
+            
             const { data } = await supabase.auth.getSession();
             if (!data.session) {
                 // If they just navigated here directly without clicking the email link
-                // or the link expired, they don't have a recovery session.
+                // or the link expired, they don't have a recovery session yet.
                 setError("Invalid or expired password reset link. Please request a new one.");
             }
+            setVerifying(false);
+        }, 2000); // Wait 2 seconds for Supabase to finish its background work (processing the hash)
+
+        return () => {
+            isMounted = false;
+            subscription.unsubscribe();
+            clearTimeout(timer);
         };
-        checkSession();
     }, [supabase]);
 
     const handleUpdatePassword = async (e: React.FormEvent) => {
@@ -63,6 +87,15 @@ export default function ResetPasswordPage() {
             setLoading(false);
         }
     };
+
+    if (verifying && !error) {
+        return (
+            <div className="min-h-[70dvh] flex flex-col items-center justify-center px-4 py-16">
+                <Loader2 className="h-10 w-10 animate-spin text-primary mb-4" />
+                <p className="text-gray-500 font-medium">Verifying your secure link...</p>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-[70dvh] flex items-center justify-center px-4 py-16">
