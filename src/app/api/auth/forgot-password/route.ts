@@ -19,7 +19,7 @@ export async function POST(request: Request) {
         // Determine the redirect origin. 
         // We prioritize the configured APP_URL for production consistency.
         const siteUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.swarnacollection.in';
-        const redirectTo = `${siteUrl.replace(/\/$/, '')}/reset-password`;
+        const redirectTo = `${siteUrl.replace(/\/$/, '')}/api/auth/callback?next=/reset-password`;
 
         // Generate a recovery link using Supabase Admin
         const { data, error } = await supabaseAdmin.auth.admin.generateLink({
