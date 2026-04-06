@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, ShoppingBag, LogOut, Package, Users, Settings, ChevronRight } from "lucide-react";
+import { LayoutDashboard, ShoppingBag, LogOut, Package, Users, Settings, ChevronRight, BarChart3 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { Logo } from "@/components/ui/Logo";
 
@@ -11,6 +11,7 @@ const NAV = [
     { href: "/admin/orders", label: "Orders", icon: ShoppingBag },
     { href: "/admin/products", label: "Products", icon: Package },
     { href: "/admin/users", label: "Customers", icon: Users },
+    { href: "/admin/analytics", label: "Analytics", icon: BarChart3 },
 ];
 
 export function AdminSidebar() {
