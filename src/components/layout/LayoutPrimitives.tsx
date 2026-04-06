@@ -50,12 +50,13 @@ export function Stack({ children, className, gap = 4, id }: LayoutProps) {
 /**
  * AdaptiveContainer: A container that respects safe areas and avoids overflow.
  */
-export function AdaptiveContainer({ children, className, id }: LayoutProps) {
+export function AdaptiveContainer({ children, className, id, wide }: LayoutProps & { wide?: boolean }) {
   return (
     <div
       id={id}
       className={cn(
-        "safe-area w-full mx-auto max-w-7xl px-4 overflow-x-hidden",
+        "safe-area w-full mx-auto px-4",
+        wide ? "max-w-[1400px]" : "max-w-7xl",
         className
       )}
     >

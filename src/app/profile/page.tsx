@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import {
     User, Mail, Phone, MapPin, Package, ArrowLeft, Loader2, Save,
     CheckCircle2, Clock, Truck, XCircle, ShoppingBag, ChevronDown, ChevronUp, Heart,
-    FileText, Download, ShoppingCart, Share2
+    FileText, Download, ShoppingCart, Share2, Plus, Edit2, Trash2, Home, Building2
 } from "lucide-react";
 // jsPDF and html2canvas will be dynamically imported during the download action
 // to prevent SSR/Build-time crashes in Vercel.
@@ -34,6 +34,20 @@ interface UserProfile {
         reason: string;
         createdAt: string;
     }[];
+}
+
+interface Address {
+    id: string;
+    label: string | null;
+    fullName: string;
+    phone: string;
+    addressLine1: string;
+    addressLine2: string | null;
+    landmark: string | null;
+    city: string | null;
+    state: string | null;
+    pincode: string | null;
+    isDefault: boolean;
 }
 
 interface OrderItem {
@@ -104,7 +118,18 @@ export default function ProfilePage() {
     const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
 
     // Active tab
-    const [activeTab, setActiveTab] = useState<"profile" | "orders" | "wishlist" | "wallet">("profile");
+    const [activeTab, setActiveTab] = useState<"profile" | "addresses" | "orders" | "wishlist" | "wallet">("profile");
+    
+    // Addresses state
+    const [addresses, setAddresses] = useState<Address[]>([]);
+    const [addressesLoading, setAddressesLoading] = useState(true);
+    const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
+    const [editingAddress, setEditingAddress] = useState<Address | null>(null);
+    const [addressForm, setAddressForm] = useState({
+        label: "", fullName: "", phone: "", addressLine1: "", addressLine2: "", landmark: "", city: "", state: "", pincode: "", isDefault: false
+    });
+    const [addressSaving, setAddressSaving] = useState(false);
+
     const [wishlistProducts, setWishlistProducts] = useState<Product[]>([]);
     const [downloadingInvoice, setDownloadingInvoice] = useState<string | null>(null);
     const invoiceRef = useRef<HTMLDivElement>(null);
@@ -118,7 +143,9 @@ export default function ProfilePage() {
 
     // Handle hash navigation
     useEffect(() => {
-        if (window.location.hash === "#orders") {
+        if (window.location.hash === "#addresses") {
+            setActiveTab("addresses");
+        } else if (window.location.hash === "#orders") {
             setActiveTab("orders");
         } else if (window.location.hash === "#wishlist") {
             setActiveTab("wishlist");
@@ -126,6 +153,28 @@ export default function ProfilePage() {
             setActiveTab("wallet");
         }
     }, []);
+
+    // Fetch addresses
+    const fetchAddresses = async () => {
+        setAddressesLoading(true);
+        try {
+            const res = await fetch("/api/profile/addresses");
+            if (res.ok) {
+                const data = await res.json();
+                setAddresses(data);
+            }
+        } catch (err) {
+            console.error("Failed to load addresses:", err);
+        } finally {
+            setAddressesLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        if (user && activeTab === "addresses" && addresses.length === 0) {
+            fetchAddresses();
+        }
+    }, [user, activeTab]);
 
     // Fetch profile
     useEffect(() => {
@@ -233,6 +282,81 @@ export default function ProfilePage() {
             setProfileError("Network error. Please try again.");
         } finally {
             setSaving(false);
+        }
+    };
+
+    const handleOpenAddressModal = (address?: Address) => {
+        if (address) {
+            setEditingAddress(address);
+            setAddressForm({
+                label: address.label || "",
+                fullName: address.fullName || "",
+                phone: address.phone || "",
+                addressLine1: address.addressLine1 || "",
+                addressLine2: address.addressLine2 || "",
+                landmark: address.landmark || "",
+                city: address.city || "",
+                state: address.state || "",
+                pincode: address.pincode || "",
+                isDefault: address.isDefault
+            });
+        } else {
+            setEditingAddress(null);
+            setAddressForm({
+                label: "", fullName: "", phone: "", addressLine1: "", addressLine2: "", landmark: "", city: "", state: "", pincode: "", isDefault: false
+            });
+        }
+        setIsAddressModalOpen(true);
+    };
+
+    const handleSaveAddress = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setAddressSaving(true);
+        try {
+            const url = editingAddress ? `/api/profile/addresses/${editingAddress.id}` : "/api/profile/addresses";
+            const method = editingAddress ? "PUT" : "POST";
+            const res = await fetch(url, {
+                method,
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(addressForm)
+            });
+            if (res.ok) {
+                await fetchAddresses();
+                setIsAddressModalOpen(false);
+            } else {
+                alert("Failed to save address.");
+            }
+        } catch (err) {
+            console.error("Save address error:", err);
+        } finally {
+            setAddressSaving(false);
+        }
+    };
+
+    const handleDeleteAddress = async (id: string) => {
+        if (!confirm("Are you sure you want to delete this address?")) return;
+        try {
+            const res = await fetch(`/api/profile/addresses/${id}`, { method: "DELETE" });
+            if (res.ok) {
+                await fetchAddresses();
+            }
+        } catch (err) {
+            console.error("Delete address error:", err);
+        }
+    };
+
+    const handleSetDefaultAddress = async (id: string) => {
+        try {
+            const res = await fetch(`/api/profile/addresses/${id}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ isDefault: true })
+            });
+            if (res.ok) {
+                await fetchAddresses();
+            }
+        } catch (err) {
+            console.error("Set default address error:", err);
         }
     };
 
@@ -391,6 +515,18 @@ export default function ProfilePage() {
                             <span className="flex items-center gap-2">
                                 <User className="w-4 h-4" />
                                 Profile
+                            </span>
+                        </button>
+                        <button
+                            onClick={() => setActiveTab("addresses")}
+                            className={`px-6 py-4 text-sm font-semibold border-b-2 transition-all shrink-0 ${activeTab === "addresses"
+                                ? "border-primary text-primary"
+                                : "border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                                }`}
+                        >
+                            <span className="flex items-center gap-2">
+                                <MapPin className="w-4 h-4" />
+                                Addresses
                             </span>
                         </button>
                         <button
@@ -558,6 +694,137 @@ export default function ProfilePage() {
                                     )}
                                 </div>
                             </form>
+                        )}
+                    </div>
+                )}
+
+                {/* ===================== ADDRESSES TAB ===================== */}
+                {activeTab === "addresses" && (
+                    <div className="space-y-6">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-2">
+                            <div>
+                                <h3 className="text-xl font-bold text-gray-900 dark:text-white">Saved Addresses</h3>
+                                <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Manage your shipping addresses for quick checkout.</p>
+                            </div>
+                            <Button
+                                onClick={() => handleOpenAddressModal()}
+                                className="bg-primary hover:bg-primary text-white hover:text-amber-900 font-semibold rounded-full px-6 flex items-center gap-2 shadow-sm"
+                            >
+                                <Plus className="w-4 h-4" />
+                                Add New Address
+                            </Button>
+                        </div>
+
+                        {addressesLoading ? (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {[1, 2].map(i => (
+                                    <div key={i} className="h-48 bg-gray-100 dark:bg-[#1a1a1a] rounded-2xl animate-pulse" />
+                                ))}
+                            </div>
+                        ) : addresses.length === 0 ? (
+                            <div className="text-center py-16 px-4 bg-white dark:bg-[#1a1a1a] border border-gray-100 dark:border-white/10 rounded-2xl border-dashed">
+                                <div className="w-20 h-20 mx-auto bg-gray-50 dark:bg-[#111] rounded-full flex items-center justify-center mb-4">
+                                    <MapPin className="w-8 h-8 text-gray-300 dark:text-gray-600" />
+                                </div>
+                                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">No saved addresses</h3>
+                                <p className="text-gray-500 dark:text-gray-400 text-sm mt-1 max-w-sm mx-auto mb-6">
+                                    You haven't saved any addresses yet. Add one now to speed up your next checkout.
+                                </p>
+                                <Button
+                                    onClick={() => handleOpenAddressModal()}
+                                    variant="outline"
+                                    className="border-primary/20 text-primary hover:bg-primary/5 rounded-full px-6"
+                                >
+                                    <Plus className="w-4 h-4 mr-2" />
+                                    Add Address
+                                </Button>
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                {addresses.map((address) => (
+                                    <div
+                                        key={address.id}
+                                        className={`relative bg-white dark:bg-[#1a1a1a] p-6 rounded-2xl border flex flex-col h-full transition-all hover:shadow-md ${
+                                            address.isDefault
+                                                ? "border-primary/50 shadow-sm"
+                                                : "border-gray-100 dark:border-white/10"
+                                        }`}
+                                    >
+                                        {/* Header */}
+                                        <div className="flex items-start justify-between mb-4">
+                                            <div className="flex items-center gap-2">
+                                                {address.label?.toLowerCase() === "home" ? (
+                                                    <Home className="w-4 h-4 text-gray-400" />
+                                                ) : address.label?.toLowerCase() === "office" || address.label?.toLowerCase() === "work" ? (
+                                                    <Building2 className="w-4 h-4 text-gray-400" />
+                                                ) : null}
+                                                {address.label && (
+                                                    <span className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">
+                                                        {address.label}
+                                                    </span>
+                                                )}
+                                                {address.isDefault && (
+                                                    <span className="bg-primary/10 text-primary text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ml-1">
+                                                        Default
+                                                    </span>
+                                                )}
+                                            </div>
+                                            
+                                            {/* Actions */}
+                                            <div className="flex items-center gap-1">
+                                                <button
+                                                    onClick={() => handleOpenAddressModal(address)}
+                                                    className="p-1.5 text-gray-400 hover:text-primary transition-colors rounded-lg hover:bg-primary/5"
+                                                    title="Edit"
+                                                >
+                                                    <Edit2 className="w-4 h-4" />
+                                                </button>
+                                                {!address.isDefault && (
+                                                    <button
+                                                        onClick={() => handleDeleteAddress(address.id)}
+                                                        className="p-1.5 text-gray-400 hover:text-red-500 transition-colors rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10"
+                                                        title="Delete"
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        {/* Address Block */}
+                                        <div className="flex-1 space-y-3">
+                                            <div>
+                                                <p className="font-bold text-gray-900 dark:text-white text-base">
+                                                    {address.fullName}
+                                                </p>
+                                                <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mt-0.5">
+                                                    {address.phone}
+                                                </p>
+                                            </div>
+                                            <div className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">
+                                                <p>{address.addressLine1}</p>
+                                                {address.addressLine2 && <p>{address.addressLine2}</p>}
+                                                {address.landmark && <p>Near: {address.landmark}</p>}
+                                                <p>
+                                                    {[address.city, address.state, address.pincode].filter(Boolean).join(", ")}
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        {/* Set Default Action */}
+                                        {!address.isDefault && (
+                                            <div className="mt-5 pt-4 border-t border-gray-50 dark:border-white/5">
+                                                <button
+                                                    onClick={() => handleSetDefaultAddress(address.id)}
+                                                    className="text-xs font-semibold text-primary hover:text-primary/80 transition-colors"
+                                                >
+                                                    Set as Default Address
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
                         )}
                     </div>
                 )}
@@ -1126,6 +1393,152 @@ export default function ProfilePage() {
                     </div>
                 )}
             </div>
+
+            {/* Application Modal Portal would be better here, but adding inline for now */}
+            {isAddressModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+                    <div className="bg-white dark:bg-[#1a1a1a] rounded-3xl border border-gray-100 dark:border-white/10 shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
+                        <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100 dark:border-white/10">
+                            <h2 className="text-lg font-bold text-gray-900 dark:text-white">
+                                {editingAddress ? "Edit Address" : "Add New Address"}
+                            </h2>
+                            <button
+                                onClick={() => setIsAddressModalOpen(false)}
+                                className="p-2 text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5 rounded-full transition-colors"
+                            >
+                                <XCircle className="w-5 h-5" />
+                            </button>
+                        </div>
+                        <div className="p-6 overflow-y-auto flex-1">
+                            <form id="addressForm" onSubmit={handleSaveAddress} className="space-y-4">
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="col-span-2">
+                                        <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5 uppercase tracking-wider">Full Name</label>
+                                        <input
+                                            required
+                                            value={addressForm.fullName}
+                                            onChange={(e) => setAddressForm({ ...addressForm, fullName: e.target.value })}
+                                            className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all bg-transparent dark:text-white"
+                                            placeholder="Enter full name"
+                                        />
+                                    </div>
+                                    <div className="col-span-2 md:col-span-1">
+                                        <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5 uppercase tracking-wider">Mobile Number</label>
+                                        <input
+                                            required
+                                            type="tel"
+                                            value={addressForm.phone}
+                                            onChange={(e) => setAddressForm({ ...addressForm, phone: e.target.value })}
+                                            className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all bg-transparent dark:text-white"
+                                            placeholder="10-digit mobile number"
+                                        />
+                                    </div>
+                                    <div className="col-span-2 md:col-span-1">
+                                        <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5 uppercase tracking-wider">Pincode</label>
+                                        <input
+                                            value={addressForm.pincode}
+                                            onChange={(e) => setAddressForm({ ...addressForm, pincode: e.target.value })}
+                                            className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all bg-transparent dark:text-white"
+                                            placeholder="e.g. 400001"
+                                        />
+                                    </div>
+                                    <div className="col-span-2">
+                                        <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5 uppercase tracking-wider">Flat, House no., Building, Company, Apartment</label>
+                                        <input
+                                            required
+                                            value={addressForm.addressLine1}
+                                            onChange={(e) => setAddressForm({ ...addressForm, addressLine1: e.target.value })}
+                                            className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all bg-transparent dark:text-white"
+                                            placeholder="House No, Building, Street"
+                                        />
+                                    </div>
+                                    <div className="col-span-2 md:col-span-1">
+                                        <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5 uppercase tracking-wider">Area, Colony, Village</label>
+                                        <input
+                                            value={addressForm.addressLine2}
+                                            onChange={(e) => setAddressForm({ ...addressForm, addressLine2: e.target.value })}
+                                            className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all bg-transparent dark:text-white"
+                                            placeholder="Area, Colony, Sector"
+                                        />
+                                    </div>
+                                    <div className="col-span-2 md:col-span-1">
+                                        <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5 uppercase tracking-wider">Landmark</label>
+                                        <input
+                                            value={addressForm.landmark}
+                                            onChange={(e) => setAddressForm({ ...addressForm, landmark: e.target.value })}
+                                            className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all bg-transparent dark:text-white"
+                                            placeholder="Near Apollo Hospital"
+                                        />
+                                    </div>
+                                    <div className="col-span-2 md:col-span-1">
+                                        <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5 uppercase tracking-wider">Town/City</label>
+                                        <input
+                                            value={addressForm.city}
+                                            onChange={(e) => setAddressForm({ ...addressForm, city: e.target.value })}
+                                            className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all bg-transparent dark:text-white"
+                                            placeholder="City"
+                                        />
+                                    </div>
+                                    <div className="col-span-2 md:col-span-1">
+                                        <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5 uppercase tracking-wider">State</label>
+                                        <input
+                                            value={addressForm.state}
+                                            onChange={(e) => setAddressForm({ ...addressForm, state: e.target.value })}
+                                            className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all bg-transparent dark:text-white"
+                                            placeholder="State"
+                                        />
+                                    </div>
+                                    <div className="col-span-2">
+                                        <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5 uppercase tracking-wider">Address Type / Label (Optional)</label>
+                                        <input
+                                            value={addressForm.label}
+                                            onChange={(e) => setAddressForm({ ...addressForm, label: e.target.value })}
+                                            className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all bg-transparent dark:text-white"
+                                            placeholder="e.g. Home, Office"
+                                        />
+                                    </div>
+                                    
+                                    {!editingAddress?.isDefault && (
+                                        <div className="col-span-2 mt-2">
+                                            <label className="flex items-center gap-3 cursor-pointer">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={addressForm.isDefault}
+                                                    onChange={(e) => setAddressForm({ ...addressForm, isDefault: e.target.checked })}
+                                                    className="w-4 h-4 text-primary bg-gray-100 border-gray-300 rounded focus:ring-primary dark:bg-gray-700 dark:border-gray-600"
+                                                />
+                                                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                                    Make this my default address
+                                                </span>
+                                            </label>
+                                        </div>
+                                    )}
+                                </div>
+                            </form>
+                        </div>
+                        <div className="p-6 border-t border-gray-100 dark:border-white/10 bg-gray-50 dark:bg-[#111] flex gap-3">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => setIsAddressModalOpen(false)}
+                                className="flex-1 rounded-xl"
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                type="submit"
+                                form="addressForm"
+                                disabled={addressSaving}
+                                className="flex-1 bg-primary hover:bg-primary text-white hover:text-amber-900 rounded-xl font-bold"
+                            >
+                                {addressSaving ? (
+                                    <span className="flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Saving...</span>
+                                ) : "Save Address"}
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

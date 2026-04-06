@@ -5,6 +5,7 @@ import { useAuth } from './AuthContext';
 
 export interface Product {
     id: string;
+    slug: string;
     name: string;
     category: string | { slug?: string; name?: string; id?: string };
     category_slug?: string;

@@ -98,7 +98,7 @@ export function ProductCard({ product, priority = false }: ProductCardProps) {
                 </button>
 
                 {/* Product Image */}
-                <Link href={`/product/${product.id}`} className="block h-full w-full">
+                <Link href={`/product/${product.slug}`} className="block h-full w-full">
                     <motion.div
                         animate={{ scale: isHovered ? 1.08 : 1 }}
                         transition={{ duration: 0.6, ease: [0.33, 1, 0.68, 1] }}
@@ -165,7 +165,7 @@ export function ProductCard({ product, priority = false }: ProductCardProps) {
 
             {/* Content Container */}
             <div className="flex flex-1 flex-col p-4 pt-5 lg:p-6 lg:pt-6">
-                <Link href={`/product/${product.id}`} className="mb-2 block group-hover:text-primary transition-colors">
+                <Link href={`/product/${product.slug}`} className="mb-2 block group-hover:text-primary transition-colors">
                     <h3 className="line-clamp-2 text-sm font-medium leading-relaxed text-gray-900 dark:text-gray-100 lg:text-base">
                         {product.name}
                     </h3>

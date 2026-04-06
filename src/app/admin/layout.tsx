@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { AdminSidebar } from "./components/AdminSidebar";
 import { Loader2, Menu, X } from "lucide-react";
+import { Logo } from "@/components/ui/Logo";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
     const { user, loading } = useAuth();
@@ -19,7 +20,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             return;
         }
 
-        // Check admin role from DB
         fetch("/api/admin/stats")
             .then(res => {
                 if (res.status === 403) {
@@ -33,26 +33,26 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
     if (loading || isAdmin === null) {
         return (
-            <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
+            <div className="min-h-screen bg-[#f8f9fb] flex items-center justify-center">
                 <div className="text-center">
-                    <Loader2 className="w-8 h-8 text-primary animate-spin mx-auto mb-3" />
-                    <p className="text-gray-400 text-sm">Loading admin panel...</p>
+                    <Loader2 className="w-7 h-7 text-indigo-600 animate-spin mx-auto mb-3" />
+                    <p className="text-gray-500 text-sm font-medium">Loading workspace...</p>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-[#0f0f0f] text-white flex">
+        <div className="min-h-screen bg-[#f8f9fb] text-gray-900 flex">
             {/* Mobile sidebar overlay */}
             {sidebarOpen && (
                 <div
-                    className="fixed inset-0 bg-black/60 z-40 lg:hidden"
+                    className="fixed inset-0 bg-gray-900/40 backdrop-blur-sm z-40 lg:hidden"
                     onClick={() => setSidebarOpen(false)}
                 />
             )}
 
-            {/* Sidebar — desktop always visible, mobile slide-in */}
+            {/* Sidebar */}
             <div className={`fixed inset-y-0 left-0 z-50 lg:static lg:z-auto transition-transform duration-300 ${sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}`}>
                 <AdminSidebar />
             </div>
@@ -60,11 +60,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             {/* Main content */}
             <div className="flex-1 flex flex-col min-h-screen overflow-x-hidden">
                 {/* Mobile top bar */}
-                <div className="lg:hidden flex items-center gap-4 px-4 py-3 bg-[#111] border-b border-white/10 sticky top-0 z-30">
-                    <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-2 rounded-lg hover:bg-white/10">
-                        {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+                <div className="lg:hidden flex items-center gap-4 px-4 py-3 bg-white border-b border-gray-200 sticky top-0 z-30">
+                    <button
+                        onClick={() => setSidebarOpen(!sidebarOpen)}
+                        className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                    >
+                        {sidebarOpen ? <X className="w-5 h-5 text-gray-600" /> : <Menu className="w-5 h-5 text-gray-600" />}
                     </button>
-                    <p className="font-bold text-white">Swarna Admin</p>
+                    <Logo variant="full" onDark={false} className="h-8 w-auto" />
                 </div>
 
                 <main className="flex-1 p-6 lg:p-8">

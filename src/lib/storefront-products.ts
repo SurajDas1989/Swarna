@@ -25,6 +25,7 @@ const STOREFRONT_SEARCH_REVALIDATE_SECONDS = 60;
 
 type ProductListRecord = {
     id: string;
+    slug: string;
     name: string;
     sku: string | null;
     price: unknown;
@@ -47,6 +48,7 @@ type ProductListRecord = {
 
 type ProductDetailRecord = {
     id: string;
+    slug: string;
     name: string;
     sku: string | null;
     price: unknown;
@@ -99,6 +101,7 @@ function formatProductListItem(product: ProductListRecord) {
 
     return {
         id: product.id,
+        slug: product.slug,
         name: product.name,
         sku: product.sku || null,
         category: product.category,
@@ -126,9 +129,35 @@ function formatProductDetail(product: ProductDetailRecord) {
 
     return {
         id: product.id,
+        slug: product.slug || "",
         name: product.name,
         sku: product.sku || null,
         category: product.category.slug,
+        price,
+        compareAtPrice,
+        costPerItem: product.costPerItem != null ? Number(product.costPerItem) : null,
+        chargeTax: product.chargeTax,
+        originalPrice: compareAtPrice ?? price,
+        image: product.images[0] || "/products/golden-pearl-necklace.png",
+        images: product.images,
+        description: product.description || "",
+        rating: 4.5,
+        stock: product.stock,
+        outOfStockSince: product.outOfStockSince?.toISOString() ?? null,
+        isActive: product.isActive,
+    };
+}
+
+function formatProductDetailWithSlug(product: any) {
+    const price = Number(product.price);
+    const compareAtPrice = product.compareAtPrice != null ? Number(product.compareAtPrice) : null;
+
+    return {
+        id: product.id,
+        slug: product.slug || "",
+        name: product.name,
+        sku: product.sku || null,
+        category: product.category?.slug || "",
         price,
         compareAtPrice,
         costPerItem: product.costPerItem != null ? Number(product.costPerItem) : null,
@@ -287,6 +316,7 @@ async function fetchStorefrontProductsFromDb(query: StorefrontProductListQuery) 
         where,
         select: {
             id: true,
+            slug: true,
             name: true,
             sku: true,
             price: true,
@@ -317,6 +347,7 @@ async function fetchProductDetailFromDb(id: string) {
         where: { id },
         select: {
             id: true,
+            slug: true,
             name: true,
             sku: true,
             price: true,
@@ -338,6 +369,35 @@ async function fetchProductDetailFromDb(id: string) {
     });
 
     return product ? formatProductDetail(product) : null;
+}
+
+async function fetchProductDetailBySlugFromDb(slug: string) {
+    const product = await prisma.product.findUnique({
+        where: { slug },
+        select: {
+            id: true,
+            slug: true,
+            name: true,
+            sku: true,
+            price: true,
+            compareAtPrice: true,
+            costPerItem: true,
+            chargeTax: true,
+            images: true,
+            description: true,
+            stock: true,
+            outOfStockSince: true,
+            isActive: true,
+            category: {
+                select: {
+                    slug: true,
+                    name: true,
+                },
+            },
+        },
+    });
+
+    return product ? formatProductDetailWithSlug(product) : null;
 }
 
 async function fetchProductCategoryMeta(productId: string) {
@@ -363,6 +423,7 @@ async function fetchRelatedProductsFromDb(productId: string, categoryId: string,
         },
         select: {
             id: true,
+            slug: true,
             name: true,
             sku: true,
             price: true,
@@ -460,12 +521,21 @@ export async function getStorefrontProducts(query: StorefrontProductListQuery = 
 
     return getCachedStorefrontProducts(normalizedQuery);
 }
-
 export async function getCachedProductById(id: string) {
     const getProduct = unstable_cache(
         async () => fetchProductDetailFromDb(id),
         ["storefront-product", id],
         { revalidate: 60, tags: [getProductTag(id)] }
+    );
+
+    return getProduct();
+}
+
+export async function getCachedProductBySlug(slug: string) {
+    const getProduct = unstable_cache(
+        async () => fetchProductDetailBySlugFromDb(slug),
+        ["storefront-product", `slug:${slug}`],
+        { revalidate: 60, tags: [`product-slug:${slug}`] }
     );
 
     return getProduct();
@@ -510,4 +580,30 @@ export async function getCachedRelatedProducts(productId: string, limit: number)
 
 export function getFallbackStorefrontProducts(searchParams: URLSearchParams) {
     return getFallbackProducts(searchParams);
+}
+
+/**
+ * Utility to generate a URL-safe unique slug for a product.
+ * Useful for future "upload from link" functionality where name might be the only available field.
+ */
+export async function generateUniqueSlug(name: string): Promise<string> {
+    const baseSlug = name
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/(^-|-$)+/g, '');
+        
+    let finalSlug = baseSlug;
+    let counter = 1;
+
+    while (true) {
+        const existing = await prisma.product.findUnique({
+            where: { slug: finalSlug },
+            select: { id: true }
+        });
+        
+        if (!existing) break;
+        finalSlug = `${baseSlug}-${counter++}`;
+    }
+
+    return finalSlug;
 }

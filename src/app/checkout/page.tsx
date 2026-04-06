@@ -9,7 +9,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { Loader2, ArrowLeft, ShieldCheck, Truck, RotateCcw, LogIn } from "lucide-react";
+import { Loader2, ArrowLeft, ShieldCheck, Truck, RotateCcw, LogIn, Plus, Home, Building2, MapPin } from "lucide-react";
 import Link from "next/link";
 import Script from "next/script";
 import { formatInr } from "@/lib/utils";
@@ -30,6 +30,20 @@ interface RazorpaySuccessResponse {
 
 interface RazorpayFailedResponse {
     error?: { description?: string };
+}
+
+interface Address {
+    id: string;
+    label: string | null;
+    fullName: string;
+    phone: string;
+    addressLine1: string;
+    addressLine2: string | null;
+    landmark: string | null;
+    city: string | null;
+    state: string | null;
+    pincode: string | null;
+    isDefault: boolean;
 }
 
 interface RazorpayInstance {
@@ -74,6 +88,11 @@ export default function CheckoutPage() {
     const [availableCredit, setAvailableCredit] = useState(0);
     const [addressData, setAddressData] = useState<AddressFormValues | null>(null);
     const [availableDiscount, setAvailableDiscount] = useState<{ code: string; percent: number } | null>(null);
+    
+    // Address Book State
+    const [savedAddresses, setSavedAddresses] = useState<Address[]>([]);
+    const [addressesLoading, setAddressesLoading] = useState(true);
+    const [showNewAddressForm, setShowNewAddressForm] = useState(false);
 
     // Redirect if cart is empty
     useEffect(() => {
@@ -82,7 +101,32 @@ export default function CheckoutPage() {
         }
     }, [cart, router, isSubmitting, loading]);
 
-    // Pre-fill from user profile
+    // Fetch saved addresses
+    useEffect(() => {
+        if (!user) {
+            setAddressesLoading(false);
+            return;
+        }
+
+        fetch("/api/profile/addresses")
+            .then(res => res.json())
+            .then(data => {
+                if (Array.isArray(data)) {
+                    setSavedAddresses(data);
+                    // Pre-select default address if available
+                    const defaultAddr = data.find(a => a.isDefault) || data[0];
+                    if (defaultAddr) {
+                        handleSelectSavedAddress(defaultAddr);
+                    } else if (data.length === 0) {
+                        setShowNewAddressForm(true);
+                    }
+                }
+            })
+            .catch(console.error)
+            .finally(() => setAddressesLoading(false));
+    }, [user]);
+
+    // Pre-fill from user profile (fallback credit and user details)
     useEffect(() => {
         if (!user?.email) return;
 
@@ -145,10 +189,33 @@ export default function CheckoutPage() {
         ? Math.max(0, (amountBeforeShipping + finalDeliveryCharge) - availableCredit)
         : (amountBeforeShipping + finalDeliveryCharge);
 
-    // Handle address form submit
+    // Convert saved DB Address to AddressFormValues for order payload
+    const handleSelectSavedAddress = (addr: Address) => {
+        setAddressData({
+            fullName: addr.fullName,
+            email: user?.email || "",
+            phone: addr.phone,
+            addressLine1: addr.addressLine1,
+            addressLine2: addr.addressLine2 || "",
+            landmark: addr.landmark || "",
+            city: addr.city || "",
+            state: addr.state || "",
+            zipCode: addr.pincode || "",
+            addressType: (addr.label?.includes("office") || addr.label?.includes("work")) ? "Work" as const : "Home" as const,
+            deliveryInstructions: "",
+        });
+    };
+
+    // Handle address form submit (for new addresses, we don't save to db here, just use it for order)
     const handleAddressSubmit = (values: AddressFormValues) => {
         setAddressData(values);
         setStep("payment");
+    };
+
+    const proceedToPayment = () => {
+        if (addressData) {
+            setStep("payment");
+        }
     };
 
     // Handle place order
@@ -370,11 +437,86 @@ export default function CheckoutPage() {
                             {step === "address" && (
                                 <Card>
                                     <CardContent className="p-6">
-                                        <h2 className="text-lg font-semibold mb-4">Delivery Address</h2>
-                                        <AddressForm
-                                            onSubmit={handleAddressSubmit}
-                                            defaultValues={addressData || undefined}
-                                        />
+                                        <div className="flex items-center justify-between mb-4">
+                                            <h2 className="text-lg font-semibold">Delivery Address</h2>
+                                            {savedAddresses.length > 0 && showNewAddressForm && (
+                                                <Button variant="ghost" size="sm" onClick={() => setShowNewAddressForm(false)}>
+                                                    Use Saved Address
+                                                </Button>
+                                            )}
+                                        </div>
+
+                                        {addressesLoading ? (
+                                            <div className="space-y-4">
+                                                <div className="h-32 bg-muted animate-pulse rounded-lg" />
+                                            </div>
+                                        ) : savedAddresses.length > 0 && !showNewAddressForm ? (
+                                            <div className="space-y-4">
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                    {savedAddresses.map((addr) => {
+                                                        // Determine if this address is currently selected
+                                                        const isSelected = addressData?.addressLine1 === addr.addressLine1 && addressData?.phone === addr.phone;
+                                                        
+                                                        return (
+                                                            <div
+                                                                key={addr.id}
+                                                                onClick={() => handleSelectSavedAddress(addr)}
+                                                                className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${
+                                                                    isSelected 
+                                                                        ? "border-primary bg-primary/5" 
+                                                                        : "border-border hover:border-primary/50"
+                                                                }`}
+                                                            >
+                                                                <div className="flex items-center gap-2 mb-2">
+                                                                    {addr.label?.toLowerCase() === "home" ? (
+                                                                        <Home className="w-4 h-4 text-muted-foreground" />
+                                                                    ) : addr.label?.toLowerCase() === "office" || addr.label?.toLowerCase() === "work" ? (
+                                                                        <Building2 className="w-4 h-4 text-muted-foreground" />
+                                                                    ) : (
+                                                                        <MapPin className="w-4 h-4 text-muted-foreground" />
+                                                                    )}
+                                                                    {addr.label && <span className="text-xs font-semibold text-muted-foreground uppercase">{addr.label}</span>}
+                                                                    {addr.isDefault && <span className="ml-auto text-[10px] font-bold bg-primary/10 text-primary px-2 py-0.5 rounded-full uppercase">Default</span>}
+                                                                </div>
+                                                                <p className="font-semibold text-sm">{addr.fullName}</p>
+                                                                <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                                                                    {addr.addressLine1}
+                                                                    {addr.addressLine2 && `, ${addr.addressLine2}`}
+                                                                    {addr.landmark && ` (Near ${addr.landmark})`}
+                                                                    <br />
+                                                                    {addr.city}, {addr.state} - {addr.pincode}
+                                                                </p>
+                                                                <p className="text-xs text-muted-foreground mt-1">{addr.phone}</p>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                                
+                                                <div className="flex gap-4 pt-4 border-t">
+                                                    <Button 
+                                                        variant="outline" 
+                                                        onClick={() => setShowNewAddressForm(true)}
+                                                        className="w-full flex items-center justify-center gap-2 text-primary border-primary/20 hover:bg-primary/5"
+                                                    >
+                                                        <Plus className="w-4 h-4" /> Add New Address
+                                                    </Button>
+                                                </div>
+                                                
+                                                <Button
+                                                    className="w-full mt-4"
+                                                    size="lg"
+                                                    onClick={proceedToPayment}
+                                                    disabled={!addressData}
+                                                >
+                                                    Deliver to this address
+                                                </Button>
+                                            </div>
+                                        ) : (
+                                            <AddressForm
+                                                onSubmit={handleAddressSubmit}
+                                                defaultValues={addressData || undefined}
+                                            />
+                                        )}
                                     </CardContent>
                                 </Card>
                             )}

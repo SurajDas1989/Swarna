@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useState, useEffect, useCallback } from "react";
+import { use, useState, useEffect, useCallback, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -11,6 +11,7 @@ import { CheckCircle, ChevronDown, ChevronRight, Copy, Flame, Gift, Heart, Packa
 import { getBlurDataUrl } from "@/lib/utils/imageBlur";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { AdaptiveContainer, Row } from "@/components/layout/LayoutPrimitives";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface Coupon {
     id: string;
@@ -150,6 +151,18 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             setTimeout(() => setCopiedCode(null), 3000);
         });
     }, [showToast]);
+
+    const scrollRef = useRef<HTMLDivElement>(null);
+
+    const handleScroll = () => {
+        if (!scrollRef.current) return;
+        const scrollPosition = scrollRef.current.scrollLeft;
+        const width = scrollRef.current.offsetWidth;
+        const newIndex = Math.round(scrollPosition / width);
+        if (newIndex !== activeThumb) {
+            setActiveThumb(newIndex);
+        }
+    };
 
     // Fetch product details
     useEffect(() => {
@@ -308,55 +321,63 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             </div>
 
             {/* Product Details */}
-            <AdaptiveContainer className="py-6 lg:py-10">
-                <Row gap={6} className="lg:gap-12">
+            <AdaptiveContainer wide className="py-6 lg:py-10">
+                <Row gap={6} className="lg:gap-12 items-start">
 
                     {/* LEFT — Image Gallery */}
-                    <div className="w-full lg:w-1/2">
-                        <div className="flex items-start gap-3 sm:hidden">
-                            <div className="relative min-w-0 flex-[0_0_74%] overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm dark:border-white/10 dark:bg-card">
-                                <div className="relative aspect-[4/4.6]">
-                                    <Image
-                                        src={activeImage}
-                                        alt={`${product.name} main gallery view`}
-                                        fill
-                                        placeholder="blur"
-                                        blurDataURL={getBlurDataUrl()}
-                                        className="object-cover"
-                                        sizes="74vw"
-                                        priority
-                                    />
-                                    <span className="absolute left-3 top-3 bg-red-500 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg">
-                                        {discount}% OFF
-                                    </span>
-                                </div>
-                            </div>
-                            <div className="hide-scrollbar flex max-h-[23rem] flex-[0_0_26%] flex-col gap-3 overflow-y-auto pr-1">
+                    <div className="w-full lg:w-[58%] lg:sticky lg:top-24 lg:h-fit">
+                        {/* Mobile Swipe-able Gallery */}
+                        <div className="sm:hidden mb-6 overflow-hidden">
+                            <div 
+                                ref={scrollRef}
+                                onScroll={handleScroll}
+                                className="flex overflow-x-auto snap-x snap-mandatory hide-scrollbar gap-4 pb-4 px-4 scroll-pl-4"
+                                style={{ WebkitOverflowScrolling: 'touch' }}
+                            >
                                 {galleryImages.map((imageSrc, idx) => (
-                                    <button
+                                    <div 
                                         key={`${imageSrc}-${idx}`}
-                                        type="button"
-                                        onClick={() => setActiveThumb(idx)}
-                                        className={`relative overflow-hidden rounded-xl border-2 bg-white shadow-sm transition-all dark:bg-card ${
-                                            activeThumb === idx
-                                                ? "border-primary ring-2 ring-primary/20"
-                                                : "border-gray-200 dark:border-white/10"
-                                        }`}
+                                        className="relative flex-[0_0_88%] snap-start overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm dark:border-white/10 dark:bg-card"
                                     >
-                                        <div className="relative aspect-square">
+                                        <div className="relative aspect-[4/5]">
                                             <Image
                                                 src={imageSrc}
-                                                alt={`${product.name} thumbnail ${idx + 1}`}
+                                                alt={`${product.name} gallery view ${idx + 1}`}
                                                 fill
                                                 placeholder="blur"
                                                 blurDataURL={getBlurDataUrl()}
                                                 className="object-cover"
-                                                sizes="26vw"
+                                                sizes="88vw"
+                                                priority={idx === 0}
                                             />
+                                            {idx === 0 && (
+                                                <span className="absolute left-4 top-4 bg-red-500 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg">
+                                                    {discount}% OFF
+                                                </span>
+                                            )}
                                         </div>
-                                    </button>
+                                    </div>
                                 ))}
                             </div>
+                            
+                            {/* Pagination Dots */}
+                            {galleryImages.length > 1 && (
+                                <div className="flex justify-center gap-2 mt-4">
+                                    {galleryImages.map((_, idx) => (
+                                        <motion.div 
+                                            key={idx}
+                                            initial={false}
+                                            animate={{ 
+                                                width: activeThumb === idx ? 20 : 6,
+                                                backgroundColor: activeThumb === idx ? "var(--primary)" : "var(--muted-foreground, #a09888)"
+                                            }}
+                                            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                                            className="h-1.5 rounded-full"
+                                            style={{ opacity: activeThumb === idx ? 1 : 0.4 }}
+                                        />
+                                    ))}
+                                </div>
+                            )}
                         </div>
 
                         <div className="hidden grid-cols-1 gap-4 sm:grid sm:grid-cols-2">
@@ -388,7 +409,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                     </div>
 
                     {/* RIGHT — Product Info */}
-                    <div className="w-full lg:w-1/2 flex flex-col min-w-0">
+                    <div className="w-full lg:w-[42%] flex flex-col min-w-0">
                         {/* Category */}
                         <p className="text-xs uppercase tracking-[0.2em] text-gray-500 dark:text-gray-400 font-semibold mb-2">
                             Swarna Jewellery
@@ -687,8 +708,8 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                                 return (
                                     <Link
                                         key={rp.id}
-                                        href={`/product/${rp.id}`}
-                                        className="shrink-0 w-[70%] sm:w-[45%] md:w-[30%] lg:flex-1 snap-start bg-white dark:bg-card rounded-xl overflow-hidden shadow-sm border border-gray-100 dark:border-white/10 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 group"
+                                        href={`/product/${rp.slug}`}
+                                        className="shrink-0 w-[85%] sm:w-[45%] md:w-[30%] lg:w-[calc(25%-1.25rem)] lg:max-w-[320px] snap-start bg-white dark:bg-card rounded-xl overflow-hidden shadow-sm border border-gray-100 dark:border-white/10 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 group"
                                     >
                                         <div className="relative aspect-square overflow-hidden">
                                             <Image

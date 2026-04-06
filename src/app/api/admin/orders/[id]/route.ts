@@ -34,8 +34,49 @@ export async function PATCH(
         }
 
         const { id } = await params;
-        const { status } = await request.json();
+        const body = await request.json();
+        const { status, deliveryUpdate } = body;
 
+        // --- Delivery-only update (no status change) ---
+        // Updates order-level delivery fields.
+        // Optionally also updates the user profile if updateUserProfile=true (telecaller confirms it's the customer's own address).
+        if (deliveryUpdate && !status) {
+            const orderData = {
+                guestFirstName: deliveryUpdate.firstName ?? undefined,
+                guestLastName:  deliveryUpdate.lastName  ?? undefined,
+                guestPhone:     deliveryUpdate.phone     ?? undefined,
+                guestAddress:   deliveryUpdate.address   ?? undefined,
+                notes:          deliveryUpdate.notes     ?? undefined,
+            };
+
+            const updated = await prisma.$transaction(async (tx) => {
+                const order = await tx.order.update({
+                    where: { id },
+                    data: orderData,
+                    include: {
+                        user: { select: { id: true, firstName: true, lastName: true, email: true, phone: true, address: true } },
+                        items: { include: { product: { select: { name: true, images: true } } } }
+                    }
+                });
+
+                // Optionally sync to user profile (telecaller checks this for the customer's own address, not a gift)
+                if (deliveryUpdate.updateUserProfile && order.userId) {
+                    await tx.user.update({
+                        where: { id: order.userId },
+                        data: {
+                            ...(deliveryUpdate.phone   ? { phone: deliveryUpdate.phone }     : {}),
+                            ...(deliveryUpdate.address ? { address: deliveryUpdate.address } : {}),
+                        },
+                    });
+                }
+
+                return order;
+            });
+
+            return NextResponse.json(updated);
+        }
+
+        // --- Status update (with optional delivery update) ---
         const validStatuses = ['PENDING', 'CONFIRMED', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED', 'PAID'];
         if (!validStatuses.includes(status)) {
             return NextResponse.json({ error: 'Invalid status' }, { status: 400 });
@@ -63,6 +104,15 @@ export async function PATCH(
             status === 'CANCELLED' &&
             existingOrder.stockAdjusted;
 
+        // Optionally apply delivery fields alongside a status change
+        const deliveryData = deliveryUpdate ? {
+            guestFirstName: deliveryUpdate.firstName ?? undefined,
+            guestLastName:  deliveryUpdate.lastName  ?? undefined,
+            guestPhone:     deliveryUpdate.phone     ?? undefined,
+            guestAddress:   deliveryUpdate.address   ?? undefined,
+            notes:          deliveryUpdate.notes     ?? undefined,
+        } : {};
+
         const order = await prisma.$transaction(async (tx) => {
             if (shouldRestock) {
                 for (const item of existingOrder.items) {
@@ -71,9 +121,7 @@ export async function PATCH(
                         select: { stock: true },
                     });
 
-                    if (!product) {
-                        continue;
-                    }
+                    if (!product) continue;
 
                     const nextStock = product.stock + item.quantity;
                     await tx.product.update({
@@ -91,6 +139,7 @@ export async function PATCH(
                 data: {
                     status,
                     stockAdjusted: shouldRestock ? false : existingOrder.stockAdjusted,
+                    ...deliveryData,
                 },
                 include: { user: true }
             });
@@ -120,4 +169,3 @@ export async function PATCH(
         return NextResponse.json({ error: 'Failed to update order' }, { status: 500 });
     }
 }
-

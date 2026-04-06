@@ -1,6 +1,7 @@
 import { Metadata } from 'next';
 import ProductPageClient from './ProductPageClient';
-import { getCachedProductById } from '@/lib/storefront-products';
+import { getCachedProductBySlug, getCachedProductById } from '@/lib/storefront-products';
+import { notFound, redirect } from 'next/navigation';
 
 function buildProductTitle(productName: string, categoryName: string) {
     const candidateTitles = [
@@ -12,22 +13,22 @@ function buildProductTitle(productName: string, categoryName: string) {
     return candidateTitles.find((title) => title.length <= 60) ?? candidateTitles[candidateTitles.length - 1];
 }
 
-export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
-    const { id } = await params;
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+    const { slug } = await params;
 
-    const product = await getCachedProductById(id);
+    const product = await getCachedProductBySlug(slug);
     
     if (product) {
         return {
             title: {
-                absolute: buildProductTitle(product.name, product.category),
+                absolute: buildProductTitle(product.name, typeof product.category === 'string' ? product.category : 'Jewellery'),
             },
             description: product.description || undefined,
             alternates: {
-                canonical: `/product/${id}`,
+                canonical: `/product/${slug}`,
             },
             openGraph: {
-                title: buildProductTitle(product.name, product.category),
+                title: buildProductTitle(product.name, typeof product.category === 'string' ? product.category : 'Jewellery'),
                 description: product.description || undefined,
                 images: product.images.length > 0 ? [{ url: product.images[0] }] : [],
             }
@@ -39,11 +40,30 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
     };
 }
 
-export default async function ProductPage({ params }: { params: Promise<{ id: string }> }) {
-    const { id } = await params;
-    const product = await getCachedProductById(id);
+export default async function ProductPage({ params }: { params: Promise<{ slug: string }> }) {
+    const { slug } = await params;
+    let product = await getCachedProductBySlug(slug);
 
-    const jsonLd = product ? [
+    if (!product) {
+        // Try fallback for legacy ID-based URLs only if it's a valid UUID
+        const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(slug);
+        let fallbackProduct = null;
+
+        if (isUuid) {
+            try {
+                fallbackProduct = await getCachedProductById(slug);
+            } catch (err) {
+                console.error("Redirect fallback fetch error:", err);
+            }
+        }
+
+        if (fallbackProduct) {
+            redirect(`/product/${fallbackProduct.slug}`);
+        }
+        notFound();
+    }
+
+    const jsonLd = [
         {
             '@context': 'https://schema.org',
             '@type': 'Product',
@@ -65,39 +85,41 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
                     '@type': 'ListItem',
                     position: 1,
                     name: 'Home',
-                    item: 'https://swarna.vercel.app/'
+                    item: 'https://www.swarnacollection.in/'
                 },
                 {
                     '@type': 'ListItem',
                     position: 2,
                     name: 'Shop',
-                    item: 'https://swarna.vercel.app/#products'
+                    item: 'https://www.swarnacollection.in/#products'
                 },
                 {
                     '@type': 'ListItem',
                     position: 3,
                     name: product.category,
-                    item: 'https://swarna.vercel.app/#products'
+                    item: 'https://www.swarnacollection.in/#products'
                 },
                 {
                     '@type': 'ListItem',
                     position: 4,
                     name: product.name,
-                    item: `https://swarna.vercel.app/product/${id}`
+                    item: `https://www.swarnacollection.in/product/${slug}`
                 }
             ]
         }
-    ] : null;
+    ];
 
+    // Note: We reuse the [id]/ProductPageClient but it needs to handle the data fetching or we pass the product down.
+    // However, the ProductPageClient in [id] probably uses params.id to fetch data on its own.
+    // Let's check how ProductPageClient is implemented.
+    
     return (
         <>
-            {jsonLd && (
-                <script
-                    type="application/ld+json"
-                    dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-                />
-            )}
-            <ProductPageClient params={params} />
+            <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+            />
+            <ProductPageClient params={Promise.resolve({ id: product.id })} />
         </>
     );
 }

@@ -39,7 +39,7 @@ function LoginForm() {
                 const isAdmin = signedInUser?.app_metadata?.role === 'ADMIN' || 
                                 signedInUser?.user_metadata?.role === 'ADMIN';
 
-                if (isAdmin && redirectUrl === '/') {
+                if (isAdmin) {
                     router.push('/admin');
                 } else {
                     router.push(redirectUrl);

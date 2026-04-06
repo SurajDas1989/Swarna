@@ -3,8 +3,8 @@ import { UserManagementClient } from "./UserManagementClient";
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "User Management | Admin",
-  description: "Manage users and issue store credit.",
+  title: "Customers | Admin",
+  description: "Manage your customer base and view consumer insights.",
   robots: { index: false, follow: false },
 };
 
@@ -14,31 +14,55 @@ export const dynamic = "force-dynamic";
 export default async function AdminUsersPage() {
   const users = await prisma.user.findMany({
     orderBy: { createdAt: 'desc' },
-    select: {
-      id: true,
-      email: true,
-      firstName: true,
-      lastName: true,
-      role: true,
-      storeCredit: true,
-      createdAt: true,
+    include: {
+      orders: {
+        select: {
+          total: true,
+          status: true,
+        },
+      },
     }
   });
 
-  // Convert decimal to number for client component serialization
-  const serializedUsers = users.map(user => ({
-    ...user,
-    storeCredit: Number(user.storeCredit)
-  }));
+  // Calculate stats
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+  const totalCustomers = users.length;
+  const newCustomers = users.filter(u => u.createdAt > thirtyDaysAgo).length;
+  const totalRevenue = users.reduce((acc, user) => {
+    const userTotal = user.orders
+      .filter(o => o.status !== 'CANCELLED')
+      .reduce((sum, o) => sum + Number(o.total), 0);
+    return acc + userTotal;
+  }, 0);
+
+  // Convert for client component
+  const serializedUsers = users.map(user => {
+    const validOrders = user.orders.filter(o => o.status !== 'CANCELLED');
+    const totalSpent = validOrders.reduce((sum, o) => sum + Number(o.total), 0);
+    
+    return {
+      id: user.id,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      role: user.role,
+      storeCredit: Number(user.storeCredit),
+      createdAt: user.createdAt,
+      orderCount: validOrders.length,
+      totalSpent: totalSpent,
+      address: user.address,
+    };
+  });
+
+  const stats = {
+    totalCustomers,
+    newCustomers,
+    totalRevenue,
+  };
 
   return (
-    <div className="p-6">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold">User Management</h1>
-        <p className="text-gray-500 mt-2">View customers and manage store credit balances.</p>
-      </div>
-
-      <UserManagementClient initialUsers={serializedUsers} />
+    <div className="p-8">
+      <UserManagementClient initialUsers={serializedUsers} stats={stats} />
     </div>
   );
 }

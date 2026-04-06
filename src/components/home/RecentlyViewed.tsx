@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
@@ -53,7 +53,7 @@ export function RecentlyViewed() {
                     {items.map((product) => (
                         <Link
                             key={product.id}
-                            href={`/product/${product.id}`}
+                            href={`/product/${product.slug}`}
                             className="group w-[44%] shrink-0 overflow-hidden rounded-xl border border-gray-100 bg-white transition-all hover:-translate-y-0.5 hover:shadow-lg dark:border-white/10 dark:bg-card sm:w-[32%] lg:w-[22%]"
                         >
                             <div className="relative aspect-square overflow-hidden bg-[#F8F8F8] dark:bg-black">
