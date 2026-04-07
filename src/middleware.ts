@@ -74,17 +74,17 @@ export async function middleware(request: NextRequest) {
                 }
             }
 
-            const isAdmin = role === 'ADMIN';
+            const isAdminOrStaff = role === 'ADMIN' || role === 'STAFF';
 
-            // If an Admin tries to access the storefront (anything NOT /admin and NOT public auth pages), redirect to /admin
-            if (isAdmin && !isAdminRoute && !isAuthRoute) {
+            // If an Admin/Staff tries to access the storefront (anything NOT /admin and NOT public auth pages), redirect to /admin
+            if (isAdminOrStaff && !isAdminRoute && !isAuthRoute) {
                 const url = request.nextUrl.clone();
                 url.pathname = '/admin';
                 return NextResponse.redirect(url);
             }
 
             // Optional: If a regular user tries to access /admin, kick them to home (redundant but safe)
-            if (!isAdmin && isAdminRoute) {
+            if (!isAdminOrStaff && isAdminRoute) {
                 const url = request.nextUrl.clone();
                 url.pathname = '/';
                 return NextResponse.redirect(url);

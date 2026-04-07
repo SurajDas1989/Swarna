@@ -1,18 +1,20 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import { requireAdmin } from '@/lib/supabase-server';
+import { requireAdminOrStaff } from '@/lib/supabase-server';
 
 export async function GET() {
     try {
-        const admin = await requireAdmin();
-        if (!admin) {
+        const user = await requireAdminOrStaff();
+        if (!user) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
         }
+
+        const isStaff = user.role === 'STAFF';
 
         const [totalOrders, totalCustomers, revenueResult, pendingOrders] = await Promise.all([
             prisma.order.count(),
             prisma.user.count({ where: { role: 'CUSTOMER' } }),
-            prisma.order.aggregate({
+            isStaff ? Promise.resolve({ _sum: { total: 0 } }) : prisma.order.aggregate({
                 _sum: { total: true },
                 where: { status: { not: 'CANCELLED' } },
             }),
@@ -22,7 +24,7 @@ export async function GET() {
         return NextResponse.json({
             totalOrders,
             totalCustomers,
-            totalRevenue: revenueResult._sum.total ?? 0,
+            totalRevenue: isStaff ? 0 : (revenueResult._sum.total ?? 0),
             pendingOrders,
         });
     } catch (error) {

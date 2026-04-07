@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import { createServiceRoleSupabaseClient, requireAdmin } from '@/lib/supabase-server';
+import { createServiceRoleSupabaseClient, requireAdminOrStaff } from '@/lib/supabase-server';
 import { revalidatePath, revalidateTag } from 'next/cache';
 import type { Prisma } from '@/generated/prisma';
 import { getCategoryTag, getProductTag, getProductsListTag, getProductsRelatedTag } from '@/lib/storefront-products';
@@ -26,11 +26,9 @@ function getOutOfStockSinceUpdate(nextStock: number, previousStock?: number) {
     if (nextStock > 0) {
         return null;
     }
-
     if (previousStock !== undefined && previousStock <= 0) {
         return undefined;
     }
-
     return new Date();
 }
 
@@ -39,12 +37,10 @@ function getStoragePathFromUrl(url: string) {
     if (!supabaseUrl || !url.startsWith(supabaseUrl)) {
         return null;
     }
-
     const publicPrefix = `${supabaseUrl}/storage/v1/object/public/${PRODUCT_BUCKET}/`;
     if (!url.startsWith(publicPrefix)) {
         return null;
     }
-
     return url.slice(publicPrefix.length);
 }
 
@@ -60,7 +56,6 @@ async function deleteStorageImages(imageUrls: string[], excludingProductId?: str
                 images: { has: imageUrl },
             },
         });
-
         if (usageCount === 0) {
             removableUrls.push(imageUrl);
         }
@@ -78,7 +73,6 @@ async function deleteStorageImages(imageUrls: string[], excludingProductId?: str
             console.error('SUPABASE_SERVICE_ROLE_KEY is missing; cannot delete removed product images from storage.');
             return;
         }
-
         const { error } = await supabase.storage.from(PRODUCT_BUCKET).remove(paths);
         if (error) {
             console.error('Failed to delete product images from storage:', error);
@@ -90,8 +84,8 @@ async function deleteStorageImages(imageUrls: string[], excludingProductId?: str
 
 export async function POST(request: Request) {
     try {
-        const admin = await requireAdmin();
-        if (!admin) {
+        const user = await requireAdminOrStaff();
+        if (!user) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
         }
 
@@ -151,8 +145,8 @@ export async function POST(request: Request) {
 
 export async function PUT(request: Request) {
     try {
-        const admin = await requireAdmin();
-        if (!admin) {
+        const user = await requireAdminOrStaff();
+        if (!user) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
         }
 
@@ -196,7 +190,6 @@ export async function PUT(request: Request) {
         if (stock !== undefined) {
             const nextStock = Number(stock);
             updateData.stock = nextStock;
-
             const outOfStockSince = getOutOfStockSinceUpdate(nextStock, existingProduct.stock);
             if (outOfStockSince !== undefined) {
                 updateData.outOfStockSince = outOfStockSince;
@@ -235,8 +228,8 @@ export async function PUT(request: Request) {
 
 export async function DELETE(request: Request) {
     try {
-        const admin = await requireAdmin();
-        if (!admin) {
+        const user = await requireAdminOrStaff();
+        if (!user) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
         }
 
@@ -287,10 +280,11 @@ export async function DELETE(request: Request) {
         return NextResponse.json({ error: 'Failed' }, { status: 500 });
     }
 }
+
 export async function GET(request: Request) {
     try {
-        const admin = await requireAdmin();
-        if (!admin) {
+        const user = await requireAdminOrStaff();
+        if (!user) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
         }
 
@@ -301,7 +295,6 @@ export async function GET(request: Request) {
             return NextResponse.json({ error: 'Prefix required' }, { status: 400 });
         }
 
-        // Find products with SKUs starting with the prefix
         const products = await prisma.product.findMany({
             where: {
                 sku: {

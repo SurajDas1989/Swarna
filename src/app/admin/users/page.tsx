@@ -1,6 +1,7 @@
 import prisma from "@/lib/prisma";
 import { UserManagementClient } from "./UserManagementClient";
 import { Metadata } from "next";
+import { requireAdminOrStaff } from "@/lib/supabase-server";
 
 export const metadata: Metadata = {
   title: "Customers | Admin",
@@ -60,9 +61,11 @@ export default async function AdminUsersPage() {
     totalRevenue,
   };
 
+  const userRole = (await requireAdminOrStaff())?.role || "CUSTOMER";
+
   return (
     <div className="p-8">
-      <UserManagementClient initialUsers={serializedUsers} stats={stats} />
+      <UserManagementClient initialUsers={serializedUsers} stats={stats} role={userRole} />
     </div>
   );
 }

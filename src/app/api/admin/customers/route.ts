@@ -1,8 +1,14 @@
-import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { requireAdminOrStaff } from "@/lib/supabase-server";
+import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
   try {
+    // Verify Admin/Staff Status
+    const user = await requireAdminOrStaff();
+    if (!user) {
+        return NextResponse.json({ error: 'Forbidden. Admin or Staff access required.' }, { status: 403 });
+    }
     const body = await req.json();
     const { email, firstName, lastName, phone, address } = body;
 

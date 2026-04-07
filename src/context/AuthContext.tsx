@@ -26,12 +26,12 @@ function getSessionDbUserHint(currentUser: User | null) {
     if (!currentUser?.email) return null;
 
     const tokenRole = String(currentUser.app_metadata?.role || currentUser.user_metadata?.role || "").toUpperCase();
-    if (tokenRole !== "ADMIN") return null;
+    if (tokenRole !== "ADMIN" && tokenRole !== "STAFF") return null;
 
     return {
         id: currentUser.id,
         email: currentUser.email,
-        role: "ADMIN",
+        role: tokenRole,
     };
 }
 

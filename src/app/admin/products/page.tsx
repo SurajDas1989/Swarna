@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { Plus, Trash2, Edit, Loader2, Eye, EyeOff } from "lucide-react";
+import { Plus, Trash2, Edit, Loader2, Eye, EyeOff, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import ProductFormModal from "../components/ProductFormModal";
 
@@ -147,6 +147,33 @@ export default function AdminProductsPage() {
         fetchProducts();
     };
 
+    const exportToCsv = () => {
+        if (products.length === 0) return;
+
+        const headers = ["ID", "Name", "SKU", "Category", "Price", "Stock", "Status"];
+        const rows = products.map(p => {
+            return [
+                p.id,
+                `"${p.name.replace(/"/g, '""')}"`,
+                p.sku || "",
+                p.category?.name || "",
+                p.price,
+                p.stock,
+                p.isActive ? "Active" : "Inactive"
+            ].join(",");
+        });
+
+        const csvContent = "\uFEFF" + [headers.join(","), ...rows].join("\r\n");
+        const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.setAttribute("href", url);
+        link.setAttribute("download", `products_export_${new Date().toISOString().split('T')[0]}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
     if (loading || isLoading) {
         return (
             <div className="flex bg-gray-50 dark:bg-background min-h-[50vh] items-center justify-center">
@@ -170,12 +197,21 @@ export default function AdminProductsPage() {
                         <h1 className="text-2xl font-bold text-foreground">Products</h1>
                         <p className="text-sm text-gray-500">Manage your store's inventory</p>
                     </div>
-                    <Button 
-                        onClick={() => handleOpenForm()}
-                        className="bg-primary hover:bg-primary/90 text-white gap-2"
-                    >
-                        <Plus className="w-4 h-4" /> Add Product
-                    </Button>
+                    <div className="flex items-center gap-3">
+                        <Button 
+                            onClick={exportToCsv}
+                            variant="outline"
+                            className="gap-2 border-gray-200"
+                        >
+                            <Download className="w-4 h-4" /> Export
+                        </Button>
+                        <Button 
+                            onClick={() => handleOpenForm()}
+                            className="bg-primary hover:bg-primary/90 text-white gap-2"
+                        >
+                            <Plus className="w-4 h-4" /> Add Product
+                        </Button>
+                    </div>
                 </div>
 
                 {cleanupCandidates > 0 ? (

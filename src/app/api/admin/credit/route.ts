@@ -1,7 +1,7 @@
-import { NextResponse } from 'next/server';
-import { createServerSupabaseClient } from '@/lib/supabase-server';
+import { createServerSupabaseClient, requireAdminOrStaff } from '@/lib/supabase-server';
 import prisma from '@/lib/prisma';
 import { mutateStoreCredit } from '@/lib/services/storeCredit';
+import { NextResponse } from 'next/server';
 
 export async function POST(request: Request) {
     try {
@@ -12,10 +12,10 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        // Verify Admin Status
-        const isAdmin = session.user.app_metadata?.role === 'ADMIN' || session.user.user_metadata?.role === 'ADMIN';
-        if (!isAdmin) {
-            return NextResponse.json({ error: 'Forbidden. Admin access required.' }, { status: 403 });
+        // Verify Admin/Staff Status
+        const user = await requireAdminOrStaff();
+        if (!user) {
+            return NextResponse.json({ error: 'Forbidden. Admin or Staff access required.' }, { status: 403 });
         }
 
         const body = await request.json();

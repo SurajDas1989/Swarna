@@ -40,7 +40,8 @@ const STATUS_STYLE = {
     admin:   { bg: "bg-violet-50",  text: "text-violet-700",  dot: "bg-violet-400" },
 };
 
-export function UserManagementClient({ initialUsers, stats }: { initialUsers: UserType[]; stats: StatsType }) {
+export function UserManagementClient({ initialUsers, stats, role }: { initialUsers: UserType[]; stats: StatsType; role: string }) {
+    const isStaff = role === "STAFF";
     const [users, setUsers] = useState<UserType[]>(initialUsers);
     const [search, setSearch] = useState("");
     const [selectedUser, setSelectedUser] = useState<UserType | null>(null);
@@ -182,18 +183,20 @@ export function UserManagementClient({ initialUsers, stats }: { initialUsers: Us
                     </div>
                 </div>
 
-                <div className="bg-white border border-gray-200 border-l-4 border-l-emerald-500 rounded-xl p-5 shadow-sm">
-                    <div className="flex items-start justify-between">
-                        <div>
-                            <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">Lifetime Revenue</p>
-                            <p className="text-3xl font-bold text-gray-900 mt-1">{formatMoney(stats.totalRevenue)}</p>
-                            <p className="text-xs text-gray-400 mt-1">Across all orders</p>
-                        </div>
-                        <div className="p-2.5 bg-emerald-50 rounded-lg">
-                            <IndianRupee className="w-5 h-5 text-emerald-600" />
+                {!isStaff && (
+                    <div className="bg-white border border-gray-200 border-l-4 border-l-emerald-500 rounded-xl p-5 shadow-sm">
+                        <div className="flex items-start justify-between">
+                            <div>
+                                <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">Lifetime Revenue</p>
+                                <p className="text-3xl font-bold text-gray-900 mt-1">{formatMoney(stats.totalRevenue)}</p>
+                                <p className="text-xs text-gray-400 mt-1">Across all orders</p>
+                            </div>
+                            <div className="p-2.5 bg-emerald-50 rounded-lg">
+                                <IndianRupee className="w-5 h-5 text-emerald-600" />
+                            </div>
                         </div>
                     </div>
-                </div>
+                )}
             </div>
 
             {/* Table Container */}
@@ -264,7 +267,7 @@ export function UserManagementClient({ initialUsers, stats }: { initialUsers: Us
                                 <th className="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500">Status</th>
                                 <th className="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500">Location</th>
                                 <th className="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500 text-center">Orders</th>
-                                <th className="text-right px-5 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500">Spent</th>
+                                {!isStaff && <th className="text-right px-5 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500">Spent</th>}
                                 <th className="text-right px-5 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500">Credit</th>
                                 <th className="px-5 py-3 w-10" />
                             </tr>
@@ -311,7 +314,7 @@ export function UserManagementClient({ initialUsers, stats }: { initialUsers: Us
                                                 {user.orderCount}
                                             </span>
                                         </td>
-                                        <td className="px-5 py-4 text-right font-semibold text-gray-800">{formatMoney(user.totalSpent)}</td>
+                                        {!isStaff && <td className="px-5 py-4 text-right font-semibold text-gray-800">{formatMoney(user.totalSpent)}</td>}
                                         <td className="px-5 py-4 text-right">
                                             <button
                                                 onClick={() => setSelectedUser(user)}
@@ -328,9 +331,9 @@ export function UserManagementClient({ initialUsers, stats }: { initialUsers: Us
                                     </tr>
                                 );
                             })}
-                            {filteredUsers.length === 0 && (
+                             {filteredUsers.length === 0 && (
                                 <tr>
-                                    <td colSpan={8} className="px-6 py-16 text-center">
+                                    <td colSpan={isStaff ? 7 : 8} className="px-6 py-16 text-center">
                                         <div className="p-4 bg-gray-50 rounded-full w-fit mx-auto mb-4">
                                             <Search className="w-7 h-7 text-gray-300" />
                                         </div>

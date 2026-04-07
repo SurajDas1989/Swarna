@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import { requireAdmin } from '@/lib/supabase-server';
+import { requireAdminOrStaff } from '@/lib/supabase-server';
 import { generateUniqueOrderNumber, normalizePhone } from '@/lib/orders';
 import { sendOrderReceiptEmail } from '@/lib/email';
 
@@ -61,8 +61,8 @@ function buildReceiptPaymentMethod(paymentMethod: string) {
 
 export async function GET() {
     try {
-        const admin = await requireAdmin();
-        if (!admin) {
+        const user = await requireAdminOrStaff();
+        if (!user) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
         }
 
@@ -85,8 +85,8 @@ export async function GET() {
 
 export async function POST(request: Request) {
     try {
-        const admin = await requireAdmin();
-        if (!admin) {
+        const user = await requireAdminOrStaff();
+        if (!user) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
         }
 

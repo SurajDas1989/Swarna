@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, ShoppingBag, LogOut, Package, Users, Settings, ChevronRight, BarChart3 } from "lucide-react";
+import { LayoutDashboard, ShoppingBag, LogOut, Package, Users, Settings, BarChart3 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { Logo } from "@/components/ui/Logo";
 
@@ -17,7 +17,19 @@ const NAV = [
 export function AdminSidebar() {
     const pathname = usePathname();
     const router = useRouter();
-    const { signOut } = useAuth();
+    const { signOut, user, dbUser, loading } = useAuth();
+    
+    // Check both DB and Metadata to fix sync lag
+    const tokenRole = String(user?.app_metadata?.role || user?.user_metadata?.role || '').toUpperCase();
+    const dbRole = (dbUser?.role || '').toUpperCase();
+    
+    const isAdmin = tokenRole === 'ADMIN' || dbRole === 'ADMIN';
+
+    // While loading, show nothing. 
+    // If NOT admin, show the restricted Staff menu. Only show full NAV if explicitly ADMIN.
+    const filteredNav = loading ? [] : (isAdmin
+        ? NAV
+        : NAV.filter(item => item.label !== "Dashboard" && item.label !== "Analytics"));
 
     const handleLogout = async () => {
         await signOut();
@@ -37,7 +49,7 @@ export function AdminSidebar() {
             {/* Nav */}
             <nav className="flex-1 px-3 py-4 space-y-0.5">
                 <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 px-3 py-2 mb-1">Navigation</p>
-                {NAV.map(({ href, label, icon: Icon }) => {
+                {filteredNav.map(({ href, label, icon: Icon }) => {
                     const isActive = href === "/admin"
                         ? pathname === href
                         : pathname === href || pathname.startsWith(`${href}/`);
@@ -61,13 +73,15 @@ export function AdminSidebar() {
 
             {/* Footer */}
             <div className="px-3 py-4 border-t border-gray-100 space-y-0.5">
-                <Link
-                    href="/admin/settings"
-                    className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 transition-all"
-                >
-                    <Settings className="w-4 h-4 text-gray-400" />
-                    <span>Settings</span>
-                </Link>
+                {isAdmin && (
+                    <Link
+                        href="/admin/settings"
+                        className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 transition-all"
+                    >
+                        <Settings className="w-4 h-4 text-gray-400" />
+                        <span>Settings</span>
+                    </Link>
+                )}
                 <button
                     onClick={handleLogout}
                     className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:text-red-600 hover:bg-red-50 transition-all"

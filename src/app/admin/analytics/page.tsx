@@ -6,6 +6,8 @@ import {
     BarChart, Bar
 } from "recharts";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
 import { formatInr } from "@/lib/utils";
 import { Loader2, TrendingUp, TrendingDown, ArrowUpRight, ArrowDownRight, Presentation } from "lucide-react";
 
@@ -33,8 +35,21 @@ export default function AnalyticsPage() {
     const [days, setDays] = useState("365");
     const [data, setData] = useState<AnalyticsData | null>(null);
     const [loading, setLoading] = useState(true);
+    const { user, dbUser, loading: authLoading } = useAuth();
+    const router = useRouter();
 
     useEffect(() => {
+        if (authLoading) return;
+
+        const tokenRole = String(user?.app_metadata?.role || user?.user_metadata?.role || '').toUpperCase();
+        const dbRole = (dbUser?.role || '').toUpperCase();
+        const isAdmin = tokenRole === 'ADMIN' || dbRole === 'ADMIN';
+
+        if (!user || !isAdmin) {
+            router.push("/admin/orders");
+            return;
+        }
+
         const fetchAnalytics = async () => {
             setLoading(true);
             try {
@@ -49,7 +64,7 @@ export default function AnalyticsPage() {
             }
         };
         fetchAnalytics();
-    }, [days]);
+    }, [days, authLoading, user, dbUser, router]);
 
     if (loading || !data) {
         return (

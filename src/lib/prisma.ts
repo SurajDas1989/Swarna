@@ -17,7 +17,11 @@ function createPrismaClient() {
     return new PrismaClient({ adapter });
 }
 
-export const prisma = globalForPrisma.prisma || createPrismaClient();
+if (process.env.NODE_ENV !== 'production') {
+    delete (global as any).prisma;
+}
+
+export const prisma = createPrismaClient();
 
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
 

@@ -1,23 +1,7 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import { getAuthenticatedUser } from '@/lib/supabase-server';
+import { requireAdminOrStaff } from '@/lib/supabase-server';
 import { sendOrderStatusEmail } from '@/lib/email';
-
-type AdminIdentity = { id: string; email: string | null; role: 'ADMIN' };
-
-async function requireAdmin() {
-    const user = await getAuthenticatedUser();
-    if (!user) return null;
-
-    const dbUser = await prisma.user.findUnique({ where: { email: user.email! } });
-    const tokenRole = String(user.app_metadata?.role || user.user_metadata?.role || '').toUpperCase();
-
-    if (dbUser?.role === 'ADMIN' || tokenRole === 'ADMIN') {
-        return dbUser ?? ({ id: user.id, email: user.email, role: 'ADMIN' } as AdminIdentity);
-    }
-
-    return null;
-}
 
 function getOutOfStockSinceUpdate(nextStock: number) {
     return nextStock > 0 ? null : new Date();
@@ -28,7 +12,7 @@ export async function PATCH(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const admin = await requireAdmin();
+        const admin = await requireAdminOrStaff();
         if (!admin) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
         }
@@ -38,8 +22,6 @@ export async function PATCH(
         const { status, deliveryUpdate } = body;
 
         // --- Delivery-only update (no status change) ---
-        // Updates order-level delivery fields.
-        // Optionally also updates the user profile if updateUserProfile=true (telecaller confirms it's the customer's own address).
         if (deliveryUpdate && !status) {
             const orderData = {
                 guestFirstName: deliveryUpdate.firstName ?? undefined,
@@ -59,7 +41,6 @@ export async function PATCH(
                     }
                 });
 
-                // Optionally sync to user profile (telecaller checks this for the customer's own address, not a gift)
                 if (deliveryUpdate.updateUserProfile && order.userId) {
                     await tx.user.update({
                         where: { id: order.userId },
@@ -104,7 +85,6 @@ export async function PATCH(
             status === 'CANCELLED' &&
             existingOrder.stockAdjusted;
 
-        // Optionally apply delivery fields alongside a status change
         const deliveryData = deliveryUpdate ? {
             guestFirstName: deliveryUpdate.firstName ?? undefined,
             guestLastName:  deliveryUpdate.lastName  ?? undefined,

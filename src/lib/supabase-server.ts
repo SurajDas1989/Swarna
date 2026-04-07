@@ -75,3 +75,25 @@ export async function requireAdmin() {
     return null;
 }
 
+export async function requireAdminOrStaff() {
+    const user = await getAuthenticatedUser();
+    if (!user) return null;
+
+    const dbUser = await prisma.user.findUnique({ where: { email: user.email! } });
+    const tokenRole = String(user.app_metadata?.role || user.user_metadata?.role || '').toUpperCase();
+    const dbRole = (dbUser?.role || '').toUpperCase();
+
+    // Prioritize ADMIN, then STAFF. If either say they have permission, they do.
+    const effectiveRole = (tokenRole === 'ADMIN' || dbRole === 'ADMIN') ? 'ADMIN' : 
+                         (tokenRole === 'STAFF' || dbRole === 'STAFF') ? 'STAFF' : null;
+
+    if (effectiveRole) {
+        return {
+            ...(dbUser || { id: user.id, email: user.email }),
+            role: effectiveRole as 'ADMIN' | 'STAFF'
+        } as any;
+    }
+
+    return null;
+}
+

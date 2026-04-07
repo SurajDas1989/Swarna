@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { AlertTriangle, CheckCircle2, ChevronDown, Loader2, MapPin, Package, Phone, Plus, RefreshCw, Save, Search, ShoppingBag, User, UserPlus, X } from "lucide-react";
+import { AlertTriangle, CheckCircle2, ChevronDown, Download, Loader2, MapPin, Package, Phone, Plus, RefreshCw, Save, Search, ShoppingBag, User, UserPlus, X } from "lucide-react";
 import { getOrderReference } from "@/lib/order-reference";
 
 interface ProductOption {
@@ -390,6 +390,64 @@ export default function AdminOrdersPage() {
         }
     };
 
+    const exportToCsv = () => {
+        if (filtered.length === 0) return;
+
+        const headers = [
+            "Order Reference",
+            "Date",
+            "Customer Name",
+            "Email",
+            "Phone",
+            "Address",
+            "Items",
+            "Total",
+            "Payment Method",
+            "Payment Status",
+            "Order Status",
+            "Notes"
+        ];
+
+        const rows = filtered.map(order => {
+            const customerName = `${order.user?.firstName || order.guestFirstName || ""} ${order.user?.lastName || order.guestLastName || ""}`.trim();
+            const email = order.user?.email || order.guestEmail || "";
+            const phone = order.user?.phone || order.guestPhone || "";
+            const address = `"${(order.user?.address || order.guestAddress || "").replace(/"/g, '""')}"`;
+            
+            const itemsString = `"${order.items.map(i => `${i.quantity}x ${i.product.name}`).join(", ").replace(/"/g, '""')}"`;
+            const orderRef = getOrderReference({ orderNumber: order.orderNumber, orderId: order.id, createdAt: order.createdAt });
+            const date = new Date(order.createdAt).toLocaleDateString("en-IN", {
+                day: "numeric", month: "short", year: "numeric"
+            });
+            const notes = `"${(order.notes || "").replace(/"/g, '""')}"`;
+
+            return [
+                orderRef,
+                date,
+                `"${customerName}"`,
+                email,
+                phone,
+                address,
+                itemsString,
+                order.total,
+                order.paymentMethod || "",
+                order.paymentStatus || "",
+                order.status,
+                notes
+            ].join(",");
+        });
+
+        const csvContent = "\uFEFF" + [headers.join(","), ...rows].join("\r\n");
+        const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.setAttribute("href", url);
+        link.setAttribute("download", `orders_export_${filter.toLowerCase()}_${new Date().toISOString().split('T')[0]}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
     const handleRefundSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!refundingOrder) return;
@@ -429,6 +487,14 @@ export default function AdminOrdersPage() {
                     <p className="text-sm text-gray-500 mt-0.5">{orders.length} total orders</p>
                 </div>
                 <div className="flex items-center gap-3">
+                    <button
+                        onClick={exportToCsv}
+                        disabled={filtered.length === 0}
+                        className="flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition-all hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+                    >
+                        <Download className="w-4 h-4" />
+                        Export
+                    </button>
                     <button
                         onClick={() => setCreateOpen(true)}
                         className="flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition-all hover:bg-indigo-700 shadow-sm"

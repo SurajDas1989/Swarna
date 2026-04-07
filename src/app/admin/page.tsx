@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
 import { getOrderReference } from "@/lib/order-reference";
 import {
     ShoppingBag, TrendingUp, Clock,
@@ -50,6 +52,9 @@ export default function AdminDashboard() {
     const [loading, setLoading] = useState(true);
     const today = new Date().toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
 
+    const { user, dbUser, loading: authLoading } = useAuth();
+    const router = useRouter();
+
     const fetchData = async () => {
         setLoading(true);
         const [statsRes, ordersRes] = await Promise.all([
@@ -63,9 +68,20 @@ export default function AdminDashboard() {
     };
 
     useEffect(() => {
+        if (authLoading) return;
+
+        const tokenRole = String(user?.app_metadata?.role || user?.user_metadata?.role || '').toUpperCase();
+        const dbRole = (dbUser?.role || '').toUpperCase();
+        const isAdmin = tokenRole === 'ADMIN' || dbRole === 'ADMIN';
+
+        if (!user || !isAdmin) {
+            router.push("/admin/orders");
+            return;
+        }
+
         const id = requestAnimationFrame(() => { void fetchData(); });
         return () => cancelAnimationFrame(id);
-    }, []);
+    }, [authLoading, user, dbUser, router]);
 
     const statCards = stats ? [
         {
