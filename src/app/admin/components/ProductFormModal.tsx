@@ -21,6 +21,8 @@ interface ProductFormModalProps {
         id: string;
         name: string;
         description: string;
+        story?: string | null;
+        highlights?: string[];
         price: number;
         compareAtPrice?: number | null;
         costPerItem?: number | null;
@@ -137,12 +139,14 @@ export default function ProductFormModal({
 }: ProductFormModalProps) {
     const supabase = createClient();
     const [categories, setCategories] = useState<Category[]>([]);
-    const [loading, setLoading] = useState(false);
+    const [, setLoading] = useState(false);
     const [submitting, setSubmitting] = useState(false);
     const [uploadingImage, setUploadingImage] = useState(false);
     const [formData, setFormData] = useState({
         name: "",
         description: "",
+        story: "",
+        highlightsText: "",
         price: "",
         compareAtPrice: "",
         costPerItem: "",
@@ -172,6 +176,8 @@ export default function ProductFormModal({
                 setFormData({
                     name: product.name,
                     description: product.description || "",
+                    story: product.story || "",
+                    highlightsText: (product.highlights || []).join("\n"),
                     price: product.price.toString(),
                     compareAtPrice: product.compareAtPrice?.toString() || "",
                     costPerItem: product.costPerItem?.toString() || "",
@@ -196,6 +202,8 @@ export default function ProductFormModal({
                 setFormData({
                     name: "",
                     description: "",
+                    story: "",
+                    highlightsText: "",
                     price: "",
                     compareAtPrice: "",
                     costPerItem: "",
@@ -361,6 +369,10 @@ export default function ProductFormModal({
                 body: JSON.stringify({
                     ...formData,
                     ...(product && { id: product.id }),
+                    highlights: formData.highlightsText
+                        .split("\n")
+                        .map((line) => line.trim())
+                        .filter(Boolean),
                     price: parseFloat(formData.price),
                     compareAtPrice: formData.compareAtPrice ? parseFloat(formData.compareAtPrice) : null,
                     costPerItem: formData.costPerItem ? parseFloat(formData.costPerItem) : null,
@@ -458,6 +470,47 @@ export default function ProductFormModal({
                             placeholder="Add product description..."
                             rows={3}
                         />
+                    </div>
+
+                    {/* Story */}
+                    <div>
+                        <label className="block text-sm font-semibold text-foreground mb-2">
+                            Product Story
+                        </label>
+                        <textarea
+                            value={formData.story}
+                            onChange={(e) =>
+                                setFormData({
+                                    ...formData,
+                                    story: e.target.value,
+                                })
+                            }
+                            className="w-full px-4 py-2 border border-gray-300 dark:border-white/20 rounded-lg bg-white dark:bg-white/5 text-foreground focus:outline-none focus:ring-2 focus:ring-primary resize-none"
+                            placeholder="Short emotional line shown near the product title"
+                            rows={3}
+                        />
+                    </div>
+
+                    {/* Highlights */}
+                    <div>
+                        <label className="block text-sm font-semibold text-foreground mb-2">
+                            Style Highlights
+                        </label>
+                        <textarea
+                            value={formData.highlightsText}
+                            onChange={(e) =>
+                                setFormData({
+                                    ...formData,
+                                    highlightsText: e.target.value,
+                                })
+                            }
+                            className="w-full px-4 py-2 border border-gray-300 dark:border-white/20 rounded-lg bg-white dark:bg-white/5 text-foreground focus:outline-none focus:ring-2 focus:ring-primary resize-none"
+                            placeholder={"One highlight per line\nExample: Everyday layering: Pairs beautifully with a watch, bangles, or a clean cuff look.\nExample: Gift-ready feel: A polished piece that feels thoughtful without being too formal."}
+                            rows={4}
+                        />
+                        <p className="mt-2 text-xs text-gray-500">
+                            Use `Title: description` for each line. These will render as the small cards on the product page.
+                        </p>
                     </div>
 
                     {/* Category & Price */}

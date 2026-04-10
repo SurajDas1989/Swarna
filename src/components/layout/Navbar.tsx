@@ -26,6 +26,15 @@ export function Navbar() {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [activeMegaMenu, setActiveMegaMenu] = useState<string | null>(null);
     const [mounted, setMounted] = useState(false);
+    const [isScrolled, setIsScrolled] = useState(false);
+
+    useEffect(() => {
+        const handleScroll = () => {
+            setIsScrolled(window.scrollY > 20);
+        };
+        window.addEventListener("scroll", handleScroll, { passive: true });
+        return () => window.removeEventListener("scroll", handleScroll);
+    }, []);
 
     useEffect(() => {
         setMounted(true);
@@ -56,20 +65,26 @@ export function Navbar() {
 
     return (
         <>
-            <header className="sticky top-0 z-50 w-full border-b border-border/70 bg-background/95 shadow-sm backdrop-blur">
-                <div className="overflow-hidden border-b border-primary/15 bg-[#171717] py-2 text-sm text-stone-100 dark:border-white/10 dark:bg-[#101010]">
-                    <div className="container relative mx-auto flex items-center justify-between px-4">
-                        <div className="flex w-full items-center overflow-hidden whitespace-nowrap">
-                            <div className="inline-block animate-[marquee_20s_linear_infinite] font-medium tracking-wide text-stone-100/95">
-                                {"\u2728 Free Shipping on Orders Above \u20B9799 \u2022 Discover the Premium Wedding Collection"}
-                            </div>
+            {/* Announcement Bar - Exists in normal flow so it scrolls off naturally */}
+            <div className="overflow-hidden border-b border-primary/15 bg-[#171717] py-2 text-sm text-stone-100 dark:border-white/10 dark:bg-[#101010]">
+                <div className="container relative mx-auto flex items-center justify-between px-4">
+                    <div className="flex w-full items-center overflow-hidden whitespace-nowrap">
+                        <div className="inline-block animate-[marquee_20s_linear_infinite] font-medium tracking-wide text-stone-100/95">
+                            {"✨ Free Shipping on Orders Above ₹799 • Discover the Premium Wedding Collection"}
                         </div>
                     </div>
                 </div>
+            </div>
 
-                <div className="py-4">
-                    <div className="container mx-auto px-4">
-                        <div className="relative flex items-center justify-between md:hidden">
+            <header 
+                className={`sticky top-0 z-[100] w-full transition-all duration-300 ${
+                    isScrolled 
+                    ? "border-b border-primary/10 bg-background/70 shadow-lg backdrop-blur-2xl py-2" 
+                    : "border-b border-transparent bg-background py-4"
+                }`}
+            >
+                <div className="container mx-auto px-4">
+                    <div className="relative flex items-center justify-between md:hidden">
                             <button
                                 className="text-foreground transition-colors hover:text-primary"
                                 aria-label="Menu"
@@ -274,7 +289,6 @@ export function Navbar() {
                                     )}
                                 </div>
                             </div>
-                        </div>
                     </div>
                 </div>
             </header>
@@ -288,7 +302,9 @@ export function Navbar() {
                         exit={{ opacity: 0, y: -20 }}
                         onMouseEnter={() => setActiveMegaMenu(activeMegaMenu)}
                         onMouseLeave={() => setActiveMegaMenu(null)}
-                        className="fixed inset-x-0 top-[110px] z-[45] hidden md:block"
+                        className={`fixed inset-x-0 z-[45] hidden md:block transition-all duration-300 ${
+                            isScrolled ? "top-[68px]" : "top-[86px]"
+                        }`}
                     >
                         {/* Backdrop Blur Layer */}
                         <div className="absolute inset-0 bg-white/40 dark:bg-black/10 backdrop-blur-2xl shadow-[0_40px_100px_rgba(0,0,0,0.1)] border-b border-white/20 dark:border-white/5" />

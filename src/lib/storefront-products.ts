@@ -2,12 +2,12 @@ import { unstable_cache } from "next/cache";
 import prisma from "@/lib/prisma";
 
 const DEFAULT_PRODUCTS = [
-    { name: "Golden Pearl Necklace", category: "necklaces", price: 1499, description: "Elegant pearl necklace with timeless design.", image: "/products/golden-pearl-necklace.png" },
-    { name: "Diamond Studs", category: "earrings", price: 799, description: "Classic diamond studs for daily and occasion wear.", image: "/products/diamond-studs.png" },
-    { name: "Elegant Gold Bangles", category: "bangles", price: 1299, description: "Gold bangles with traditional detailing.", image: "/products/gold-bangles.png" },
-    { name: "Ruby Statement Ring", category: "rings", price: 599, description: "Bold ruby ring with premium finish.", image: "/products/ruby-ring.png" },
-    { name: "Silver Chain Bracelet", category: "bracelets", price: 299, description: "Minimal silver bracelet for everyday style.", image: "/products/silver-chain-bracelet.png" },
-    { name: "Bridal Jewellery Set", category: "sets", price: 3499, description: "Complete bridal jewellery set for special occasions.", image: "/products/bridal-jewellery-set.png" },
+    { name: "Golden Pearl Necklace", category: "necklaces", price: 1499, description: "Elegant pearl necklace with timeless design.", story: "A polished pearl necklace that adds quiet elegance to everyday and occasion looks.", highlights: ["Face-framing finish: Adds polish to simple outfits and layered jewelry stories.", "Dress-up ease: Works for both everyday wear and special occasions.", "Balanced profile: Looks refined without feeling too heavy or ornate."], image: "/products/golden-pearl-necklace.png" },
+    { name: "Diamond Studs", category: "earrings", price: 799, description: "Classic diamond studs for daily and occasion wear.", story: "A refined pair of studs that keeps the look bright, clean, and effortless.", highlights: ["Instant framing: Creates a brighter, more expressive look around the face.", "Festive energy: Feels special enough for celebrations, yet wearable day-to-day.", "Movement and sparkle: Adds a sense of motion that makes the piece feel alive."], image: "/products/diamond-studs.png" },
+    { name: "Elegant Gold Bangles", category: "bangles", price: 1299, description: "Gold bangles with traditional detailing.", story: "A graceful wrist accent that gives every outfit a more finished, luxurious feel.", highlights: ["Everyday layering: Pairs beautifully with a watch, bangles, or a clean cuff look.", "Gift-ready feel: A polished piece that feels thoughtful without being too formal.", "Lightweight shine: Designed to add presence without overwhelming the wrist."], image: "/products/gold-bangles.png" },
+    { name: "Ruby Statement Ring", category: "rings", price: 599, description: "Bold ruby ring with premium finish.", story: "A compact statement piece that brings personality and polish to the hand.", highlights: ["Subtle statement: A small detail that still feels intentional and styled.", "Stacking friendly: Easy to pair with other rings or wear as a single accent.", "Elegant finish: Brings a refined touch to everyday hand styling."], image: "/products/ruby-ring.png" },
+    { name: "Silver Chain Bracelet", category: "bracelets", price: 299, description: "Minimal silver bracelet for everyday style.", story: "A refined wrist accent with just enough shine to make everyday outfits feel finished.", highlights: ["Everyday layering: Pairs beautifully with a watch, bangles, or a clean cuff look.", "Gift-ready feel: A polished piece that feels thoughtful without being too formal.", "Lightweight shine: Designed to add presence without overwhelming the wrist."], image: "/products/silver-chain-bracelet.png" },
+    { name: "Bridal Jewellery Set", category: "sets", price: 3499, description: "Complete bridal jewellery set for special occasions.", story: "A coordinated jewelry story designed to make occasion dressing feel effortless.", highlights: ["Complete look: Makes dressing up simple by giving you a coordinated story.", "Occasion ready: A stronger choice when you want an effortless festive impact.", "Balanced styling: Designed to feel unified without looking overdone."], image: "/products/bridal-jewellery-set.png" },
 ];
 
 const DEFAULT_CATEGORIES = [
@@ -36,6 +36,8 @@ type ProductListRecord = {
     outOfStockSince: Date | null;
     images: string[];
     description: string | null;
+    story: string | null;
+    highlights: string[];
     isActive: boolean;
     isFeatured: boolean;
     categoryId: string;
@@ -57,6 +59,8 @@ type ProductDetailRecord = {
     chargeTax: boolean;
     images: string[];
     description: string | null;
+    story: string | null;
+    highlights: string[];
     stock: number;
     outOfStockSince: Date | null;
     isActive: boolean;
@@ -117,6 +121,8 @@ function formatProductListItem(product: ProductListRecord) {
         originalPrice: compareAtPrice ?? price,
         image: product.images[0] || "/products/golden-pearl-necklace.png",
         description: product.description || "",
+        story: product.story || product.description || "",
+        highlights: product.highlights || [],
         isActive: product.isActive,
         isFeatured: product.isFeatured,
         rating: 4.5,
@@ -141,6 +147,8 @@ function formatProductDetail(product: ProductDetailRecord) {
         image: product.images[0] || "/products/golden-pearl-necklace.png",
         images: product.images,
         description: product.description || "",
+        story: product.story || product.description || "",
+        highlights: product.highlights || [],
         rating: 4.5,
         stock: product.stock,
         outOfStockSince: product.outOfStockSince?.toISOString() ?? null,
@@ -148,7 +156,7 @@ function formatProductDetail(product: ProductDetailRecord) {
     };
 }
 
-function formatProductDetailWithSlug(product: any) {
+function formatProductDetailWithSlug(product: ProductDetailRecord) {
     const price = Number(product.price);
     const compareAtPrice = product.compareAtPrice != null ? Number(product.compareAtPrice) : null;
 
@@ -166,6 +174,8 @@ function formatProductDetailWithSlug(product: any) {
         image: product.images[0] || "/products/golden-pearl-necklace.png",
         images: product.images,
         description: product.description || "",
+        story: product.story || product.description || "",
+        highlights: product.highlights || [],
         rating: 4.5,
         stock: product.stock,
         outOfStockSince: product.outOfStockSince?.toISOString() ?? null,
@@ -191,6 +201,8 @@ function getFallbackProducts(searchParams: URLSearchParams) {
         originalPrice: Math.round(product.price * 1.6),
         image: product.image,
         description: product.description,
+        story: product.story || product.description,
+        highlights: product.highlights,
         rating: 4.5,
     })).filter((product) => {
         if (idFilter && !idFilter.has(product.id)) return false;
@@ -225,6 +237,8 @@ async function seedIfEmpty() {
                 compareAtPrice: Math.round(product.price * 1.6),
                 description: product.description,
                 images: [product.image],
+                story: product.story,
+                highlights: product.highlights,
                 categoryId: category.id,
                 stock: 50,
                 isFeatured: true,
@@ -236,6 +250,8 @@ async function seedIfEmpty() {
                 compareAtPrice: Math.round(product.price * 1.6),
                 description: product.description,
                 images: [product.image],
+                story: product.story,
+                highlights: product.highlights,
                 categoryId: category.id,
                 stock: 50,
                 isFeatured: true,
@@ -327,6 +343,8 @@ async function fetchStorefrontProductsFromDb(query: StorefrontProductListQuery) 
             outOfStockSince: true,
             images: true,
             description: true,
+            story: true,
+            highlights: true,
             isActive: true,
             isFeatured: true,
             categoryId: true,
@@ -356,6 +374,8 @@ async function fetchProductDetailFromDb(id: string) {
             chargeTax: true,
             images: true,
             description: true,
+            story: true,
+            highlights: true,
             stock: true,
             outOfStockSince: true,
             isActive: true,
@@ -385,6 +405,8 @@ async function fetchProductDetailBySlugFromDb(slug: string) {
             chargeTax: true,
             images: true,
             description: true,
+            story: true,
+            highlights: true,
             stock: true,
             outOfStockSince: true,
             isActive: true,
@@ -434,6 +456,8 @@ async function fetchRelatedProductsFromDb(productId: string, categoryId: string,
             outOfStockSince: true,
             images: true,
             description: true,
+            story: true,
+            highlights: true,
             isActive: true,
             isFeatured: true,
             categoryId: true,

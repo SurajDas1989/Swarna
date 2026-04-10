@@ -7,14 +7,18 @@ import { getCategoryTag, getProductTag, getProductsListTag, getProductsRelatedTa
 
 const PRODUCT_BUCKET = 'products';
 
-function revalidateStorefrontProductTags(productId?: string, categorySlugs: string[] = []) {
+function revalidateStorefrontProductTags(productId?: string, categorySlugs: string[] = [], productSlug?: string) {
     revalidateTag(getProductsListTag(), 'cache');
     revalidateTag(getProductsRelatedTag(), 'cache');
     revalidatePath('/');
 
     if (productId) {
         revalidateTag(getProductTag(productId), 'cache');
-        revalidatePath(`/product/${productId}`);
+        revalidatePath(`/product/${productSlug || productId}`);
+    }
+
+    if (productSlug) {
+        revalidateTag(`product-slug:${productSlug}`, 'cache');
     }
 
     for (const slug of [...new Set(categorySlugs.filter(Boolean))]) {
@@ -30,6 +34,16 @@ function getOutOfStockSinceUpdate(nextStock: number, previousStock?: number) {
         return undefined;
     }
     return new Date();
+}
+
+function normalizeHighlights(value: unknown) {
+    if (!Array.isArray(value)) {
+        return [];
+    }
+
+    return value
+        .map((item) => (typeof item === 'string' ? item.trim() : ''))
+        .filter(Boolean);
 }
 
 function getStoragePathFromUrl(url: string) {
@@ -98,6 +112,8 @@ export async function POST(request: Request) {
             costPerItem,
             chargeTax = true,
             description,
+            story,
+            highlights,
             images,
             stock,
             isActive = true,
@@ -117,6 +133,8 @@ export async function POST(request: Request) {
                 costPerItem: costPerItem ? Number(costPerItem) : null,
                 chargeTax: Boolean(chargeTax),
                 images: images || [],
+                story: story || null,
+                highlights: normalizeHighlights(highlights),
                 categoryId,
                 stock: Number(stock) || 0,
                 outOfStockSince: Number(stock) > 0 ? null : new Date(),
@@ -126,6 +144,7 @@ export async function POST(request: Request) {
             },
             select: {
                 id: true,
+                slug: true,
                 category: {
                     select: {
                         slug: true,
@@ -134,7 +153,7 @@ export async function POST(request: Request) {
             },
         });
 
-        revalidateStorefrontProductTags(product.id, [product.category.slug]);
+        revalidateStorefrontProductTags(product.id, [product.category.slug], product.slug);
 
         return NextResponse.json(product);
     } catch (error) {
@@ -151,7 +170,7 @@ export async function PUT(request: Request) {
         }
 
         const body = await request.json();
-        const { id, name, categoryId, price, compareAtPrice, costPerItem, chargeTax, description, images, stock, isActive, isFeatured, sku } = body;
+        const { id, name, categoryId, price, compareAtPrice, costPerItem, chargeTax, description, story, highlights, images, stock, isActive, isFeatured, sku } = body;
 
         if (!id) return NextResponse.json({ error: 'ID required' }, { status: 400 });
 
@@ -186,6 +205,8 @@ export async function PUT(request: Request) {
         if (costPerItem !== undefined) updateData.costPerItem = costPerItem ? Number(costPerItem) : null;
         if (chargeTax !== undefined) updateData.chargeTax = Boolean(chargeTax);
         if (description !== undefined) updateData.description = description;
+        if (story !== undefined) updateData.story = story || null;
+        if (highlights !== undefined) updateData.highlights = normalizeHighlights(highlights);
         if (images !== undefined) updateData.images = images;
         if (stock !== undefined) {
             const nextStock = Number(stock);
@@ -204,6 +225,7 @@ export async function PUT(request: Request) {
             data: updateData,
             select: {
                 id: true,
+                slug: true,
                 category: {
                     select: {
                         slug: true,
@@ -212,7 +234,7 @@ export async function PUT(request: Request) {
             },
         });
 
-        revalidateStorefrontProductTags(id, [existingProduct.category.slug, product.category.slug]);
+        revalidateStorefrontProductTags(id, [existingProduct.category.slug, product.category.slug], product.slug);
 
         if (images !== undefined) {
             const removedImages = existingProduct.images.filter((imageUrl) => !images.includes(imageUrl));

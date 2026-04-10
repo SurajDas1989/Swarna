@@ -22,6 +22,8 @@ interface Product {
     outOfStockSince?: string | null;
     images: string[];
     description: string;
+    story?: string | null;
+    highlights?: string[];
     isActive: boolean;
     isFeatured: boolean;
     categoryId: string;
@@ -195,7 +197,7 @@ export default function AdminProductsPage() {
                 <div className="flex justify-between items-center mb-8">
                     <div>
                         <h1 className="text-2xl font-bold text-foreground">Products</h1>
-                        <p className="text-sm text-gray-500">Manage your store's inventory</p>
+                        <p className="text-sm text-gray-500">Manage your store&apos;s inventory</p>
                     </div>
                     <div className="flex items-center gap-3">
                         <Button 

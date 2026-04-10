@@ -7,11 +7,11 @@ import { useRouter } from "next/navigation";
 import { useAppContext, Product } from "@/context/AppContext";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/Toast";
-import { CheckCircle, ChevronDown, ChevronRight, Copy, Flame, Gift, Heart, PackageCheck, RotateCcw, ShieldCheck, ShoppingCart, Sparkles, Star, Truck, Zap } from "lucide-react";
+import { CheckCircle, ChevronDown, ChevronRight, Copy, Flame, Gift, Heart, PackageCheck, RotateCcw, ShieldCheck, Sparkles, Star, Truck } from "lucide-react";
 import { getBlurDataUrl } from "@/lib/utils/imageBlur";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { AdaptiveContainer, Row } from "@/components/layout/LayoutPrimitives";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 
 interface Coupon {
     id: string;
@@ -128,6 +128,17 @@ function getInfoSections(product: Product): Array<{
             ],
         },
     ];
+}
+
+function parseHighlightText(value: string) {
+    const [titlePart, ...descriptionParts] = value.split(":");
+    const title = (titlePart || "").trim();
+    const description = descriptionParts.join(":").trim();
+
+    return {
+        title: title || value.trim(),
+        description: description || "Styled from the product's saved highlight copy.",
+    };
 }
 
 export default function ProductDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -272,7 +283,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     if (!product) {
         return (
             <div className="container mx-auto px-4 py-20 text-center min-h-[60dvh] flex flex-col items-center justify-center">
-                <div className="text-6xl mb-6">ðŸ˜•</div>
+                <div className="text-6xl mb-6">◦</div>
                 <h1 className="text-3xl font-bold mb-4 text-foreground">Product Not Found</h1>
                 <p className="text-gray-500 mb-8">The product you&apos;re looking for doesn&apos;t exist or has been removed.</p>
                 <Button asChild className="bg-primary hover:bg-primary-dark text-white">
@@ -286,10 +297,11 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     const isLiked = isInWishlist(product.id);
     const isOutOfStock = (product.stock ?? 0) <= 0;
     const galleryImages = (product.images && product.images.length > 0 ? product.images : [product.image]).slice(0, 3);
-    const activeImage = galleryImages[Math.min(activeThumb, galleryImages.length - 1)] || product.image;
 
     const categoryLabel = getCategoryLabel(product.category);
     const keyFeatures = getKeyFeatures(product, categoryLabel);
+    const productStory = product.story?.trim() || product.description || product.name;
+    const styleHighlights = (product.highlights || []).map(parseHighlightText);
     const infoSections = getInfoSections(product);
     const soldCount = 40 + (product.id.length * 13) % 160;
 
@@ -304,9 +316,13 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     };
 
     return (
-        <div className="bg-gray-50 dark:bg-background min-h-dvh pb-24 lg:pb-0">
+        <div className="relative overflow-hidden bg-[radial-gradient(circle_at_top_left,rgba(212,175,55,0.12),transparent_28%),radial-gradient(circle_at_top_right,rgba(44,44,44,0.08),transparent_30%),linear-gradient(to_bottom,rgba(255,255,255,0.95),rgba(253,251,247,1))] dark:bg-[radial-gradient(circle_at_top_left,rgba(212,175,55,0.12),transparent_28%),radial-gradient(circle_at_top_right,rgba(255,255,255,0.04),transparent_30%),linear-gradient(to_bottom,rgba(26,26,26,1),rgba(26,26,26,1))] min-h-dvh pb-24 lg:pb-0">
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-80 bg-[linear-gradient(to_bottom,rgba(212,175,55,0.08),transparent)]" />
+            <div className="pointer-events-none absolute left-[-8rem] top-24 h-64 w-64 rounded-full bg-primary/10 blur-3xl" />
+            <div className="pointer-events-none absolute right-[-6rem] top-48 h-72 w-72 rounded-full bg-black/5 blur-3xl dark:bg-white/5" />
+
             {/* Breadcrumb */}
-            <div className="bg-white dark:bg-card border-b dark:border-white/10">
+            <div className="relative border-b border-black/5 bg-white/80 backdrop-blur-xl dark:border-white/10 dark:bg-card/70">
                 <div className="container mx-auto px-4 py-4">
                     <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
                         <Link href="/" className="hover:text-primary transition-colors">Home</Link>
@@ -384,7 +400,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                             {galleryImages.map((imageSrc, idx) => (
                                 <div
                                     key={`${imageSrc}-${idx}`}
-                                    className={`group relative overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm dark:border-white/10 dark:bg-card ${idx === 0 ? "sm:col-span-2" : ""}`}
+                                    className={`group relative overflow-hidden rounded-[1.75rem] border border-black/5 bg-white/90 shadow-[0_18px_60px_rgba(17,17,17,0.08)] backdrop-blur-sm dark:border-white/10 dark:bg-card/90 ${idx === 0 ? "sm:col-span-2" : ""}`}
                                 >
                                     <div className={idx === 0 ? "aspect-[4/5] sm:aspect-[2.1/1.2]" : "aspect-[4/5]"}>
                                         <Image
@@ -399,7 +415,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                                         />
                                     </div>
                                     {idx === 0 && (
-                                        <span className="absolute top-5 left-5 bg-red-500 text-white px-4 py-1.5 rounded-full text-sm font-bold shadow-lg">
+                                        <span className="absolute top-5 left-5 rounded-full border border-white/20 bg-black/65 px-4 py-1.5 text-sm font-bold text-white shadow-lg backdrop-blur-sm">
                                             {discount}% OFF
                                         </span>
                                     )}
@@ -410,6 +426,18 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
 
                     {/* RIGHT — Product Info */}
                     <div className="w-full lg:w-[42%] flex flex-col min-w-0">
+                        <div className="mb-4 flex flex-wrap items-center gap-2">
+                            <span className="rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">
+                                Curated Edit
+                            </span>
+                            <span className="rounded-full border border-black/5 bg-white/80 px-3 py-1 text-xs font-medium text-gray-600 shadow-sm dark:border-white/10 dark:bg-white/5 dark:text-gray-300">
+                                {product.price >= 799 ? "Free shipping" : "Gift-ready"}
+                            </span>
+                            <span className="rounded-full border border-black/5 bg-white/80 px-3 py-1 text-xs font-medium text-gray-600 shadow-sm dark:border-white/10 dark:bg-white/5 dark:text-gray-300">
+                                {discount}% off
+                            </span>
+                        </div>
+
                         {/* Category */}
                         <p className="text-xs uppercase tracking-[0.2em] text-gray-500 dark:text-gray-400 font-semibold mb-2">
                             Swarna Jewellery
@@ -419,6 +447,10 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                         <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-foreground mb-3 leading-tight">
                             {product.name}
                         </h1>
+
+                        <p className="mb-4 max-w-2xl text-base leading-relaxed text-gray-600 dark:text-gray-300">
+                            {productStory}
+                        </p>
 
                         {/* Rating */}
                         <div className="flex items-center gap-2 mb-3">
@@ -461,10 +493,50 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                             )}
                         </div>
 
-                        {/* Description */}
-                        <p className="text-gray-600 dark:text-gray-300 leading-relaxed mb-5 text-sm sm:text-base max-w-prose">
-                            {product.description}
-                        </p>
+                        <div className="mb-6 grid gap-3 sm:grid-cols-3">
+                            {styleHighlights.map((item) => (
+                                <div key={item.title} className="rounded-2xl border border-black/5 bg-white/80 p-4 shadow-sm backdrop-blur-sm dark:border-white/10 dark:bg-white/5">
+                                    <p className="mb-1 text-sm font-semibold text-foreground">{item.title}</p>
+                                    <p className="text-xs leading-relaxed text-gray-500 dark:text-gray-400">{item.description}</p>
+                                </div>
+                            ))}
+                        </div>
+
+                        <div className="mb-6 rounded-[1.75rem] border border-black/5 bg-white/85 p-5 shadow-[0_18px_60px_rgba(17,17,17,0.08)] backdrop-blur-sm dark:border-white/10 dark:bg-card/80">
+                            <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.3em] text-primary/80">
+                                Product Story
+                            </p>
+                            <p className="text-sm leading-relaxed text-gray-600 dark:text-gray-300">
+                                {product.description}
+                            </p>
+                        </div>
+
+                        <div className="hidden lg:grid grid-cols-2 gap-3 mb-6">
+                            <Button
+                                onClick={async () => {
+                                    if (isOutOfStock) return;
+                                    const added = await addToCart(product.id);
+                                    if (added) {
+                                        showToast(`${product.name} added to cart`, "cart");
+                                        setIsCartOpen(true);
+                                    } else {
+                                        showToast("Could not add to cart. Please try again.", "error");
+                                    }
+                                }}
+                                disabled={isOutOfStock}
+                                className="h-14 rounded-2xl bg-black text-white hover:bg-black/90 dark:bg-primary dark:text-background dark:hover:bg-primary/90"
+                            >
+                                {isOutOfStock ? "OUT OF STOCK" : "Add To Cart"}
+                            </Button>
+                            <Button
+                                variant="outline"
+                                onClick={handleBuyNow}
+                                disabled={isOutOfStock}
+                                className="h-14 rounded-2xl border-black/10 bg-white/90 text-foreground shadow-sm hover:bg-amber-50 dark:border-white/10 dark:bg-white/5 dark:text-white dark:hover:bg-white/10"
+                            >
+                                Buy Now
+                            </Button>
+                        </div>
 
                         <div className="mb-6 flex items-start justify-between gap-4 rounded-2xl border border-gray-100 bg-white px-5 py-4 shadow-sm dark:border-white/10 dark:bg-card">
                             <div>
@@ -487,7 +559,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                         <div className="h-px bg-gray-100 dark:bg-white/10 mb-6" />
 
                         {/* Action Buttons — Black Sticky Bar */}
-                        <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/95 dark:bg-card/95 backdrop-blur-md border-t border-gray-100 dark:border-white/10 shadow-[0_-4px_20px_rgba(0,0,0,0.15)] z-50 lg:static lg:w-[80%] lg:p-0 lg:bg-transparent lg:border-none lg:shadow-none lg:z-auto lg:mb-4" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 80px)' }}>
+                        <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/95 dark:bg-card/95 backdrop-blur-md border-t border-gray-100 dark:border-white/10 shadow-[0_-4px_20px_rgba(0,0,0,0.15)] z-50 lg:hidden" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 80px)' }}>
                             <button
                                 disabled={isOutOfStock}
                                 onClick={async () => {
@@ -541,9 +613,9 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                             <span className="text-gray-500 dark:text-gray-400">in the last 24 hours</span>
                         </div>
 
-                        <div className="mb-6 rounded-2xl border border-gray-100 bg-white px-5 py-5 shadow-sm dark:border-white/10 dark:bg-card">
+                        <div className="mb-6 rounded-[1.75rem] border border-black/5 bg-white/85 px-5 py-5 shadow-[0_18px_60px_rgba(17,17,17,0.08)] backdrop-blur-sm dark:border-white/10 dark:bg-card/80">
                             <div className="mb-4 flex items-center justify-between gap-4">
-                                <h3 className="text-lg font-semibold text-foreground">Explore this piece</h3>
+                                <h3 className="text-lg font-semibold text-foreground">Style Notes</h3>
                                 <Sparkles className="h-4 w-4 text-primary/70" />
                             </div>
                             <div className="mb-4 flex items-center gap-2 text-sm">
@@ -570,7 +642,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                                 { icon: RotateCcw, title: "Return Support", desc: "24-hour claims" },
                                 { icon: ShieldCheck, title: "Quality", desc: "Checked before dispatch" },
                             ].map((badge) => (
-                                <div key={badge.title} className="text-center p-3 bg-gray-50 dark:bg-white/5 rounded-xl border border-gray-100 dark:border-white/10">
+                                <div key={badge.title} className="text-center p-3 rounded-2xl border border-black/5 bg-white/80 shadow-sm dark:border-white/10 dark:bg-white/5">
                                     <badge.icon className="w-5 h-5 mx-auto mb-1.5 text-primary" />
                                     <p className="text-xs font-semibold text-foreground">{badge.title}</p>
                                     <p className="text-[10px] text-gray-500 dark:text-gray-400">{badge.desc}</p>
@@ -583,7 +655,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                                 Helpful Details
                             </p>
                             <h2 className="mb-5 text-3xl font-semibold leading-tight text-foreground">
-                                What makes this piece special
+                                Care, delivery, and offers
                             </h2>
                             <div className="space-y-3">
                                 {infoSections.map((section) => {
@@ -701,7 +773,14 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                 {/* Related Products */}
                 {relatedProducts.length > 0 && (
                     <div className="mt-16">
-                        <h2 className="text-2xl font-bold text-foreground mb-8">You May Also Like</h2>
+                        <div className="mb-6 flex items-end justify-between gap-4">
+                            <div>
+                                <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.3em] text-primary/80">
+                                    Complete The Look
+                                </p>
+                                <h2 className="text-2xl font-bold text-foreground">Pieces that pair well with this one</h2>
+                            </div>
+                        </div>
                         <div className="flex overflow-x-auto gap-4 lg:gap-6 pb-4 snap-x hide-scrollbar">
                             {relatedProducts.map((rp) => {
                                 const rpDiscount = Math.round(((rp.originalPrice - rp.price) / rp.originalPrice) * 100);
@@ -709,7 +788,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                                     <Link
                                         key={rp.id}
                                         href={`/product/${rp.slug}`}
-                                        className="shrink-0 w-[85%] sm:w-[45%] md:w-[30%] lg:w-[calc(25%-1.25rem)] lg:max-w-[320px] snap-start bg-white dark:bg-card rounded-xl overflow-hidden shadow-sm border border-gray-100 dark:border-white/10 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 group"
+                                        className="shrink-0 w-[85%] sm:w-[45%] md:w-[30%] lg:w-[calc(25%-1.25rem)] lg:max-w-[320px] snap-start rounded-[1.5rem] overflow-hidden border border-black/5 bg-white/85 shadow-[0_16px_50px_rgba(17,17,17,0.08)] backdrop-blur-sm transition-all duration-300 group hover:-translate-y-1 hover:shadow-[0_22px_70px_rgba(17,17,17,0.12)] dark:border-white/10 dark:bg-card/85"
                                     >
                                         <div className="relative aspect-square overflow-hidden">
                                             <Image
@@ -721,7 +800,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                                                 className="object-cover transition-transform duration-500 group-hover:scale-105"
                                                 sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
                                             />
-                                            <span className="absolute top-3 left-3 bg-red-500 text-white px-2 py-1 rounded-full text-xs font-bold">
+                                            <span className="absolute top-3 left-3 rounded-full border border-white/20 bg-black/65 px-2 py-1 text-xs font-bold text-white backdrop-blur-sm">
                                                 {rpDiscount}% OFF
                                             </span>
                                         </div>

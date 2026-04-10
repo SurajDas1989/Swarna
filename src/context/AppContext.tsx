@@ -18,6 +18,8 @@ export interface Product {
     image: string;
     images?: string[];
     description: string;
+    story?: string;
+    highlights?: string[];
     stock?: number;
     isActive?: boolean;
     isFeatured?: boolean;

@@ -25,6 +25,7 @@ const nextConfig: NextConfig = {
         hostname: "images.unsplash.com",
       }
     ],
+    qualities: [75, 90],
   },
   // Security Headers — protects against XSS, clickjacking, MIME sniffing
   async headers() {

@@ -12,7 +12,6 @@ import { StickyDiscountTab } from "@/components/ui/StickyDiscountTab";
 export function AppShell({ children }: { children: ReactNode }) {
     const pathname = usePathname();
     const isAdminRoute = pathname.startsWith("/admin");
-
     if (isAdminRoute) {
         return <main className="flex-grow">{children}</main>;
     }

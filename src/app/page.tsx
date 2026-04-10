@@ -15,6 +15,7 @@ import { OrderSummary } from "@/components/checkout/OrderSummary";
 import { AddressForm } from "@/components/checkout/AddressForm";
 import { PaymentMethodSelector } from "@/components/checkout/PaymentMethodSelector";
 import { CouponInput } from "@/components/checkout/CouponInput";
+import { ProductSlider } from "@/components/shared/ProductSlider";
 
 
 export const metadata: Metadata = {
@@ -45,6 +46,21 @@ export default async function Home() {
       <ShopByPriceMobile />
       <CategoryGrid />
       <FeaturedProducts initialProducts={initialProducts} />
+
+      <ProductSlider
+        title="Bestsellers"
+        description="Our most-loved pieces, curated for timeless elegance and sparkle."
+        products={initialProducts.filter(p => (p.rating || 0) >= 4.5).slice(0, 10)}
+        viewAllLink="/#products"
+      />
+
+      <ProductSlider
+        title="New Arrivals"
+        description="Discover the latest additions to our collection. Just landed and ready to shine."
+        products={initialProducts.slice(0, 10)}
+        viewAllLink="/#products"
+      />
+
       <RecentlyViewed />
       <FaqSection />
       <About />

@@ -24,6 +24,53 @@ const CATEGORIES = [
     { name: 'Sets', slug: 'sets' },
 ]
 
+function getHighlights(category: string) {
+    switch (category) {
+        case "necklaces":
+            return [
+                "Face-framing finish: Adds polish to simple outfits and layered jewelry stories.",
+                "Dress-up ease: Works for both everyday wear and special occasions.",
+                "Balanced profile: Looks refined without feeling too heavy or ornate.",
+            ];
+        case "earrings":
+            return [
+                "Instant framing: Creates a brighter, more expressive look around the face.",
+                "Festive energy: Feels special enough for celebrations, yet wearable day-to-day.",
+                "Movement and sparkle: Adds a sense of motion that makes the piece feel alive.",
+            ];
+        case "bangles":
+            return [
+                "Everyday layering: Pairs beautifully with a watch, bangles, or a clean cuff look.",
+                "Gift-ready feel: A polished piece that feels thoughtful without being too formal.",
+                "Lightweight shine: Designed to add presence without overwhelming the wrist.",
+            ];
+        case "rings":
+            return [
+                "Subtle statement: A small detail that still feels intentional and styled.",
+                "Stacking friendly: Easy to pair with other rings or wear as a single accent.",
+                "Elegant finish: Brings a refined touch to everyday hand styling.",
+            ];
+        case "bracelets":
+            return [
+                "Everyday layering: Pairs beautifully with a watch, bangles, or a clean cuff look.",
+                "Gift-ready feel: A polished piece that feels thoughtful without being too formal.",
+                "Lightweight shine: Designed to add presence without overwhelming the wrist.",
+            ];
+        case "sets":
+            return [
+                "Complete look: Makes dressing up simple by giving you a coordinated story.",
+                "Occasion ready: A stronger choice when you want an effortless festive impact.",
+                "Balanced styling: Designed to feel unified without looking overdone.",
+            ];
+        default:
+            return [
+                "Versatile styling: Works across casual, festive, and gifting moments with ease.",
+                "Clean finish: Keeps the look refined, modern, and easy to pair.",
+                "Premium feel: Brings a polished touch that elevates everyday dressing.",
+            ];
+    }
+}
+
 async function main() {
     console.log('Seeding database with Swarna products...')
 
@@ -56,6 +103,8 @@ async function main() {
             update: {
                 price: prod.price,
                 description: prod.description,
+                story: prod.description,
+                highlights: getHighlights(prod.category),
                 images: [prod.image],
                 stock: 50,
                 isFeatured: true
@@ -65,6 +114,8 @@ async function main() {
                 slug: slug,
                 price: prod.price,
                 description: prod.description,
+                story: prod.description,
+                highlights: getHighlights(prod.category),
                 images: [prod.image],
                 stock: 50,
                 categoryId: dbCategory.id,
