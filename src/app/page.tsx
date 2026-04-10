@@ -10,11 +10,6 @@ import { About } from "@/components/home/About";
 import type { Metadata } from "next";
 import type { Product } from "@/context/AppContext";
 import { getCachedStorefrontProducts } from "@/lib/storefront-products";
-import { CheckoutStepper } from "@/components/checkout/CheckoutStepper";
-import { OrderSummary } from "@/components/checkout/OrderSummary";
-import { AddressForm } from "@/components/checkout/AddressForm";
-import { PaymentMethodSelector } from "@/components/checkout/PaymentMethodSelector";
-import { CouponInput } from "@/components/checkout/CouponInput";
 import { ProductSlider } from "@/components/shared/ProductSlider";
 
 
