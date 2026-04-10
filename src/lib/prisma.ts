@@ -9,9 +9,12 @@ function createPrismaClient() {
         throw new Error('DATABASE_URL is missing. Configure it in your deployment environment.');
     }
 
+    const isLocal = process.env.DATABASE_URL.includes('localhost') || 
+                    process.env.DATABASE_URL.includes('127.0.0.1');
+
     const pool = new Pool({
         connectionString: process.env.DATABASE_URL,
-        ssl: { rejectUnauthorized: false }
+        ssl: isLocal ? false : { rejectUnauthorized: false }
     });
     const adapter = new PrismaPg(pool);
     return new PrismaClient({ adapter });

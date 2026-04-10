@@ -4,9 +4,11 @@ async function testConnection() {
     const url = process.env.DATABASE_URL;
     console.log('Testing connection to:', url.replace(/:[^:@]+@/, ':***@'));
 
+    const isLocal = url.includes('localhost') || url.includes('127.0.0.1');
+
     const client = new Client({
         connectionString: url,
-        ssl: { rejectUnauthorized: false }
+        ssl: isLocal ? false : { rejectUnauthorized: false }
     });
 
     try {
