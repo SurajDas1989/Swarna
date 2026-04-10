@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { createServiceRoleSupabaseClient, requireAdminOrStaff } from '@/lib/supabase-server';
 import { revalidatePath, revalidateTag } from 'next/cache';
-import type { Prisma } from '@/generated/prisma';
+import type { Prisma } from '@prisma/client';
 import { getCategoryTag, getProductTag, getProductsListTag, getProductsRelatedTag } from '@/lib/storefront-products';
 
 const PRODUCT_BUCKET = 'products';
