@@ -12,6 +12,53 @@ import { Logo } from "@/components/ui/Logo";
 import { motion, AnimatePresence } from "framer-motion";
 import { useShipping } from "@/context/ShippingContext";
 
+function PincodeSelector({ isMobile = false, onClose }: { isMobile?: boolean, onClose?: () => void }) {
+    const { pincode, setPincode } = useShipping();
+    const [isEditing, setIsEditing] = useState(false);
+    const [inputValue, setInputValue] = useState(pincode);
+
+    const handleSave = () => {
+        if (inputValue.length === 6) {
+            setPincode(inputValue);
+            setIsEditing(false);
+            if (onClose) onClose();
+        }
+    };
+
+    if (isEditing) {
+        return (
+            <div className={`flex items-center gap-2 ${isMobile ? 'w-full pl-4' : ''}`}>
+                <input
+                    autoFocus
+                    type="text"
+                    maxLength={6}
+                    value={inputValue}
+                    onChange={(e) => setInputValue(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                    onKeyDown={(e) => e.key === 'Enter' && handleSave()}
+                    onBlur={handleSave}
+                    placeholder="6-digit Pincode"
+                    className={`bg-transparent border-b border-primary text-sm focus:outline-none ${isMobile ? 'flex-1 text-base py-2' : 'w-24'}`}
+                />
+            </div>
+        );
+    }
+
+    return (
+        <div 
+            className={`${isMobile ? 'flex items-center gap-3 w-full pl-4 py-3 bg-accent/30 rounded-2xl border border-border' : 'hidden lg:flex items-center gap-2'} group cursor-pointer`} 
+            onClick={() => setIsEditing(true)}
+        >
+            <MapPin className={`${isMobile ? 'h-5 w-5' : 'w-4 h-4'} text-primary group-hover:scale-110 transition-transform`} />
+            <div className="flex flex-col items-start -space-y-1">
+                <span className="text-[10px] uppercase tracking-widest text-gray-400 font-bold underline decoration-primary/30 underline-offset-2">Deliver to</span>
+                <span className={`${isMobile ? 'text-base' : 'text-xs'} font-bold text-foreground`}>
+                    {pincode || "Select Area"}
+                </span>
+            </div>
+        </div>
+    );
+}
+
 export function Navbar() {
     const router = useRouter();
     const { 
@@ -79,10 +126,10 @@ export function Navbar() {
             </div>
 
             <header 
-                className={`sticky top-0 z-[100] w-full transition-all duration-300 ${
+                className={`w-full border-b transition-all duration-300 ${
                     isScrolled 
-                    ? "border-b border-primary/10 bg-background/70 shadow-lg backdrop-blur-2xl py-2" 
-                    : "border-b border-transparent bg-background py-4"
+                    ? "border-primary/10 bg-background shadow-md py-2" 
+                    : "border-transparent bg-background py-4"
                 }`}
             >
                 <div className="container mx-auto px-4">
@@ -163,18 +210,7 @@ export function Navbar() {
 
                             <div className="flex items-center gap-4 lg:gap-6">
                                 {/* Global Pincode Selector */}
-                                <div className="hidden lg:flex items-center gap-2 group cursor-pointer" onClick={() => {
-                                    const code = prompt("Enter your delivery pincode", pincode);
-                                    if (code !== null) setPincode(code.replace(/\D/g, "").slice(0, 6));
-                                }}>
-                                    <MapPin className="w-4 h-4 text-primary group-hover:scale-110 transition-transform" />
-                                    <div className="flex flex-col -space-y-1">
-                                        <span className="text-[10px] uppercase tracking-widest text-gray-400 font-bold">Deliver to</span>
-                                        <span className="text-xs font-bold text-foreground">
-                                            {pincode || "Select Area"}
-                                        </span>
-                                    </div>
-                                </div>
+                                <PincodeSelector />
 
                                 <div className="relative hidden sm:flex items-center">
                                     <input
@@ -322,8 +358,8 @@ export function Navbar() {
                             isScrolled ? "top-[68px]" : "top-[86px]"
                         }`}
                     >
-                        {/* Backdrop Blur Layer */}
-                        <div className="absolute inset-0 bg-white/40 dark:bg-black/10 backdrop-blur-2xl shadow-[0_40px_100px_rgba(0,0,0,0.1)] border-b border-white/20 dark:border-white/5" />
+                        {/* Solid Background Layer */}
+                        <div className="absolute inset-0 bg-white dark:bg-[#121212] shadow-xl border-b border-border" />
                         
                         <div className="container relative mx-auto py-12 px-8">
                             <div className="grid grid-cols-4 gap-12">
@@ -422,21 +458,7 @@ export function Navbar() {
                             {/* Pincode Selection (Mobile) */}
                             <div className="space-y-4">
                                 <h3 className="text-xl font-medium text-foreground px-0">Location</h3>
-                                <button 
-                                    onClick={() => {
-                                        const code = prompt("Enter your delivery pincode", pincode);
-                                        if (code !== null) setPincode(code.replace(/\D/g, "").slice(0, 6));
-                                    }}
-                                    className="flex items-center gap-3 w-full pl-4 py-3 bg-accent/30 rounded-2xl border border-border group"
-                                >
-                                    <MapPin className="h-5 w-5 text-primary" />
-                                    <div className="flex flex-col items-start -space-y-0.5">
-                                        <span className="text-[10px] uppercase tracking-widest text-gray-500 font-bold">Deliver to</span>
-                                        <span className="text-base font-bold text-foreground">
-                                            {pincode || "Select Pincode"}
-                                        </span>
-                                    </div>
-                                </button>
+                                <PincodeSelector isMobile onClose={() => setMobileMenuOpen(false)} />
                             </div>
 
                             {/* Auth Section (Mobile) */}
