@@ -3,13 +3,14 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Sun, Moon, Search, ShoppingCart, Menu, X, User, Heart, ChevronDown } from "lucide-react";
+import { Sun, Moon, Search, ShoppingCart, Menu, X, User, Heart, ChevronDown, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAppContext } from "@/context/AppContext";
 import { useAuth } from "@/context/AuthContext";
 import { useTheme } from "@/context/ThemeContext";
 import { Logo } from "@/components/ui/Logo";
 import { motion, AnimatePresence } from "framer-motion";
+import { useShipping } from "@/context/ShippingContext";
 
 export function Navbar() {
     const router = useRouter();
@@ -23,6 +24,7 @@ export function Navbar() {
     } = useAppContext();
     const { user, dbUser, signOut } = useAuth();
     const { resolvedTheme, toggleTheme } = useTheme();
+    const { pincode, setPincode } = useShipping();
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [activeMegaMenu, setActiveMegaMenu] = useState<string | null>(null);
     const [mounted, setMounted] = useState(false);
@@ -160,6 +162,20 @@ export function Navbar() {
                             </nav>
 
                             <div className="flex items-center gap-4 lg:gap-6">
+                                {/* Global Pincode Selector */}
+                                <div className="hidden lg:flex items-center gap-2 group cursor-pointer" onClick={() => {
+                                    const code = prompt("Enter your delivery pincode", pincode);
+                                    if (code !== null) setPincode(code.replace(/\D/g, "").slice(0, 6));
+                                }}>
+                                    <MapPin className="w-4 h-4 text-primary group-hover:scale-110 transition-transform" />
+                                    <div className="flex flex-col -space-y-1">
+                                        <span className="text-[10px] uppercase tracking-widest text-gray-400 font-bold">Deliver to</span>
+                                        <span className="text-xs font-bold text-foreground">
+                                            {pincode || "Select Area"}
+                                        </span>
+                                    </div>
+                                </div>
+
                                 <div className="relative hidden sm:flex items-center">
                                     <input
                                         type="text"
@@ -403,6 +419,26 @@ export function Navbar() {
                         </div>
 
                         <nav className="flex-1 overflow-y-auto p-6 space-y-9">
+                            {/* Pincode Selection (Mobile) */}
+                            <div className="space-y-4">
+                                <h3 className="text-xl font-medium text-foreground px-0">Location</h3>
+                                <button 
+                                    onClick={() => {
+                                        const code = prompt("Enter your delivery pincode", pincode);
+                                        if (code !== null) setPincode(code.replace(/\D/g, "").slice(0, 6));
+                                    }}
+                                    className="flex items-center gap-3 w-full pl-4 py-3 bg-accent/30 rounded-2xl border border-border group"
+                                >
+                                    <MapPin className="h-5 w-5 text-primary" />
+                                    <div className="flex flex-col items-start -space-y-0.5">
+                                        <span className="text-[10px] uppercase tracking-widest text-gray-500 font-bold">Deliver to</span>
+                                        <span className="text-base font-bold text-foreground">
+                                            {pincode || "Select Pincode"}
+                                        </span>
+                                    </div>
+                                </button>
+                            </div>
+
                             {/* Auth Section (Mobile) */}
                             {user ? (
                                 <div className="space-y-4">

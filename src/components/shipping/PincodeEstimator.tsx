@@ -1,92 +1,109 @@
 "use client";
 
-import { useState } from "react";
-import { Truck, MapPin, Loader2 } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Truck, MapPin, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
+import { useShipping } from "@/context/ShippingContext";
 
 export function PincodeEstimator() {
-    const [pincode, setPincode] = useState("");
+    const { pincode, setPincode, estimationData, setEstimationData } = useShipping();
+    const [inputValue, setInputValue] = useState(pincode);
     const [loading, setLoading] = useState(false);
-    const [result, setResult] = useState<{
-        etd?: string;
-        estimatedDays?: number;
-        courierName?: string;
-        error?: string;
-    } | null>(null);
+    const [error, setError] = useState<string | null>(null);
+
+    // Sync input with global pincode if it changes externally
+    useEffect(() => {
+        setInputValue(pincode);
+    }, [pincode]);
 
     const handleCheck = async (e: React.FormEvent) => {
         e.preventDefault();
         
-        if (!/^\d{6}$/.test(pincode)) {
-            setResult({ error: "Please enter a valid 6-digit Pincode." });
+        if (!/^\d{6}$/.test(inputValue)) {
+            setError("Please enter a valid 6-digit Pincode.");
             return;
         }
 
         setLoading(true);
-        setResult(null);
+        setError(null);
 
         try {
-            const res = await fetch(`/api/shiprocket/estimate?pincode=${pincode}`);
+            const res = await fetch(`/api/shiprocket/estimate?pincode=${inputValue}`);
             const data = await res.json();
             
             if (!res.ok || data.error) {
-                setResult({ error: data.error || "Delivery not available to this pincode." });
+                // Handle the "not configured" error gracefully for the user
+                if (data.error?.includes("configured")) {
+                    setError("Shipping estimates are temporarily unavailable. Please try again later.");
+                } else {
+                    setError(data.error || "Delivery not available to this pincode.");
+                }
+                setEstimationData(null);
             } else {
-                setResult(data);
+                setEstimationData(data);
+                setPincode(inputValue);
             }
-        } catch (error) {
-            setResult({ error: "Failed to fetch estimate." });
+        } catch (err) {
+            setError("Failed to fetch estimate.");
         } finally {
             setLoading(false);
         }
     };
 
     return (
-        <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-            <h4 className="flex items-center gap-2 text-sm font-semibold text-gray-800">
-                <Truck className="h-4 w-4 text-indigo-600" />
-                Check Delivery Estimate
-            </h4>
+        <div className="my-6 border-t border-b border-gray-100 py-6 dark:border-white/5">
+            <div className="flex items-center gap-2 mb-4">
+                <Truck className="h-4 w-4 text-primary" />
+                <span className="text-sm font-medium tracking-tight uppercase text-gray-500 dark:text-gray-400">
+                    Delivery Availability
+                </span>
+            </div>
             
-            <form onSubmit={handleCheck} className="mt-3 flex gap-2">
+            <form onSubmit={handleCheck} className="flex gap-2">
                 <div className="relative flex-1">
                     <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                     <input
                         type="text"
                         maxLength={6}
-                        placeholder="Enter 6-digit Pincode"
-                        value={pincode}
-                        onChange={(e) => setPincode(e.target.value.replace(/\D/g, ""))}
-                        className="w-full rounded-lg border border-gray-200 py-2.5 pl-9 pr-3 text-sm text-gray-800 placeholder:text-gray-400 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                        placeholder="Enter Pincode"
+                        value={inputValue}
+                        onChange={(e) => {
+                            setInputValue(e.target.value.replace(/\D/g, ""));
+                            setError(null);
+                        }}
+                        className="w-full h-11 bg-transparent border-b border-gray-200 pl-9 pr-3 text-sm focus:border-primary focus:outline-none transition-colors dark:border-white/10"
                     />
                 </div>
                 <button
                     type="submit"
-                    disabled={loading || pincode.length !== 6}
-                    className="flex shrink-0 items-center justify-center rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-indigo-700 disabled:opacity-60"
+                    disabled={loading || inputValue.length !== 6}
+                    className="px-6 h-11 text-xs font-bold uppercase tracking-widest bg-black text-white hover:bg-gray-900 transition-all disabled:opacity-30 dark:bg-white dark:text-black dark:hover:bg-gray-200"
                 >
-                    {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Check"}
+                    {loading ? <Loader2 className="h-4 w-4 animate-spin mx-auto" /> : "Check"}
                 </button>
             </form>
 
-            {result && (
-                <div className="mt-3 text-sm">
-                    {result.error ? (
-                        <p className="font-medium text-red-600">{result.error}</p>
-                    ) : (
-                        <div className="flex items-start gap-2 rounded-lg bg-emerald-50 p-2.5 text-emerald-800">
-                            <Truck className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
-                            <div>
-                                <p className="font-semibold">
-                                    Estimated delivery by {result.etd ? new Date(result.etd).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' }) : `${result.estimatedDays} days`}
-                                </p>
-                                {result.courierName && (
-                                    <p className="text-xs text-emerald-600 mt-0.5">via {result.courierName}</p>
-                                )}
-                            </div>
+            <div className="min-h-[2.5rem] mt-3">
+                {error && (
+                    <div className="flex items-center gap-2 text-xs text-red-500">
+                        <AlertCircle className="h-3 w-3" />
+                        {error}
+                    </div>
+                )}
+
+                {estimationData && !error && (
+                    <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg dark:bg-white/5">
+                        <CheckCircle2 className="h-4 w-4 text-emerald-500 mt-0.5" />
+                        <div className="space-y-0.5">
+                            <p className="text-sm font-medium">
+                                Delivered by {new Date(estimationData.etd).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' })}
+                            </p>
+                            <p className="text-[11px] text-gray-500 uppercase tracking-tight">
+                                Reliable Delivery via {estimationData.courierName}
+                            </p>
                         </div>
-                    )}
-                </div>
-            )}
+                    </div>
+                )}
+            </div>
         </div>
     );
 }

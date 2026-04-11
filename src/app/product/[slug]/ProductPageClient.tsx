@@ -492,6 +492,9 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                                     <Truck className="w-4 h-4" /> Free shipping on this piece
                                 </div>
                             )}
+
+                            {/* Pincode Estimator Integrated Here */}
+                            <PincodeEstimator />
                         </div>
 
                         <div className="mb-6 grid gap-3 sm:grid-cols-3">
@@ -651,9 +654,6 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                             ))}
                         </div>
 
-                        <div className="mb-8">
-                            <PincodeEstimator />
-                        </div>
 
                         <div className="mb-8">
                             <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.3em] text-primary/80">

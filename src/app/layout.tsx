@@ -81,6 +81,8 @@ export const metadata: Metadata = {
   },
 };
 
+import { ShippingProvider } from "@/context/ShippingContext";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -104,13 +106,15 @@ export default function RootLayout({
         <ThemeProvider>
           <AuthProvider>
             <AppProvider>
-              <ToastProvider>
-                <script
-                  type="application/ld+json"
-                  dangerouslySetInnerHTML={{ __html: JSON.stringify(orgSchema) }}
-                />
-                <AppShell>{children}</AppShell>
-              </ToastProvider>
+              <ShippingProvider>
+                <ToastProvider>
+                  <script
+                    type="application/ld+json"
+                    dangerouslySetInnerHTML={{ __html: JSON.stringify(orgSchema) }}
+                  />
+                  <AppShell>{children}</AppShell>
+                </ToastProvider>
+              </ShippingProvider>
             </AppProvider>
           </AuthProvider>
         </ThemeProvider>
