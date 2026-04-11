@@ -305,6 +305,11 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     const styleHighlights = (product.highlights || []).map(parseHighlightText);
     const infoSections = getInfoSections(product);
     const soldCount = 40 + (product.id.length * 13) % 160;
+    const productWeightKgRaw = (product as Product & { weightKg?: number | null; weight?: number | null }).weightKg
+        ?? (product as Product & { weightKg?: number | null; weight?: number | null }).weight;
+    const productWeightKg = Number.isFinite(productWeightKgRaw)
+        ? Number(productWeightKgRaw)
+        : 0.5;
 
     const handleBuyNow = async () => {
         if (isOutOfStock) return;
@@ -494,7 +499,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                             )}
 
                             {/* Pincode Estimator Integrated Here */}
-                            <PincodeEstimator />
+                            <PincodeEstimator productWeightKg={productWeightKg} />
                         </div>
 
                         <div className="mb-6 grid gap-3 sm:grid-cols-3">
