@@ -118,8 +118,12 @@ model Order {
   paymentStatus   PaymentStatus @default(PENDING)
   stockAdjusted   Boolean       @default(false)
   appliedCoupon   String?
-  items           OrderItem[]
-  user            User?         @relation(fields: [userId], references: [id])
+  shiprocketOrderId     String?
+  shiprocketShipmentId  String?
+  awbCode               String?
+  trackingUrl           String?
+  items                 OrderItem[]
+  user                  User?         @relation(fields: [userId], references: [id])
 
   @@index([userId])
   @@map("orders")

@@ -49,6 +49,10 @@ interface Order {
     items: { quantity: number; price: number; product: { name: string; images: string[]; stock?: number } }[];
     refundedAmount?: number;
     storeCreditUsed?: number;
+    shiprocketOrderId?: string | null;
+    shiprocketShipmentId?: string | null;
+    awbCode?: string | null;
+    trackingUrl?: string | null;
 }
 
 interface CartItem {
@@ -105,6 +109,35 @@ export default function AdminOrdersPage() {
     const [drawerDelivery, setDrawerDelivery] = useState({
         firstName: "", lastName: "", phone: "", address: "", notes: "", updateUserProfile: false,
     });
+    const [pushingShiprocket, setPushingShiprocket] = useState(false);
+    const [shiprocketError, setShiprocketError] = useState("");
+
+    const handlePushShiprocket = async () => {
+        if (!drawerOrder) return;
+        setPushingShiprocket(true);
+        setShiprocketError("");
+        try {
+            const res = await fetch("/api/shiprocket/push-order", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ orderId: drawerOrder.id }),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || "Failed to push to Shiprocket");
+            
+            const updated = { 
+                shiprocketOrderId: data.shiprocketOrderId, 
+                awbCode: data.awbCode, 
+                trackingUrl: data.trackingUrl 
+            };
+            setOrders(prev => prev.map(o => o.id === drawerOrder.id ? { ...o, ...updated } : o));
+            setDrawerOrder(prev => prev ? { ...prev, ...updated } : prev);
+        } catch (err: any) {
+            setShiprocketError(err.message);
+        } finally {
+            setPushingShiprocket(false);
+        }
+    };
 
     const openDrawer = (order: Order) => {
         setDrawerOrder(order);
@@ -1078,6 +1111,48 @@ export default function AdminOrdersPage() {
                                         </div>
                                     ))}
                                 </div>
+                            </section>
+
+                            {/* Shiprocket Delivery Integration */}
+                            <section className="rounded-xl border border-gray-200 p-4">
+                                <div className="flex items-center gap-2 mb-3">
+                                    <Package className="w-4 h-4 text-indigo-500" />
+                                    <h3 className="text-sm font-semibold text-gray-800">Shiprocket Fulfillment</h3>
+                                </div>
+                                {drawerOrder.shiprocketOrderId ? (
+                                    <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3">
+                                        <p className="text-xs font-semibold text-emerald-800 flex items-center gap-1.5"><CheckCircle2 className="w-4 h-4"/> Order Pushed to Shiprocket</p>
+                                        <div className="mt-2 text-xs text-emerald-700">
+                                            {drawerOrder.awbCode ? (
+                                                <div className="flex items-center justify-between">
+                                                    <span>AWB: <strong>{drawerOrder.awbCode}</strong></span>
+                                                    {drawerOrder.trackingUrl && (
+                                                        <a href={drawerOrder.trackingUrl} target="_blank" rel="noreferrer" className="text-indigo-600 hover:underline font-semibold bg-white px-2 py-0.5 rounded shadow-sm">Track Package</a>
+                                                    )}
+                                                </div>
+                                            ) : (
+                                                <span className="opacity-75">AWB generation pending...</span>
+                                            )}
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-3">
+                                        <p className="text-xs text-gray-500">Push this order to Shiprocket once confirming delivery details and order readiness.</p>
+                                        {(drawerOrder.status !== "PAID" && drawerOrder.status !== "CONFIRMED") ? (
+                                            <p className="text-xs text-amber-600 font-medium">Only PAID or CONFIRMED orders can be pushed.</p>
+                                        ) : (
+                                            <button
+                                                onClick={handlePushShiprocket}
+                                                disabled={pushingShiprocket}
+                                                className="w-full flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-xs font-bold text-white transition-colors hover:bg-indigo-700 disabled:opacity-60"
+                                            >
+                                                {pushingShiprocket ? <Loader2 className="w-4 h-4 animate-spin" /> : <Package className="w-4 h-4" />}
+                                                {pushingShiprocket ? "Pushing to Shiprocket..." : "Push to Shiprocket"}
+                                            </button>
+                                        )}
+                                        {shiprocketError && <p className="text-xs font-semibold text-red-600">{shiprocketError}</p>}
+                                    </div>
+                                )}
                             </section>
 
                             {/* Payment Summary */}

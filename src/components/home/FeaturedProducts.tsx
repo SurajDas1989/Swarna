@@ -422,7 +422,7 @@ export function FeaturedProducts({ initialProducts = [] }: { initialProducts?: P
                         <Button
                             variant="outline"
                             size="lg"
-                            className="rounded-full border-gray-300 px-12 text-gray-700 hover:bg-gray-50 dark:border-white/20 dark:text-gray-300 dark:hover:bg-white/5"
+                            className="btn-reflective-chrome rounded-full px-12"
                             onClick={() => setShowAllProducts(true)}
                         >
                             View All Products Collection

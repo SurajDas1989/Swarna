@@ -11,6 +11,7 @@ import { CheckCircle, ChevronDown, ChevronRight, Copy, Flame, Gift, Heart, Packa
 import { getBlurDataUrl } from "@/lib/utils/imageBlur";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { AdaptiveContainer, Row } from "@/components/layout/LayoutPrimitives";
+import { PincodeEstimator } from "@/components/shipping/PincodeEstimator";
 import { motion } from "framer-motion";
 
 interface Coupon {
@@ -648,6 +649,10 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                                     <p className="text-[10px] text-gray-500 dark:text-gray-400">{badge.desc}</p>
                                 </div>
                             ))}
+                        </div>
+
+                        <div className="mb-8">
+                            <PincodeEstimator />
                         </div>
 
                         <div className="mb-8">

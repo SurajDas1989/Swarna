@@ -176,13 +176,7 @@ export default function AdminProductsPage() {
         document.body.removeChild(link);
     };
 
-    if (loading || isLoading) {
-        return (
-            <div className="flex bg-gray-50 dark:bg-background min-h-[50vh] items-center justify-center">
-                <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-            </div>
-        );
-    }
+
 
     if (!user) return null;
 
@@ -236,7 +230,16 @@ export default function AdminProductsPage() {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100 dark:divide-white/10">
-                                {products.length === 0 ? (
+                                {loading || isLoading ? (
+                                    <tr>
+                                        <td colSpan={6} className="p-12 text-center">
+                                            <div className="inline-flex items-center justify-center space-x-3">
+                                                <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                                                <span className="text-gray-500 text-sm">Loading products...</span>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ) : products.length === 0 ? (
                                     <tr>
                                         <td colSpan={6} className="p-8 text-center text-gray-500">
                                             No products found. Add one to get started.

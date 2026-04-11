@@ -8,10 +8,13 @@ import { Loader2, Menu, X } from "lucide-react";
 import { Logo } from "@/components/ui/Logo";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
-    const { user, loading } = useAuth();
+    const { user, loading, dbUser } = useAuth();
     const router = useRouter();
-    const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
+    const [isAdminChecked, setIsAdminChecked] = useState<boolean>(false);
     const [sidebarOpen, setSidebarOpen] = useState(false);
+
+    // Optimistic check based on session metadata
+    const isLikelyAdmin = dbUser?.role === "ADMIN" || dbUser?.role === "STAFF";
 
     useEffect(() => {
         if (loading) return;
@@ -20,18 +23,20 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             return;
         }
 
+        // Background verification
         fetch("/api/admin/stats")
             .then(res => {
                 if (res.status === 403) {
                     router.replace("/");
                 } else {
-                    setIsAdmin(true);
+                    setIsAdminChecked(true);
                 }
             })
             .catch(() => router.replace("/"));
     }, [user, loading, router]);
 
-    if (loading || isAdmin === null) {
+    // Only block completely if we have no hints that they are an admin
+    if (loading || (!isLikelyAdmin && !isAdminChecked)) {
         return (
             <div className="min-h-screen bg-[#f8f9fb] flex items-center justify-center">
                 <div className="text-center">
