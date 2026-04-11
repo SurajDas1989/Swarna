@@ -4,7 +4,20 @@ import { useState, useEffect } from "react";
 import { Truck, MapPin, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 import { useShipping } from "@/context/ShippingContext";
 
-export function PincodeEstimator() {
+function formatEstimateRange(startIso?: string, endIso?: string) {
+    if (!startIso || !endIso) return null;
+
+    const start = new Date(startIso);
+    const end = new Date(endIso);
+    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return null;
+
+    const weekdayFormatter = new Intl.DateTimeFormat("en-IN", { weekday: "short" });
+    const endFormatter = new Intl.DateTimeFormat("en-IN", { weekday: "short", day: "numeric", month: "short" });
+
+    return `Estimated by ${weekdayFormatter.format(start)}-${endFormatter.format(end)}`;
+}
+
+export function PincodeEstimator({ productWeightKg }: { productWeightKg?: number }) {
     const { pincode, setPincode, estimationData, setEstimationData } = useShipping();
     const [inputValue, setInputValue] = useState(pincode);
     const [loading, setLoading] = useState(false);
@@ -27,7 +40,16 @@ export function PincodeEstimator() {
         setError(null);
 
         try {
-            const res = await fetch(`/api/shiprocket/estimate?pincode=${inputValue}`);
+            const normalizedWeightKg = Number.isFinite(productWeightKg)
+                ? Math.min(Math.max(productWeightKg as number, 0.1), 5)
+                : 0.5;
+            const params = new URLSearchParams({
+                pincode: inputValue,
+                cod: "1",
+                weightKg: normalizedWeightKg.toString(),
+            });
+
+            const res = await fetch(`/api/shiprocket/estimate?${params.toString()}`);
             const data = await res.json();
             
             if (!res.ok || data.error) {
@@ -42,7 +64,7 @@ export function PincodeEstimator() {
                 setEstimationData(data);
                 setPincode(inputValue);
             }
-        } catch (err) {
+        } catch {
             setError("Failed to fetch estimate.");
         } finally {
             setLoading(false);
@@ -95,7 +117,8 @@ export function PincodeEstimator() {
                         <CheckCircle2 className="h-4 w-4 text-emerald-500 mt-0.5" />
                         <div className="space-y-0.5">
                             <p className="text-sm font-medium">
-                                Delivered by {new Date(estimationData.etd).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' })}
+                                {formatEstimateRange(estimationData.etdStart, estimationData.etdEnd) ||
+                                    `Delivered by ${new Date(estimationData.etd).toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" })}`}
                             </p>
                         </div>
                     </div>

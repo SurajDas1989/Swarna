@@ -44,7 +44,7 @@ export function ShopByPriceMobile() {
   };
 
   return (
-    <section className="bg-white py-8 border-b border-gray-100 sm:hidden">
+    <section className="bg-white py-8 border-b border-gray-100 dark:bg-[#121212] dark:border-white/10 sm:hidden">
       <div className="container mx-auto px-4">
         <motion.h2 
           animate={{ backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"] }}
@@ -77,11 +77,11 @@ export function ShopByPriceMobile() {
                   backgroundSize: 'cover',
                   backgroundPosition: 'center',
                 }}
-                className={`group relative flex w-full cursor-pointer flex-col items-center justify-center overflow-hidden rounded-xl border border-[#d4af37]/50 ${!range.image ? 'bg-gradient-to-br from-[#fffcf5] to-[#fdf2e9]' : ''} p-4 py-6 transition-all duration-300 hover:border-[#f1d592] hover:shadow-[0_15px_30px_rgba(212,175,55,0.25)] focus:outline-none min-h-[96px] shadow-[0_8px_20px_rgba(212,175,55,0.08)]`}
+                className={`group relative flex w-full cursor-pointer flex-col items-center justify-center overflow-hidden rounded-xl border border-[#d4af37]/50 ${!range.image ? 'bg-gradient-to-br from-[#fffcf5] to-[#fdf2e9] dark:from-[#1b1b1b] dark:to-[#111111]' : ''} p-4 py-6 transition-all duration-300 hover:border-[#f1d592] hover:shadow-[0_15px_30px_rgba(212,175,55,0.25)] focus:outline-none min-h-[96px] shadow-[0_8px_20px_rgba(212,175,55,0.08)]`}
               >
                 {/* Automated Gold Border Shine (The Sparkle) for Mobile */}
                 <motion.div 
-                  className="absolute top-0 z-20 h-full w-[150%] -skew-x-[30deg] bg-gradient-to-r from-transparent via-white/90 to-transparent pointer-events-none"
+                  className="absolute top-0 z-20 h-full w-[150%] -skew-x-[30deg] bg-gradient-to-r from-transparent via-white/90 to-transparent dark:via-white/30 pointer-events-none"
                   initial={{ left: "-200%" }}
                   animate={{ left: "200%" }}
                   transition={{ 
@@ -97,7 +97,7 @@ export function ShopByPriceMobile() {
                   <div className="absolute inset-0 z-0 bg-black/40 transition-opacity" />
                 )}
                 
-                <span className={`relative z-10 text-[16px] font-bold tracking-widest uppercase transition-transform duration-300 flex items-center gap-2 ${range.image ? 'text-white drop-shadow-md' : 'text-gray-900 drop-shadow-sm'}`}>
+                <span className={`relative z-10 text-[16px] font-bold tracking-widest uppercase transition-transform duration-300 flex items-center gap-2 ${range.image ? 'text-white drop-shadow-md' : 'text-gray-900 dark:text-gray-100 drop-shadow-sm'}`}>
                   {range.title}
                   {/* Rotating Diamond SVG Sparkle */}
                   <motion.svg 

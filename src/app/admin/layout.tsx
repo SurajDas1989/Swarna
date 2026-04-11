@@ -4,11 +4,11 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { AdminSidebar } from "./components/AdminSidebar";
-import { Loader2, Menu, X } from "lucide-react";
+import { Loader2, LogOut, Menu, X } from "lucide-react";
 import { Logo } from "@/components/ui/Logo";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
-    const { user, loading, dbUser } = useAuth();
+    const { user, loading, dbUser, signOut } = useAuth();
     const router = useRouter();
     const [isAdminChecked, setIsAdminChecked] = useState<boolean>(false);
     const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -47,6 +47,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         );
     }
 
+    const handleMobileLogout = async () => {
+        await signOut();
+        router.push("/");
+    };
+
     return (
         <div className="min-h-screen bg-[#f8f9fb] text-gray-900 flex">
             {/* Mobile sidebar overlay */}
@@ -73,6 +78,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                         {sidebarOpen ? <X className="w-5 h-5 text-gray-600" /> : <Menu className="w-5 h-5 text-gray-600" />}
                     </button>
                     <Logo variant="full" onDark={false} className="h-8 w-auto" />
+                    <button
+                        onClick={handleMobileLogout}
+                        className="ml-auto inline-flex items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
+                    >
+                        <LogOut className="w-4 h-4" />
+                        Logout
+                    </button>
                 </div>
 
                 <main className="flex-1 p-6 lg:p-8">

@@ -187,18 +187,53 @@ export async function trackShipment(awbCode: string) {
     return await response.json();
 }
 
+function addBusinessDays(baseDate: Date, businessDaysToAdd: number): Date {
+    const date = new Date(baseDate);
+    let added = 0;
+
+    while (added < businessDaysToAdd) {
+        date.setDate(date.getDate() + 1);
+        const day = date.getDay();
+        if (day !== 0 && day !== 6) {
+            added += 1;
+        }
+    }
+
+    return date;
+}
+
+function isValidDate(value: unknown): value is string {
+    if (typeof value !== "string" || !value) return false;
+    return !Number.isNaN(new Date(value).getTime());
+}
+
+type DeliveryEstimateOptions = {
+    cod?: boolean;
+    weightKg?: number;
+};
+
+type ShiprocketCourier = {
+    etd?: string;
+    estimated_delivery_days?: number | string;
+    courier_name?: string;
+};
+
 /**
  * Estimates delivery time based on pickup and delivery pincodes.
  */
-export async function getDeliveryEstimate(deliveryPincode: string) {
+export async function getDeliveryEstimate(deliveryPincode: string, options: DeliveryEstimateOptions = {}) {
     const token = await authenticate();
     const pickupPincode = process.env.SHIPROCKET_PICKUP_PINCODE || "110001"; // Fallback if missing
+    const cod = options.cod ?? true;
+    const normalizedWeightKg = Number.isFinite(options.weightKg)
+        ? Math.min(Math.max(options.weightKg as number, 0.1), 5)
+        : 0.5;
 
     const params = new URLSearchParams({
         pickup_postcode: pickupPincode,
         delivery_postcode: deliveryPincode,
-        cod: "0",
-        weight: "0.5"
+        cod: cod ? "1" : "0",
+        weight: normalizedWeightKg.toFixed(2)
     });
 
     const response = await fetch(`https://apiv2.shiprocket.in/v1/external/courier/serviceability/?${params.toString()}`, {
@@ -218,19 +253,49 @@ export async function getDeliveryEstimate(deliveryPincode: string) {
         throw new Error("Delivery not available to this pincode.");
     }
 
-    // Find the courier with the fastest delivery time
-    const couriers = data.data.available_courier_companies as any[];
+    const couriers = data.data.available_courier_companies as ShiprocketCourier[];
     if (couriers.length === 0) {
         throw new Error("Delivery not available to this pincode.");
     }
 
-    const fastestCourier = couriers.reduce((prev, curr) => 
-        (curr.estimated_delivery_days < prev.estimated_delivery_days) ? curr : prev
-    );
+    const normalizedCouriers = couriers
+        .map((courier) => ({
+            ...courier,
+            estimated_delivery_days: Number(courier.estimated_delivery_days),
+        }))
+        .filter((courier) => Number.isFinite(courier.estimated_delivery_days))
+        .sort((a, b) => a.estimated_delivery_days - b.estimated_delivery_days);
+
+    if (normalizedCouriers.length === 0) {
+        throw new Error("Delivery not available to this pincode.");
+    }
+
+    // Do not show fastest ETA. Use second-fastest for 2 options, median for 3+ options.
+    const selectedIndex =
+        normalizedCouriers.length >= 3
+            ? Math.floor(normalizedCouriers.length / 2)
+            : Math.min(1, normalizedCouriers.length - 1);
+    const selectedCourier = normalizedCouriers[selectedIndex];
+
+    const baseEtaDate = isValidDate(selectedCourier.etd)
+        ? new Date(selectedCourier.etd)
+        : addBusinessDays(new Date(), Math.max(1, Math.round(selectedCourier.estimated_delivery_days)));
+
+    // Add 1 business day as handling/packing buffer.
+    const etaStartDate = addBusinessDays(baseEtaDate, 1);
+    // Show a customer-friendly delivery range instead of a single optimistic date.
+    const etaEndDate = addBusinessDays(etaStartDate, 2);
 
     return {
-        etd: fastestCourier.etd, // Estimated Time of Delivery (Date string)
-        estimatedDays: fastestCourier.estimated_delivery_days,
-        courierName: fastestCourier.courier_name
+        etd: selectedCourier.etd, // Raw courier ETA for debugging/ops
+        etdStart: etaStartDate.toISOString(),
+        etdEnd: etaEndDate.toISOString(),
+        estimatedDays: selectedCourier.estimated_delivery_days,
+        courierName: selectedCourier.courier_name,
+        courierSelection:
+            normalizedCouriers.length >= 3 ? "median" : normalizedCouriers.length === 2 ? "second_fastest" : "only_option",
+        codUsed: cod,
+        weightKgUsed: normalizedWeightKg,
+        handlingBufferBusinessDays: 1,
     };
 }
