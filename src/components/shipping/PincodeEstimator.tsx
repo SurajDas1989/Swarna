@@ -97,9 +97,6 @@ export function PincodeEstimator() {
                             <p className="text-sm font-medium">
                                 Delivered by {new Date(estimationData.etd).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' })}
                             </p>
-                            <p className="text-[11px] text-gray-500 uppercase tracking-tight">
-                                Reliable Delivery via {estimationData.courierName}
-                            </p>
                         </div>
                     </div>
                 )}
